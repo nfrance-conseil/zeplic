@@ -1,15 +1,32 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/mistifyio/go-zfs"
 )
 
+type settings struct {
+	Dataset string
+	Clones  string
+}
+
+func config() (string, string) {
+	configFile, err := ioutil.ReadFile("/etc/zeplic.d/config.json")
+	var jsontype settings
+	json.Unmarshal(configFile, &jsontype)
+	ok(err)
+	return jsontype.Dataset, jsontype.Clones
+}
+
 func ok(err error) {
 	if err != nil {
 		fmt.Printf("\033[31mUnexpected error! %s\033[39m\n", err.Error())
+		os.Stderr.WriteString(err.Error())
 	}
 }
 
@@ -21,36 +38,42 @@ func snapName() string {
 }
 
 func main () {
+	//JSON
+	dataset, clones := config()
+
 	// Get Clones
-	c, err := zfs.GetDataset("tank/clones")
+	cl, err := zfs.GetDataset(clones)
 	ok(err)
-	if c != nil {
+	if cl != nil {
 		// Destroy Clones
-		c.Destroy(zfs.DestroyRecursiveClones)
+		cl.Destroy(zfs.DestroyRecursiveClones)
 		ok(err)
 	}
 
 	// Get Dataset
-	f, err := zfs.GetDataset("tank/test")
+	ds, err := zfs.GetDataset(dataset)
 	ok(err)
-	if f != nil {
-		// Destroy Dataset
-		f.Destroy(zfs.DestroyRecursive)
+	// Destroy Dataset
+/*	ds.Destroy(zfs.DestroyRecursive)
+	ok(err)*/
+	if ds == nil {
+		// Create Dataset
+		zfs.CreateFilesystem(dataset, nil)
 		ok(err)
 	}
-	// Create Dataset
-	zfs.CreateFilesystem("tank/test", nil)
-	ok(err)
 
+	// Get Snapshots
+/*	zfs.Snapshots(dataset)
+	ok(err)*/
 	// Create Snapshot
-	s, err := f.Snapshot(snapName(), false)
+	s, err := ds.Snapshot(snapName(), false)
 	ok(err)
 
 	// Create Clone
-	s.Clone("tank/clones", nil)
+	s.Clone(clones, nil)
 	ok(err)
 
 	// Rollback
-	s.Rollback(true)
-	ok(err)
+/*	s.Rollback(true)
+	ok(err)*/
 }
