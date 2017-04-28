@@ -88,7 +88,7 @@ func main () {
 	k := len(count)
 	if k > 0 {
 		// Save the last #Retain(JSON file) snapshots
-		for k > retain {
+		for ; k > retain; k-- {
 			list, err := zfs.Snapshots(dataset)
 			ok(err)
 			justList := fmt.Sprintf("%s", list)
@@ -97,19 +97,18 @@ func main () {
 			ok(err)
 			snap.Destroy(zfs.DestroyDefault)
 			ok(err)
-			k = k - 1
 		}
 	}
 
-	// Create new snapshot
+	// Create a new snapshot
 	s, err := ds.Snapshot(snapName(), false)
 	ok(err)
 
-	// Create clone of last snapshot
+	// Create a clone of last snapshot
 	s.Clone(clones, nil)
 	ok(err)
 
-	// Rollback snapshot
+	// Rollback of last snapshot
 /*	s.Rollback(true)
 	ok(err)*/
 }
