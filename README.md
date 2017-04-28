@@ -17,7 +17,7 @@ Process
 6. Save the last #Retain(JSON file) snapshots
 7. Create a new snapshot
 8. Create a clone of last snapshot
-9. Rollback of last snapshot
+9. Rollback of last snapshot (disable)
 
 Configuration
 -------------
