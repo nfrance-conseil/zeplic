@@ -14,6 +14,7 @@ Use a JSON file (/etc/zeplic.d/config.json):
 ```sh
 {
 	"dataset": "tank/test",
-	"clones": "tank/clones"
+	"clones": "tank/clones",
+	"retain": 3
 }
 ```
