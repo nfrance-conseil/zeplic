@@ -1,4 +1,4 @@
-#zeplic 0.1.0
+# zeplic 0.1.0
 
 [![Build Status](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic.svg?branch=master)](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic)
 
@@ -25,11 +25,11 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 ## How can you use it?
 
 First, clone this repository into `$GOPATH/src/github.com/nfrance-conseil/zeplic` and export your `$GOBIN`.
-The next step is to configure **zeplic**
+The next step is to configure **zeplic**:
 
 ### Configuration
 
-Add the next line to your syslog configuration file ('/etc/syslog.conf'):
+Add the next line to your syslog configuration file `/etc/syslog.conf`:
 
 ```sh
 !zeplic
@@ -46,7 +46,7 @@ Use a JSON file (/etc/zeplic.d/config.json):
 }
 ```
 
-Finally, let'zeplic!
+Finally, **let'zeplic!**
 
 ```sh
 $ zeplic
