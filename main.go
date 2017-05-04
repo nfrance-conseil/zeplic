@@ -25,6 +25,7 @@ func config() (string, string, int) {
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		fmt.Printf("\nThe file '"+jsonFile+"' does not exist!\n\n")
+		os.Exit(1)
 	}
 	var jsontype settings
 	json.Unmarshal(configFile, &jsontype)
@@ -68,7 +69,7 @@ func main () {
 		defer file.Close()
 		if err != nil {
 			fmt.Printf("\nError creating log file '%s'...\n\n", logFile)
-			return
+			os.Exit(1)
 		}
 	}
 	// Establishe a new connection to the system log daemon

@@ -1,5 +1,4 @@
-zeplic 0.1.0
-============
+#zeplic 0.1.0
 
 [![Build Status](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic.svg?branch=master)](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic)
 
@@ -7,8 +6,7 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 **Tested on FreeBSD**
 
-Process
--------
+## Process
 
 1. Get clone dataset
 2. Destroy clone dataset
@@ -20,8 +18,23 @@ Process
 8. Create a clone of last snapshot
 9. Rollback of last snapshot (disable)
 
-Configuration
--------------
+## Utils
+
+- System logging daemon.
+
+## How can you use it?
+
+First, clone this repository into `$GOPATH/src/github.com/nfrance-conseil/zeplic` and export your `$GOBIN`.
+The next step is to configure **zeplic**
+
+### Configuration
+
+Add the next line to your syslog configuration file ('/etc/syslog.conf'):
+
+```sh
+!zeplic
+local0.*					/var/log/zeplic.d
+```
 
 Use a JSON file (/etc/zeplic.d/config.json):
 
@@ -33,12 +46,8 @@ Use a JSON file (/etc/zeplic.d/config.json):
 }
 ```
 
-Utils
------
-
-- System logging daemon. Add the next line to your syslog configuration file ('/etc/syslog.conf'):
+Finally, let'zeplic!
 
 ```sh
-!zeplic
-local0.*					/var/log/zeplic.log
+$ zeplic
 ```
