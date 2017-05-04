@@ -5,12 +5,13 @@ zeplic 0.1.0
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
+**Tested on FreeBSD**
 
 Process
 -------
 
-1. Get clones dataset
-2. Destroy clones dataset
+1. Get clone dataset
+2. Destroy clone dataset
 3. Get dataset (called in JSON file)
 4. Destroy dataset (disable)
 5. Create dataset if it does not exist
@@ -27,7 +28,17 @@ Use a JSON file (/etc/zeplic.d/config.json):
 ```sh
 {
 	"dataset": "tank/test",
-	"clones": "tank/clones",
+	"clone": "tank/clone",
 	"retain": 3
 }
+```
+
+Utils
+-----
+
+- System logging daemon. Add the next line to your syslog configuration file ('/etc/syslog.conf'):
+
+```sh
+!zeplic
+local0.*					/var/log/zeplic.log
 ```

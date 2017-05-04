@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"log/syslog"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -13,34 +16,31 @@ import (
 
 type settings struct {
 	Dataset string
-	Clones  string
+	Clone  string
 	Retain  int
 }
 
 func config() (string, string, int) {
-	configFile, err := ioutil.ReadFile("/etc/zeplic.d/config.json")
+	jsonFile := "/etc/zeplic.d/config.json"
+	configFile, err := ioutil.ReadFile(jsonFile)
+	if err != nil {
+		fmt.Printf("\nThe file '"+jsonFile+"' does not exist!\n\n")
+	}
 	var jsontype settings
 	json.Unmarshal(configFile, &jsontype)
-	ok(err)
-	return jsontype.Dataset, jsontype.Clones, jsontype.Retain
+//	syslog.Err("it was not possible to parse the JSON configuration file.")
+	return jsontype.Dataset, jsontype.Clone, jsontype.Retain
 }
 
-func ok(err error) {
-	if err != nil {
-		fmt.Printf("\033[31mUnexpected error! %s\033[39m\n", err.Error())
-		// Call to Error() function in 'go-zfs' package
-		os.Stderr.WriteString(err.Error())
-	}
-}
-
+// Define the name of the snapshot: SNAP_yyyy-Month-dd_HH:MM:SS
 func snapName() string {
 	year, month, day := time.Now().Date()
 	hour, min, sec := time.Now().Clock()
 	snapDate := fmt.Sprintf("%s_%d-%s-%02d_%02d:%02d:%02d", "SNAP", year, month, day, hour, min, sec)
-	// snapName == SNAP_yyyy-Month-dd_HH:MM:SS	
 	return snapDate
 }
 
+// Get substring with the name of the snapshots
 func between(value string, a string, b string) string {
 	posFirst := strings.Index(value, a)
 	if posFirst == -1 {
@@ -58,57 +58,97 @@ func between(value string, a string, b string) string {
 }
 
 func main () {
+	// Open or create log file
+	var logPath = "/var/log/zeplic.log"
+	var _, err = os.Stat(logPath)
+	if os.IsNotExist(err) {
+		var file, err = os.Create(logPath)
+		// Send a HUP signal to syslog daemon
+		exec.Command("csh", "-c", "pkill -SIGHUP syslogd").Run()
+		defer file.Close()
+		if err != nil {
+			fmt.Printf("\nError creating log file '%s'...\n\n", logPath)
+			return
+		}
+	}
+	// Establishe a new connection to the system log daemon
+	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_ALERT|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	//JSON
-	dataset, clones, retain := config()
+	dataset, clone, retain := config()
 
 	// Get clones dataset
-	cl, err := zfs.GetDataset(clones)
-	ok(err)
-	if cl != nil {
+	cl, err := zfs.GetDataset(clone)
+	if err != nil {
+		sysLog.Info("the clone '"+clone+"' does not exist.")
+	} else {
 		// Destroy clones dataset
-		cl.Destroy(zfs.DestroyRecursiveClones)
-		ok(err)
+		err := cl.Destroy(zfs.DestroyRecursiveClones)
+		if err != nil {
+			sysLog.Err("it was not possible to destroy the clone '"+clone+"'.")
+		}
 	}
 
 	// Get dataset (called in JSON file)
 	ds, err := zfs.GetDataset(dataset)
-	ok(err)
+	if err != nil {
+		sysLog.Info("the dataset '"+dataset+"' does not exist.")
+	}
 	// Destroy dataset (optional)
-/*	ds.Destroy(zfs.DestroyRecursive)
-	ok(err)*/
+/*	err := ds.Destroy(zfs.DestroyRecursive)
+	if err != nil {
+		sysLog.Err("it was not possible to destroy the dataset '"+dataset+"'.")
+	}*/
 	if ds == nil {
 		// Create dataset if it does not exist
 		zfs.CreateFilesystem(dataset, nil)
-		ok(err)
+		sysLog.Err("it was not possible to create the dataset '"+dataset+"'.")
 	}
 
 	// Return the number of existing snapshots
 	count, err := zfs.Snapshots(dataset)
-	ok(err)
+	if err != nil {
+		sysLog.Err("it was not possible to access of snapshots list.")
+	}
 	k := len(count)
 	if k > 0 {
 		// Save the last #Retain(JSON file) snapshots
 		for ; k > retain; k-- {
 			list, err := zfs.Snapshots(dataset)
-			ok(err)
+			if err != nil {
+				sysLog.Err("it was not possible to access of snapshots list.")
+			}
 			justList := fmt.Sprintf("%s", list)
 			take := between(justList, "{", " ")
 			snap, err := zfs.GetDataset(take)
-			ok(err)
+			if err != nil {
+				sysLog.Err("it was not possible to get the snapshot '"+take+"'.")
+			}
 			snap.Destroy(zfs.DestroyDefault)
-			ok(err)
+			if err != nil {
+				sysLog.Err("it was not possible to destroy the snapshot '"+take+"'.")
+			}
 		}
 	}
 
 	// Create a new snapshot
 	s, err := ds.Snapshot(snapName(), false)
-	ok(err)
+	if err != nil {
+		sysLog.Err("it was not possible to create the snapshot '"+snapName()+"'.")
+	}
 
 	// Create a clone of last snapshot
-	s.Clone(clones, nil)
-	ok(err)
+	s.Clone(clone, nil)
+	if err != nil {
+		sysLog.Err("it was not possible to clone the snapshot '"+snapName()+"'.")
+	}
 
-	// Rollback of last snapshot
+	// Rollback of last snaphot
 /*	s.Rollback(true)
-	ok(err)*/
+	if err != nil {
+		sysLog.Err("it was not possible to rolling back the snapshot '"+snapName()+"'.")
+	}*/
 }
