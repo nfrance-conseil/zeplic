@@ -59,15 +59,15 @@ func between(value string, a string, b string) string {
 
 func main () {
 	// Open or create log file
-	var logPath = "/var/log/zeplic.log"
-	var _, err = os.Stat(logPath)
+	var logFile = "/var/log/zeplic.log"
+	var _, err = os.Stat(logFile)
 	if os.IsNotExist(err) {
-		var file, err = os.Create(logPath)
+		var file, err = os.Create(logFile)
 		// Send a HUP signal to syslog daemon
 		exec.Command("csh", "-c", "pkill -SIGHUP syslogd").Run()
 		defer file.Close()
 		if err != nil {
-			fmt.Printf("\nError creating log file '%s'...\n\n", logPath)
+			fmt.Printf("\nError creating log file '%s'...\n\n", logFile)
 			return
 		}
 	}
