@@ -7,4 +7,13 @@ branches:
   only:
     - master
 
+install: 
+  - go get -v github.com/mistifyio/go-zfs
+  - go get -v github.com/golang/lint/golint
+
+script:
+  - go test -v ./...
+  - go vet -v ./...
+  - golint .
+
 sudo: false
