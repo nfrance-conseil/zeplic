@@ -74,7 +74,7 @@ func RealMain(j int) int {
 			if err != nil {
 				w.Err("[ERROR] it was not possible to access of snapshots list.")
 			}
-			justList := fmt.Sprintf("%s", list)
+			justList := fmt.Sprintf("%v", list)
 			for strings.Contains(justList, "BACKUP") {
 				take := Between(justList, "{", " ")
 				if strings.Contains(take, "BACKUP") {
@@ -112,7 +112,7 @@ func RealMain(j int) int {
 					if err != nil {
 						w.Err("[ERROR] it was not possible to access of snapshots list.")
 					}
-					justList := fmt.Sprintf("%s", list)
+					justList := fmt.Sprintf("%v", list)
 					take := Between(justList, "{", " ")
 					snap, err := zfs.GetDataset(take)
 					if err != nil {
