@@ -2,7 +2,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"log/syslog"
 	"os"
@@ -20,7 +19,7 @@ func LogCreate() error {
 		exec.Command("csh", "-c", "pkill -SIGHUP syslogd").Run()
 		defer file.Close()
 		if err != nil {
-			fmt.Errorf("\n[ERR] config/syslog.go:18 ~> func LogCreate() *** Error creating log file '%s' ***\n\n", logFile)
+			fmt.Printf("\n[ERROR] config/syslog.go:17 *** Error creating log file '%s' ***\n\n", logFile)
 			os.Exit(1)
 		}
 	}
@@ -32,7 +31,7 @@ func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
 	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_ALERT|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")
 	if err != nil {
-		errors.New("\n[ERR] config/syslog.go:33 ~> func LogBook() *** Unable to establish a new connection to the system log daemon ***\n\n")
+		fmt.Printf("\n[ERROR] config/syslog.go:32 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)
 	}
 	return sysLog, nil

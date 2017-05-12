@@ -3,7 +3,6 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -30,6 +29,7 @@ type Pool struct {
 
 // Json() reads the JSON file and checks how many datasets are there
 func Json() (int, string, error) {
+	w, _ := LogBook()
 	jsonFile := "/usr/local/etc/zeplic.d/config.json"
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
@@ -39,7 +39,7 @@ func Json() (int, string, error) {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		errors.New("\n[ERR] config/json.go:40 ~> func Json() *** Impossible to parse the JSON configuration file ***\n\n")
+		w.Err("[ERROR] config/json.go:40 *** Impossible to parse the JSON configuration file ***")
 		os.Exit(1)
 	}
 	return len(values.Dataset), jsonFile, nil
