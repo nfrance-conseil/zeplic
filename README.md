@@ -41,7 +41,7 @@ Use a JSON file (/usr/local/etc/zeplic.d/config.json):
 
 ```sh
 {
-	"dataset": [
+	"datasets": [
 		"enable": true,
 		"name": "tank/test",
 		"snapshot": "SNAP",
