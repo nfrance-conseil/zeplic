@@ -24,8 +24,8 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 ## How can you use it?
 
-First, clone this repository into `$GOPATH/src/zeplic` and export your `$GOBIN`.
-After, make `go install`.
+First, clone this repository `go get -v github.com/nfrance-conseil/zeplic` and export your `$GOBIN`.
+After, change your directory to zeplic/ and make `go install`.
 The next step is to configure **zeplic**:
 
 ### Configuration
