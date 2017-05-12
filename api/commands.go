@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"zeplic/config"
+	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/mistifyio/go-zfs"
 )
 

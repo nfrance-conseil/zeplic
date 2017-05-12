@@ -1,6 +1,6 @@
 # zeplic
 
-[![Build Status](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic.svg?branch=master)](https://travis-ci.org/IgnacioCarbajoVallejo/zeplic)
+[![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
@@ -12,15 +12,15 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 2. Read JSON configuration file
 3. Check datasets enabled
 4. ZFS functions...
-  4.1. Destroy an existing clone
-  4.2. Select datasets
-  4.3. Destroy dataset (disable)
-  4.4. Create dataset if it does not exist
-  4.5. Create a new snapshot
-  4.6. Save the last #Retain(JSON file) snapshots
-  4.7. Create a backup snapshot
-  4.8. Create a clone of last snapshot (optional function)
-  4.9. Rollback of last snapshot (optional function)
+- Destroy an existing clone
+- Select datasets
+- Destroy dataset (disable)
+- Create dataset if it does not exist
+- Create a new snapshot
+- Save the last #Retain(JSON file) snapshots
+- Create a backup snapshot
+- Create a clone of last snapshot (optional function)
+- Rollback of last snapshot (optional function)
 
 ## How can you use it?
 

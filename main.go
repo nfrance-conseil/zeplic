@@ -7,8 +7,8 @@ package main
 import (
 	"os"
 
-	"zeplic/config"
-	"zeplic/api"
+	"github.com/nfrance-conseil/zeplic/config"
+	"github.com/nfrance-conseil/zeplic/api"
 )
 
 func main () {
