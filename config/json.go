@@ -33,7 +33,7 @@ type Pool struct {
 	Dataset	[]Data	`json:"datasets"`
 }
 
-// Json reads the 'JSON' file and checks how many datasets are there
+// JSON reads the 'JSON' file and checks how many datasets are there
 func JSON() (int, string, error) {
 	w, _ := LogBook()
 	jsonFile := "/usr/local/etc/zeplic.d/config.json"
