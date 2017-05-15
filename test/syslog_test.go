@@ -4,14 +4,14 @@ import (
 	"github.com/nfrance-conseil/zeplic/config"
 	"testing"
 )
-/*
+
 func TestLogCreate(t *testing.T) {
 	err := config.LogCreate()
 	if err != nil {
 		t.Errorf("LogCreate() test failed!")
 	}
 }
-*/
+/*
 func TestLogBook(t *testing.T) {
 	sysLog, err := config.LogBook()
 	if sysLog == nil {
@@ -21,3 +21,4 @@ func TestLogBook(t *testing.T) {
 		t.Errorf("LogBook() test failed!")
 	}
 }
+*/
