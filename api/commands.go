@@ -8,10 +8,7 @@ import (
 	"github.com/mistifyio/go-zfs"
 )
 
-// Commands runs all 'ZFS' functions
-//
 // RealMain is a loop that executes 'ZFS' functions for each dataset enabled
-//
 func RealMain(j int) int {
 	// Start syslog system service
 	w, _ := config.LogBook()

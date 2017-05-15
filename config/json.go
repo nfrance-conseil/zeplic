@@ -34,7 +34,7 @@ type Pool struct {
 }
 
 // Json reads the 'JSON' file and checks how many datasets are there
-func Json() (int, string, error) {
+func JSON() (int, string, error) {
 	w, _ := LogBook()
 	jsonFile := "/usr/local/etc/zeplic.d/config.json"
 	configFile, err := ioutil.ReadFile(jsonFile)
@@ -53,7 +53,7 @@ func Json() (int, string, error) {
 
 // Extract returns the value of each configuration file field
 func Extract(i int) ([]interface{}) {
-	_, path, _ := Json()
+	_, path, _ := JSON()
 	configFile, _ := ioutil.ReadFile(path)
 	var values Pool
 	json.Unmarshal(configFile, &values)

@@ -24,7 +24,7 @@ func main () {
 	go config.LogCreate()
 
 	// Read JSON configuration file
-	j, _, _ := config.Json()
+	j, _, _ := config.JSON()
 
 	// Invoke RealMain() function
 	os.Exit(api.RealMain(j))
