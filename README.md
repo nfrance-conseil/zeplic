@@ -11,13 +11,13 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 1. Run syslog service
 2. Read JSON configuration file
 3. Check datasets enabled
-4. ZFS functions...
+4. Run ZFS functions...
 - Destroy an existing clone
 - Select datasets
 - Destroy dataset (disable)
 - Create dataset if it does not exist
 - Create a new snapshot
-- Save the last #Retain(JSON file) snapshots
+- Snapshots retention policy
 - Create a backup snapshot
 - Create a clone of last snapshot (optional function)
 - Rollback of last snapshot (optional function)
