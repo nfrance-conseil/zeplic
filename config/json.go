@@ -8,11 +8,13 @@ import (
 	"os"
 )
 
+// Copy contains Clone options
 type Copy struct {
 	Enable	bool	`json:"enable"`
 	Name	string	`json:"name"`
 }
 
+// Data contains the information of each dataset
 type Data struct {
 	Enable	bool	`json:"enable"`
 	Name	string	`json:"name"`
@@ -23,6 +25,7 @@ type Data struct {
 	Roll	bool	`json:"rollback"`
 }
 
+// Pool extracts the interface of JSON file
 type Pool struct {
 	Dataset	[]Data	`json:"datasets"`
 }

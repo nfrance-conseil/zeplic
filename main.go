@@ -20,7 +20,7 @@ import (
 )
 
 func main () {
-	// Call to syslog daemon service
+	// Start syslog daemon service
 	go config.LogCreate()
 
 	// Read JSON configuration file
