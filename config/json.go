@@ -1,4 +1,7 @@
+// Package config contains: json.go - syslog.go
+//
 // Json reads and extracts the information JSON configuration file
+//
 package config
 
 import (
@@ -30,7 +33,7 @@ type Pool struct {
 	Dataset	[]Data	`json:"datasets"`
 }
 
-// Json() reads the JSON file and checks how many datasets are there
+// Json reads the JSON file and checks how many datasets are there
 func Json() (int, string, error) {
 	w, _ := LogBook()
 	jsonFile := "/usr/local/etc/zeplic.d/config.json"
@@ -48,7 +51,7 @@ func Json() (int, string, error) {
 	return len(values.Dataset), jsonFile, nil
 }
 
-// Extract() returns the value of each configuration file field
+// Extract returns the value of each configuration file field
 func Extract(i int) ([]interface{}) {
 	_, path, _ := Json()
 	configFile, _ := ioutil.ReadFile(path)

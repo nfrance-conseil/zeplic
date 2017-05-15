@@ -1,6 +1,9 @@
+// Package config contains: json.go - syslog.go
+//
 // Syslog establishes a new connection with the syslog daemon
 // and writes (firstly, can create the file) in the log file,
 // all messages return by the functions
+//
 package config
 
 import (
@@ -10,7 +13,7 @@ import (
 	"os/exec"
 )
 
-// LogCreate() creates a new log file if it does not exist
+// LogCreate creates a new log file if it does not exist
 func LogCreate() error {
 	// Open or create log file
 	logFile := "/var/log/zeplic.log"
@@ -28,7 +31,7 @@ func LogCreate() error {
 	return nil
 }
 
-// LogBook() creates a new connection with the syslog service
+// LogBook creates a new connection with the syslog service
 func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
 	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")

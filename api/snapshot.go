@@ -1,4 +1,7 @@
+// Package api contains: commands.go - snapshot.go
+//
 // Snapshot makes the structure of snapshot's names
+//
 package api
 
 import (
@@ -6,7 +9,7 @@ import (
 	"time"
 )
 
-// SnapName() define the name of the snapshot: NAME_yyyy-Month-dd_HH:MM:SS
+// SnapName defines the name of the snapshot: NAME_yyyy-Month-dd_HH:MM:SS
 func SnapName(name string) string {
 	year, month, day := time.Now().Date()
 	hour, min, sec := time.Now().Clock()
@@ -14,7 +17,7 @@ func SnapName(name string) string {
 	return snapDate
 }
 
-// SnapBackup() define the name of a backup snapshot: BACKUP_yyyy-Month-dd_HH:MM:SS
+// SnapBackup defines the name of a backup snapshot: BACKUP_yyyy-Month-dd_HH:MM:SS
 func SnapBackup() string {
 	year, month, day := time.Now().Date()
 	hour, min, sec := time.Now().Clock()
