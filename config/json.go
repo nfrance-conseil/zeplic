@@ -1,4 +1,4 @@
-// Functions to read and extract the information that the JSON file contains
+// Json reads and extracts the information JSON configuration file
 package config
 
 import (

@@ -1,4 +1,6 @@
-// Functions to read the log file (or to create it) and to establishe a new connection with the syslog daemon
+// Syslog establishes a new connection with the syslog daemon
+// and writes (firstly, can create the file) in the log file,
+// all messages return by the functions
 package config
 
 import (
@@ -29,7 +31,7 @@ func LogCreate() error {
 // LogBook() creates a new connection with the syslog service
 func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
-	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_ALERT|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")
+	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")
 	if err != nil {
 		fmt.Printf("\n[ERROR] config/syslog.go:32 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)

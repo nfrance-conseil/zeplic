@@ -1,8 +1,7 @@
-// Comands runs all zfs functions
+// Comands runs all ZFS functions
 package api
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
@@ -74,9 +73,9 @@ func RealMain(j int) int {
 			if err != nil {
 				w.Err("[ERROR] it was not possible to access of snapshots list.")
 			}
-			justList := fmt.Sprintf("%v", list)
-			for strings.Contains(justList, "BACKUP") {
-				take := Between(justList, "{", " ")
+			count := len(list)
+			for k := 0; k < count; k++ {
+				take := list[k].Name
 				if strings.Contains(take, "BACKUP") {
 					snap, err := zfs.GetDataset(take)
 					if err != nil {
@@ -88,43 +87,33 @@ func RealMain(j int) int {
 					} else {
 						w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
 					}
-					remove := Before(justList, " %")
-					r := int(len(remove)+1)
-					justList = Chop(r, justList)
-				} else {
-					remove := Before(justList, " %")
-					r := int(len(remove)+1)
-					justList = Chop(r, justList)
 				}
 			}
 
-			// Return the number of existing snapshots
+			// Return the number of snapshots we want to keep
 			retain := pieces[4].(int)
-			count, err := zfs.Snapshots(dataset)
+			list, err = zfs.Snapshots(dataset)
 			if err != nil {
 				w.Err("[ERROR] it was not possible to access of snapshots list.")
 			}
-			k := len(count)
-			if k > 0 {
-				// Save the last #Retain(JSON file) snapshots
-				for ; k > retain; k-- {
-					list, err := zfs.Snapshots(dataset)
-					if err != nil {
-						w.Err("[ERROR] it was not possible to access of snapshots list.")
-					}
-					justList := fmt.Sprintf("%v", list)
-					take := Between(justList, "{", " ")
-					snap, err := zfs.GetDataset(take)
-					if err != nil {
-						w.Err("[ERROR] it was not possible to get the snapshot '"+take+"'.")
-					}
-					err = snap.Destroy(zfs.DestroyDefault)
-					if err != nil {
-						w.Err("[ERROR] it was not possible to destroy the snapshot '"+take+"'.")
-					} else {
-						w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
-					}
+			count = len(list)
+			for k := 0; count > retain; k++ {
+				take := list[k].Name
+				snap, err := zfs.GetDataset(take)
+				if err != nil {
+					w.Err("[ERROR] it was not possible to get the snapshot '"+take+"'.")
 				}
+				err = snap.Destroy(zfs.DestroyDefault)
+				if err != nil {
+					w.Err("[ERROR] it was not possible to destroy the snapshot '"+take+"'.")
+				} else {
+					w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
+				}
+				list, err = zfs.Snapshots(dataset)
+				if err != nil {
+					w.Err("[ERROR] it was not possible to access of snapshots list.")
+				}
+				count = len(list)
 			}
 
 			// Create a backup snapshot

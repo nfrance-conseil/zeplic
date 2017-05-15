@@ -1,6 +1,14 @@
 // zeplic main package
 //
-// Description...
+// Version * - May 2017
+//
+// ZEPLIC is an application to manage ZFS datasets.
+// It establishes a connection with the syslog system service,
+// reads the dataset configuration of a JSON file
+// and execute a sequence of ZFS functions:
+//
+// Get a dataset, get a list of snapshots, create a snapshot,
+// delete it, create a clone, roll back snapshot...
 //
 package main
 
