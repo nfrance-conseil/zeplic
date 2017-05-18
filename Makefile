@@ -4,8 +4,8 @@
 #
 
 GOPATH:=$(shell go env GOPATH)
-GOGET=$(shell) sudo go get
-GOBUILD=$(shell) sudo go install
+GOGET=$(shell) go get
+GOBUILD=$(shell) go install
 
 PACKAGE1="github.com/mistifyio/go-zfs"
 PACKAGE2="github.com/pborman/uuid"
