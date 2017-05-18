@@ -14,10 +14,6 @@ PACKAGE4="github.com/kardianos/osext"
 
 make:
 	@printf "\n:: ZEPLIC ::\n"
-	@printf "\nExpected: gmake install\n\n"
-
-install:
-	@printf "\n:: ZEPLIC ::\n"
 	@printf "\nBuilding tree... "
 	@if [ ! -d "$(GOPATH)/pkg" ] ; then mkdir -p "$(GOPATH)/pkg" ; fi
 	@if [ ! -d "$(GOPATH)/bin" ] ; then mkdir -p "$(GOPATH)/bin" ; fi
