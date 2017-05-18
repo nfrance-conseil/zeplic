@@ -15,8 +15,8 @@ PACKAGE4="github.com/kardianos/osext"
 make:
 	@printf "\n:: ZEPLIC ::\n"
 	@printf "\nBuilding tree... "
-	@if [ ! -d "$(GOPATH)/pkg" ] ; then mkdir -p "$(GOPATH)/pkg" ; fi
-	@if [ ! -d "$(GOPATH)/bin" ] ; then mkdir -p "$(GOPATH)/bin" ; fi
+	@if [ ! -d "$(GOPATH)/pkg" ] ; then sudo mkdir -p "$(GOPATH)/pkg" ; fi
+	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
 	@printf "done!"
 	@printf "\nGetting dependencies... "
 	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
@@ -25,13 +25,15 @@ make:
 	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
 	@printf "done!"
 	@printf "\nSetting syslog daemon service... "
-	@if ! grep -q \!zeplic "/etc/syslog.conf" ; then printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/syslog.conf ; fi
+	@if [ -e "/etc/rsyslog.conf" ] && ! grep -q \!zeplic "/etc/rsyslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/rsyslog.conf ; fi
+	@if [ -e "/etc/syslog.conf" ] && ! grep -q \!zeplic "/etc/syslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/syslog.conf ; fi	
 	@printf "done!"
 	@printf "\nBuilding... "
 	@$(GOBUILD)
 	@printf "done!"
 	@printf "\nExporting your \$$\GOBIN... "
-#	@scp $(GOPATH)/bin/zeplic /usr/local/bin/
+	@if [ -e "/root/.bashrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.bashrc" ; then sudo printf "export PATH=\$$\PATH:$(GOPATH)/bin" >> ~/.bashrc ; fi
+	@if [ -e "/root/.cshrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.cshrc" ; then sudo printf "setenv PATH \"\$$\PATH\":$(GOPATH)/bin" >> ~/.cshrc ; fi
 	@printf "done!\n\n"
 	@printf "Remember to config your JSON file: /usr/local/etc/zeplic.d/config.json\n\n"
 
