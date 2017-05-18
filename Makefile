@@ -7,10 +7,11 @@ GOPATH:=$(shell go env GOPATH)
 GOGET=$(shell) go get
 GOBUILD=$(shell) go install
 
-PACKAGE1="github.com/mistifyio/go-zfs"
-PACKAGE2="github.com/pborman/uuid"
-PACKAGE3="github.com/sevlyar/go-daemon"
-PACKAGE4="github.com/kardianos/osext"
+PACKAGE0="github.com/nfrance-conseil"
+PACKAGE1="github.com/mistifyio"
+PACKAGE2="github.com/pborman"
+PACKAGE3="github.com/sevlyar"
+PACKAGE4="github.com/kardianos"
 
 make:
 	@printf "\n:: ZEPLIC ::\n"
@@ -19,10 +20,10 @@ make:
 	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
 	@printf "done!"
 	@printf "\nGetting dependencies... "
-#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
-#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
-#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
-#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then sudo $(GOGET) $(PACKAGE1)/go-zfs ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then sudo $(GOGET) $(PACKAGE2)/uuid ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then sudo $(GOGET) $(PACKAGE3)/go-daemon ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then sudo $(GOGET) $(PACKAGE4)/osext ; fi
 	@printf "done!"
 	@printf "\nSetting syslog daemon service... "
 	@if [ -e "/etc/rsyslog.conf" ] && ! grep -q \!zeplic "/etc/rsyslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/rsyslog.conf ; fi
@@ -31,23 +32,22 @@ make:
 	@printf "\nBuilding... "
 	@$(GOBUILD)
 	@printf "done!"
-	@printf "\nExporting your \$$\GOBIN... "
-	@if [ -e "/root/.bashrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.bashrc" ; then sudo printf "export PATH=\$$\PATH:$(GOPATH)/bin" >> ~/.bashrc ; fi
-	@if [ -e "/root/.cshrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.cshrc" ; then sudo printf "setenv PATH \"\$$\PATH\":$(GOPATH)/bin" >> ~/.cshrc ; fi
+	@printf "\nInstalling zeplic... "
+	@sudo install -m 755 -o root -g wheel -b $(GOPATH)/bin/zeplic /usr/local/bin
 	@printf "done!\n\n"
 	@printf "Remember to config your JSON file: /usr/local/etc/zeplic.d/config.json\n\n"
 
 clean:
 	@printf "\n:: ZEPLIC ::\n"
-	@printf "\nCleaning dependencies... \c"
-	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE4)"
+	@printf "\nCleaning dependencies... "
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE4)/osext"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE4)" 2>/dev/null || :
-	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE3)"
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE3)/go-daemon"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE3)" 2>/dev/null || :
-	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE2)"
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE2)/uuid"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE2)" 2>/dev/null || :
-	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE1)"
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE1)/go-zfs"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE1)" 2>/dev/null || :
-#	@rm -rf "$(GOPATH)/src/$(PACKAGE0)"
-#	@rmdir "$(GOPATH)/src/$(PACKAGE0)" 2>/dev/null || :
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE0)/zeplic"
+	@sudo rmdir "$(GOPATH)/src/$(PACKAGE0)" 2>/dev/null || :
 	@printf "done!\n\n"
