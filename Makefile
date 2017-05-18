@@ -4,8 +4,8 @@
 #
 
 GOPATH:=$(shell go env GOPATH)
-GOGET=$(shell) go get
-GOBUILD=$(shell) go install
+GOGET=$(shell) sudo go get
+GOBUILD=$(shell) sudo go install
 
 PACKAGE1="github.com/mistifyio/go-zfs"
 PACKAGE2="github.com/pborman/uuid"
@@ -19,17 +19,17 @@ make:
 	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
 	@printf "done!"
 	@printf "\nGetting dependencies... "
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then sudo $(GOGET) $(PACKAGE1) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then sudo $(GOGET) $(PACKAGE2) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then sudo $(GOGET) $(PACKAGE3) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then sudo $(GOGET) $(PACKAGE4) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
 	@printf "done!"
 	@printf "\nSetting syslog daemon service... "
 	@if [ -e "/etc/rsyslog.conf" ] && ! grep -q \!zeplic "/etc/rsyslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/rsyslog.conf ; fi
 	@if [ -e "/etc/syslog.conf" ] && ! grep -q \!zeplic "/etc/syslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/syslog.conf ; fi	
 	@printf "done!"
 	@printf "\nBuilding... "
-	@sudo $(GOBUILD)
+	@$(GOBUILD)
 	@printf "done!"
 	@printf "\nExporting your \$$\GOBIN... "
 	@if [ -e "/root/.bashrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.bashrc" ; then sudo printf "export PATH=\$$\PATH:$(GOPATH)/bin" >> ~/.bashrc ; fi
