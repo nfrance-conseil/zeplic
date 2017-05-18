@@ -1,4 +1,6 @@
 language: go
+sudo: required
+dist: trusty
 
 go:
   - 1.8.x
@@ -19,6 +21,5 @@ script:
   - go vet -v ./...
   - golint .
 
-dist: precise
-
-sudo: required
+notifications:
+  email: false
