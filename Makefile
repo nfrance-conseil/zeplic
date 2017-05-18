@@ -20,7 +20,7 @@ make:
 	@printf "done!"
 	@printf "\nGetting dependencies... "
 	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
+#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
 	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
 	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
 	@printf "done!"
