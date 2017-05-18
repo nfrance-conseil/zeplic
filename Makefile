@@ -14,7 +14,7 @@ PACKAGE3="github.com/sevlyar"
 PACKAGE4="github.com/kardianos"
 
 build:
-	@printf "\n:: ZEPLIC ::\n"
+	@printf "\nBuilding zeplic...\n"
 	@printf "\nBuilding tree... "
 	@if [ ! -d "$(GOPATH)/pkg" ] ; then sudo mkdir -p "$(GOPATH)/pkg" ; fi
 	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
@@ -32,16 +32,17 @@ build:
 	@printf "\nBuilding... "
 	@$(GOBUILD)
 	@printf "done!\n\n"
+	@printf "...done!\n"
+	@printf "\nTo install zeplic 'gmake install'\n\n"
 
 install:
 	@printf "\nInstalling zeplic... "
 	@sudo install -m 755 -o root -g wheel -b $(GOPATH)/bin/zeplic /usr/local/bin
 	@printf "done!\n\n"
-	@printf "Remember to config your JSON file: /usr/local/etc/zeplic.d/config.json\n\n"
+	@printf "[!] Remember to config your JSON file: /usr/local/etc/zeplic.d/config.json\n\n"
 
 clean:
-	@printf "\n:: ZEPLIC ::\n"
-	@printf "\nCleaning dependencies... "
+	@printf "\nCleaning dependencies for zeplic... "
 	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE4)/osext"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE4)" 2>/dev/null || :
 	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE3)/go-daemon"
