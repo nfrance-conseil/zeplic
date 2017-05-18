@@ -19,17 +19,17 @@ make:
 	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
 	@printf "done!"
 	@printf "\nGetting dependencies... "
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then sudo $(GOGET) $(PACKAGE1) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then sudo $(GOGET) $(PACKAGE2) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then sudo $(GOGET) $(PACKAGE3) ; fi
+	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then sudo $(GOGET) $(PACKAGE4) ; fi
 	@printf "done!"
 	@printf "\nSetting syslog daemon service... "
 	@if [ -e "/etc/rsyslog.conf" ] && ! grep -q \!zeplic "/etc/rsyslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/rsyslog.conf ; fi
 	@if [ -e "/etc/syslog.conf" ] && ! grep -q \!zeplic "/etc/syslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/syslog.conf ; fi	
 	@printf "done!"
 	@printf "\nBuilding... "
-	@$(GOBUILD)
+	@sudo $(GOBUILD)
 	@printf "done!"
 	@printf "\nExporting your \$$\GOBIN... "
 	@if [ -e "/root/.bashrc" ] && ! grep -q "$(GOPATH)/bin" "/root/.bashrc" ; then sudo printf "export PATH=\$$\PATH:$(GOPATH)/bin" >> ~/.bashrc ; fi
@@ -40,14 +40,14 @@ make:
 clean:
 	@printf "\n:: ZEPLIC ::\n"
 	@printf "\nCleaning dependencies... \c"
-	@rm -rf "$(GOPATH)/src/$(PACKAGE4)"
-	@rmdir "$(GOPATH)/src/$(PACKAGE4)" 2>/dev/null || :
-	@rm -rf "$(GOPATH)/src/$(PACKAGE3)"
-	@rmdir "$(GOPATH)/src/$(PACKAGE3)" 2>/dev/null || :
-	@rm -rf "$(GOPATH)/src/$(PACKAGE2)"
-	@rmdir "$(GOPATH)/src/$(PACKAGE2)" 2>/dev/null || :
-	@rm -rf "$(GOPATH)/src/$(PACKAGE1)"
-	@rmdir "$(GOPATH)/src/$(PACKAGE1)" 2>/dev/null || :
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE4)"
+	@sudo rmdir "$(GOPATH)/src/$(PACKAGE4)" 2>/dev/null || :
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE3)"
+	@sudo rmdir "$(GOPATH)/src/$(PACKAGE3)" 2>/dev/null || :
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE2)"
+	@sudo rmdir "$(GOPATH)/src/$(PACKAGE2)" 2>/dev/null || :
+	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE1)"
+	@sudo rmdir "$(GOPATH)/src/$(PACKAGE1)" 2>/dev/null || :
 #	@rm -rf "$(GOPATH)/src/$(PACKAGE0)"
 #	@rmdir "$(GOPATH)/src/$(PACKAGE0)" 2>/dev/null || :
 	@printf "done!\n\n"
