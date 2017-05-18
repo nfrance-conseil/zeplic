@@ -19,10 +19,10 @@ make:
 	@if [ ! -d "$(GOPATH)/bin" ] ; then sudo mkdir -p "$(GOPATH)/bin" ; fi
 	@printf "done!"
 	@printf "\nGetting dependencies... "
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
+#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE1)" ] ; then $(GOGET) $(PACKAGE1) ; fi
 #	@if [ ! -d "$(GOPATH)/src/$(PACKAGE2)" ] ; then $(GOGET) $(PACKAGE2) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
-	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
+#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE3)" ] ; then $(GOGET) $(PACKAGE3) ; fi
+#	@if [ ! -d "$(GOPATH)/src/$(PACKAGE4)" ] ; then $(GOGET) $(PACKAGE4) ; fi
 	@printf "done!"
 	@printf "\nSetting syslog daemon service... "
 	@if [ -e "/etc/rsyslog.conf" ] && ! grep -q \!zeplic "/etc/rsyslog.conf" ; then sudo printf "\n\!zeplic\nlocal0.*\t\t\t\t\t-/var/log/zeplic.log\n" >> /etc/rsyslog.conf ; fi
