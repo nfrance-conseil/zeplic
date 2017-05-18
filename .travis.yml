@@ -10,7 +10,7 @@ branches:
 install:
   - go get -v github.com/mistifyio/go-zfs
   - go get -v github.com/pborman/uuid
-  - go get -v github.com/sevylar/go-daemon
+  - go get -v github.com/sevlyar/go-daemon
   - go get -v github.com/kardianos/osext
   - go get -v github.com/golang/lint/golint
 
