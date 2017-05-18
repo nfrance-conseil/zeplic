@@ -21,5 +21,8 @@ script:
   - go vet -v ./...
   - golint .
 
+
 notifications:
   email: false
+
+sudo: false
