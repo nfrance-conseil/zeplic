@@ -4,7 +4,7 @@
 #
 
 GOPATH:=$(shell go env GOPATH)
-GOGET=$(shell) go get
+GOGET=$(shell) go get -v
 #GOBUILD=$(shell) go install
 
 PACKAGE1="github.com/mistifyio/go-zfs"
