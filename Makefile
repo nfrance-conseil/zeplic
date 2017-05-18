@@ -30,8 +30,8 @@ make:
 	@printf "\nBuilding... "
 	@$(GOBUILD)
 	@printf "done!"
-	@printf "\nExporting zeplic... "
-	@scp $(GOPATH)/bin/zeplic /usr/local/bin/
+	@printf "\nExporting your \$$\GOBIN... "
+#	@scp $(GOPATH)/bin/zeplic /usr/local/bin/
 	@printf "done!\n\n"
 	@printf "Remember to config your JSON file: /usr/local/etc/zeplic.d/config.json\n\n"
 
