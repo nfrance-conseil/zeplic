@@ -13,7 +13,7 @@ PACKAGE2="github.com/pborman"
 PACKAGE3="github.com/sevlyar"
 PACKAGE4="github.com/kardianos"
 
-make:
+build:
 	@printf "\n:: ZEPLIC ::\n"
 	@printf "\nBuilding tree... "
 	@if [ ! -d "$(GOPATH)/pkg" ] ; then sudo mkdir -p "$(GOPATH)/pkg" ; fi
@@ -31,7 +31,9 @@ make:
 	@printf "done!"
 	@printf "\nBuilding... "
 	@$(GOBUILD)
-	@printf "done!"
+	@printf "done!\n\n"
+
+install:
 	@printf "\nInstalling zeplic... "
 	@sudo install -m 755 -o root -g wheel -b $(GOPATH)/bin/zeplic /usr/local/bin
 	@printf "done!\n\n"
@@ -51,3 +53,5 @@ clean:
 	@sudo rm -rf "$(GOPATH)/src/$(PACKAGE0)/zeplic"
 	@sudo rmdir "$(GOPATH)/src/$(PACKAGE0)" 2>/dev/null || :
 	@printf "done!\n\n"
+
+all: build
