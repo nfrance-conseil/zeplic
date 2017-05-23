@@ -35,6 +35,7 @@ Use a JSON file (/usr/local/etc/zeplic.d/config.json):
 ```sh
 {
 	"datasets": [
+	{
 		"enable": true,
 		"name": "tank/test",
 		"snapshot": "SNAP",
@@ -42,13 +43,13 @@ Use a JSON file (/usr/local/etc/zeplic.d/config.json):
 		"backup" true,
 		"clone": {
 			"enable": true,
-			"tank/clone"
+			"name": "tank/clone"
 		},
 		"rollback": false
 	},
 	{
 		"enable": false,
-		"name": "tank/storage"
+		"name": "tank/storage",
 		...
 	}]
 }
