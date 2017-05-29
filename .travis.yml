@@ -1,5 +1,4 @@
 language: go
-sudo: required
 dist: trusty
 
 go:
@@ -20,7 +19,6 @@ script:
   - go test -v ./...
   - go vet -v ./...
   - golint .
-
 
 notifications:
   email: false
