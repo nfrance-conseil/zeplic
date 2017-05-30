@@ -1,0 +1,18 @@
+{
+	"datasets": [
+	{
+		"enable": true,
+		"name": "tank/test",
+		"snapshot": "SNAP",
+		"retain": 3,
+		"backup": true,
+		"clone": {
+			"enable": true,
+			"name": "tank/clone"
+		},
+		"rollback": false
+	},
+	{
+		"enable": false
+	}]
+}
