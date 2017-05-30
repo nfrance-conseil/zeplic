@@ -11,6 +11,8 @@ import (
 	"os"
 )
 
+var ConfigFilePath string
+
 // Copy contains Clone options
 type Copy struct {
 	Enable	bool	`json:"enable"`
@@ -36,7 +38,7 @@ type Pool struct {
 // JSON reads the 'JSON' file and checks how many datasets are there
 func JSON() (int, string, error) {
 	w, _ := LogBook()
-	jsonFile := "/usr/local/etc/zeplic.d/config.json"
+	jsonFile := ConfigFilePath
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		fmt.Printf("\nThe file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)

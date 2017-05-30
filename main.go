@@ -20,9 +20,6 @@ import (
 )
 
 func main () {
-	// Start syslog daemon service
-	go config.LogCreate()
-
 	// Read JSON configuration file
 	j, _, _ := config.JSON()
 
