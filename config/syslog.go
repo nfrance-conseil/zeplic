@@ -34,7 +34,7 @@ func LogCreate() error {
 // LogBook creates a new connection with the syslog service
 func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
-	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_INFO|syslog.LOG_WARNING, "zeplic")
+	sysLog, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 	if err != nil {
 		fmt.Printf("\n[ERROR] config/syslog.go:32 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)

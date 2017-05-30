@@ -4,7 +4,7 @@
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
-**Tested on FreeBSD**
+**zeplic is available for FreeBSD**
 
 ## Utils
 
@@ -24,24 +24,18 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 ## How can you use it?
 
-First, clone this repository `go get -v github.com/nfrance-conseil/zeplic` and export your `$GOBIN`.
-After, change your directory to zeplic/ and make `go install`.
-The next step is to configure **zeplic**:
+- First, clone this repository and type `gmake` (you have to execute it as root).
+- After, type `gmake install` to install **zeplic** and if you want, you can clean all dependencies with `gmake clean`.
+- The next step is to configure **zeplic**:
 
 ### Configuration
-
-Add the next line to your syslog configuration file `/etc/syslog.conf`:
-
-```sh
-!zeplic
-local0.*					-/var/log/zeplic.log
-```
 
 Use a JSON file (/usr/local/etc/zeplic.d/config.json):
 
 ```sh
 {
 	"datasets": [
+	{
 		"enable": true,
 		"name": "tank/test",
 		"snapshot": "SNAP",
@@ -49,19 +43,21 @@ Use a JSON file (/usr/local/etc/zeplic.d/config.json):
 		"backup" true,
 		"clone": {
 			"enable": true,
-			"tank/clone"
+			"name": "tank/clone"
 		},
 		"rollback": false
 	},
 	{
 		"enable": false,
-		"name": "tank/storage"
+		"name": "tank/storage",
 		...
 	}]
 }
 ```
 
-Finally, **let'zeplic!**
+### Running
+
+**Let'zeplic!**
 
 ```sh
 $ zeplic

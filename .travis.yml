@@ -1,4 +1,5 @@
 language: go
+dist: trusty
 
 go:
   - 1.8.x
@@ -7,13 +8,19 @@ branches:
   only:
     - master
 
-install: 
+install:
   - go get -v github.com/mistifyio/go-zfs
+  - go get -v github.com/pborman/uuid
+  - go get -v github.com/sevlyar/go-daemon
+  - go get -v github.com/kardianos/osext
   - go get -v github.com/golang/lint/golint
 
 script:
   - go test -v ./...
   - go vet -v ./...
   - golint .
+
+notifications:
+  email: false
 
 sudo: false

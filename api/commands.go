@@ -40,17 +40,19 @@ func RealMain(j int) int {
 			// Get dataset (called in JSON file)
 			dataset := pieces[2].(string)
 			ds, err := zfs.GetDataset(dataset)
-			if err != nil {
-				w.Info("[INFO] the dataset '"+dataset+"' does not exist.")
-			}
+
 			// Destroy dataset (optional)
 /*			err := ds.Destroy(zfs.DestroyRecursive)
 			if err != nil {
 				w.Err("[ERROR] it was not possible to destroy the dataset '"+dataset+"'.")
 			} else {
 				w.Info("[INFO] the dataset '"+dataset+"' has been destroyed.")
-			}*/
-			if ds == nil {
+			}
+			ds, err = zfs.GetDataset(dataset)
+			*/
+			if err != nil {
+				w.Info("[INFO] the dataset '"+dataset+"' does not exist.")
+
 				// Create dataset if it does not exist
 				_, err := zfs.CreateFilesystem(dataset, nil)
 				if err != nil {
@@ -58,6 +60,7 @@ func RealMain(j int) int {
 				} else {
 					w.Info("[INFO] the dataset '"+dataset+"' has been created.")
 				}
+				ds, _ = zfs.GetDataset(dataset)
 			}
 
 			// Create a new snapshot
