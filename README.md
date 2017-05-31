@@ -4,7 +4,7 @@
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
-**zeplic is available for FreeBSD**
+**zeplic is available for Linux and FreeBSD**
 
 ## Utils
 
@@ -30,7 +30,9 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 ### Configuration
 
-Use a JSON file (/usr/local/etc/zeplic.d/config.json):
+You can modify a sample JSON file that it has been created in your config path:
+- `/etc/zeplic/` for Linux
+- `/usr/local/etc/zeplic/` for FreeBSD
 
 ```sh
 {
