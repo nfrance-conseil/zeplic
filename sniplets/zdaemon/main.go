@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/sevlyar/go-daemon"
 )
@@ -18,11 +19,16 @@ var (
 )
 
 var (
-	quit = make(chan struct{})
 	done = make(chan struct{})
+	quit = make(chan struct{})
+	reload = make(chan struct{})
 )
 
 func main() {
+	// Start syslog daemon service
+/*	go config.LogCreate()
+	w, _ := config.LogBook()*/
+
 	flag.Parse()
 	daemon.AddCommand(daemon.StringFlag(signal, "quit"), syscall.SIGQUIT, TermHandler)
 	daemon.AddCommand(daemon.StringFlag(signal, "reload"), syscall.SIGHUP, ReloadHandler)
@@ -36,6 +42,9 @@ func main() {
 	}
 	if len(daemon.ActiveFlags()) > 0 {
 		d, _ := cntxt.Search()
+/*		if err != nil {
+			w.Warning("[WARNING] unable send signal to the daemon!")
+		}*/
 		daemon.SendCommands(d)
 		return
 	}
@@ -49,16 +58,35 @@ func main() {
 	defer cntxt.Release()
 
 	// Start daemon
-	go Worker()
-
-//	quit <- struct{}{}
-//	<-done
-
-	err = daemon.ServeSignals()
-	if err != nil {
-		fmt.Printf("STOPPED!\n")
-		return
+	ticker := time.NewTicker(time.Minute)
+	zeplic := true
+	for zeplic {
+		select {
+		case <- ticker.C:
+			go Writer()
+		case <- quit:
+			// Got a quit signal, stopping
+			done <- struct{}{}
+//			w.Notice("[NOTICE] zdaemon graceful shutdown.")
+			zeplic = false
+			ticker.Stop()
+			return
+/*		case <- reload:
+			// Got a reload signal, reloading
+			done <- struct{}{}
+			zeplic = true
+			return*/
+		default:
+			// No stop signal, continuing loop
+		}
 	}
+
+/*	err = daemon.ServeSignals()
+	if err != nil {
+//		w.Notice("[NOTICE] zdaemon has been stopped.")
+//		w.Notice("[NOTICE] zdaemon graceful shutdown.")
+		return
+	}*/
 }
 
 func Writer() error {
@@ -71,32 +99,24 @@ func Writer() error {
 	fmt.Fprintln(writer, contents)
 	writer.Flush()
 
-	fmt.Println("Writed!")
 	return nil
 }
 
-func Worker() {
-	for {
-		select {
-		case <- quit:
-			done <- struct{}{}
-			return
-		default:
-		}
-		go Writer()
-	}
-//	done <- struct{}{}
-//	ticker.Stop()
-}
-
 func TermHandler(sig os.Signal) error {
+//	w.Notice("[NOTICE] zdaemon graceful shutdown.")
 	quit <- struct{}{}
 	if sig == syscall.SIGQUIT {
+//		w.Notice("[NOTICE] zdaemon graceful shutdown.")
 		<-done
 	}
-	return daemon.ErrStop
+	return nil
 }
 
 func ReloadHandler(sig os.Signal) error {
+//	w.Warning("[WARNING] zeplic configuration reloaded!")
+/*	reload <- struct{}{}
+	if sig == syscall.SIGHUP {
+		<-done
+	}*/
 	return nil
 }
