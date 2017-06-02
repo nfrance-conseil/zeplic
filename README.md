@@ -8,19 +8,22 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 ## Utils
 
-1. Run syslog service
-2. Read JSON configuration file
-3. Check datasets enabled
+1. Read your ZFS configuration from JSON file
+2. Check your datasets enabled
+3. Store log messages using syslog system service
 4. Run ZFS functions...
 - Destroy an existing clone
 - Select datasets
 - Destroy dataset (disable)
 - Create dataset if it does not exist
-- Create a new snapshot
+- Create a new snapshot with an uuid
 - Snapshots retention policy
-- Create a backup snapshot
+- Create a backup snapshot (optional function)
 - Create a clone of last snapshot (optional function)
 - Rollback of last snapshot (optional function)
+5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
+- ZFS orders (order with UUID, action, snapshot uuid, NotWritten, Rollback, Renamed...)
+6. *In development...* **zeplic** runs as background
 
 ## How can you use it?
 
@@ -64,4 +67,21 @@ You can modify a sample JSON file that it has been created in your config path:
 
 ```sh
 $ zeplic
+```
+
+### Syslog system service
+
+Check all actions of **zeplic** in:
+```
+$ /var/log/zeplic.log
+```
+- Information of snapshots created, deleted, cloned...
+- Errors occurred while running **zeplic**
+- *In development...* Information of the synchronisation between nodes
+
+### Daemon service
+
+**zeplic** runs as background *In development...*, consult its pid in:
+```
+$ /var/run/zeplic.pid
 ```
