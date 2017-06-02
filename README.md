@@ -81,7 +81,4 @@ $ /var/log/zeplic.log
 
 ### Daemon service
 
-**zeplic** runs as background *In development...*, consult its pid in:
-```
-$ /var/run/zeplic.pid
-```
+*In development...* **zeplic** runs as background

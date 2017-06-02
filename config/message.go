@@ -15,7 +15,7 @@ type ZFSOrder struct {
 	OrderUUID	 string	// mandatory
 	Action		 string // take_snapshot, send_snapshot, destroy_snapshot
 	Dataset		 string // tank/plop
-	SnapshotName	 string // Snapshot is dataset@snapshotname
+	SnapshotName	 string // snapshot is dataset@snapshotname
 	SnapshotUUID	 string // mandatory
 	Destination	 string // hostname or ip for send
 	DestDataset	 string // dataset for recieve
