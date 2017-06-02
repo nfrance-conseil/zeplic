@@ -112,8 +112,8 @@ install:
 
 ##### =====> Internals <===== #####
 
-#VERSION          := $(shell git describe --tags --always --dirty="-dev")
-#DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
+VERSION          := $(shell git describe --tags --always --dirty="-dev")
+DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
 OS 		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
 SYSCONFDIR 	 := /usr/local/etc
