@@ -13,21 +13,14 @@ const (
 )
 
 func main() {
-//	w, _ := config.LogBook()
 	// Listen for incoming connections
 	l, _ := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
-/*	if err != nil {
-		w.Err("[ERROR] it was not possible to listen "+CONN_PORT+".")
-	}*/
 	// Close the listener when the application closes
 	defer l.Close()
 	fmt.Println("[ZEPLIC] Listening on port 7766...")
 	for {
 		// Listen for an incoming connection.
 		conn, _ := l.Accept()
-/*		if err!= nil {
-			w.Err("[ERROR] it was not possible to accept the incoming connection.")
-		}*/
 		// Handle connections in a new goroutine.
 		go handleRequest(conn)
 	}

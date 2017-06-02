@@ -1,8 +1,8 @@
-# Based on https://github.com/cloudflare/hellogopher - v1.1 - MIT License
+#Based on https://github.com/cloudflare/hellogopher - v1.1 - MIT License
 #
-# Copyright (c) 2017 Cloudflare
+## Copyright (c) 2017 Cloudflare
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
+## Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -21,26 +21,26 @@
 # SOFTWARE.
 
 IMPORT_PATH := github.com/nfrance-conseil/zeplic
-
+CHECK := 0
+i := 0
 
 .PHONY: all
 all: build
 
 .PHONY: build
 build: .GOPATH/.ok
-	$Q echo Let\'s bulid zeplic
+	$Q printf "\nLet's build zeplic..."
+	$Q printf "\nGetting dependencies... "
 	$Q go get $(if $V,-v) github.com/mistifyio/go-zfs
+	$Q go get $(if $V,-v) github.com/pborman/uuid
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
-	$Q echo done
+	$Q printf "done!"
+	$Q printf "\n\nBUILD! To install, type: sudo make install\n\n"
 
 ### Code not in the repository root? Another binary? Add to the path like this.
 # .PHONY: otherbin
 # otherbin: .GOPATH/.ok
-# 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)/cmd/otherbin
-
-##### ^^^^^^ EDIT ABOVE ^^^^^^ #####
-
-##### =====> Utility targets <===== #####
+#	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)/cmd/otherbin
 
 .PHONY: clean test list cover format
 
@@ -60,7 +60,9 @@ else
 endif
 
 list: .GOPATH/.ok
+	@echo ""
 	@echo $(allpackages)
+	@echo ""
 
 cover: bin/gocovmerge .GOPATH/.ok
 	@echo "NOTE: make cover does not exit 1 on failure, don't use it to check for tests success!"
@@ -86,29 +88,43 @@ format: bin/goimports .GOPATH/.ok
 	$Q find .GOPATH/src/$(IMPORT_PATH)/ -iname \*.go | grep -v \
 	    -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) | xargs ./bin/goimports -w
 
- 
 .PHONY: install
 install:
+	$Q printf "\nLet's install zeplic..."
+	$Q printf "\nInstalling zeplic in your BIN directory... "
 	$Q install $(if $V,-v) -m 755 .GOPATH/bin/zeplic $(BINDIR) 
+	$Q printf "done!"
+	$Q printf "\nCreating a sample JSON file in $(SYSCONFDIR)/zeplic/... "
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
+	$Q printf "done!"
+	$Q printf "\nConfiguring your syslog daemon service... "
+	$Q $(eval CHECK := $(shell if grep -q \!zeplic "$(SYSLOG)" ; then echo $$(( $(CHECK) +1 )) ; else echo $(CHECK) ; fi ) )
+	$Q if [ $(CHECK) -eq 0 ] ; then \
+		i=$(i) ; \
+		while [ $${i} -le 7 ] ; do \
+		if grep -q local$$i.* "$(SYSLOG)" ; then i=`expr $$i + 1` ; else printf "\n\!zeplic\nlocal$$i.*\t\t\t\t\t-/var/log/zeplic.log\n" >> $(SYSLOG) && break ; fi ; \
+		done ; \
+		true ; \
+	   fi
+	$Q printf "done!"
+	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
 
 ##### =====> Internals <===== #####
 
-VERSION          := $(shell git describe --tags --always --dirty="-dev")
-DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
+#VERSION          := $(shell git describe --tags --always --dirty="-dev")
+#DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
 OS 		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
 SYSCONFDIR 	 := /usr/local/etc
 BINDIR           := /usr/local/bin
+SYSLOG		 := /etc/syslog.conf
 else
 SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
+SYSLOG		 := /etc/rsyslog.conf
 endif
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
-
-
-
+COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSLOG)"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
@@ -124,12 +140,9 @@ unexport GOBIN
 
 Q := $(if $V,,@)
 
-
 .GOPATH/.ok:
 	$Q mkdir -p "$(dir .GOPATH/src/$(IMPORT_PATH))"
 	$Q ln -s ../../../.. ".GOPATH/src/$(IMPORT_PATH)"
 	$Q mkdir -p .GOPATH/test .GOPATH/cover
 	$Q mkdir -p .GOPATH/bin
 	$Q touch $@
-
-

@@ -1,14 +1,12 @@
 package main
 
 import (
-//	"bytes"
 	"bufio"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"syscall"
-//	"time"
 
 	"github.com/sevlyar/go-daemon"
 )
@@ -25,10 +23,6 @@ var (
 )
 
 func main() {
-	// Start syslog daemon service
-/*	go config.LogCreate()
-	w, _ := config.LogBook()*/
-
 	flag.Parse()
 	daemon.AddCommand(daemon.StringFlag(signal, "quit"), syscall.SIGQUIT, TermHandler)
 	daemon.AddCommand(daemon.StringFlag(signal, "reload"), syscall.SIGHUP, ReloadHandler)
@@ -42,9 +36,6 @@ func main() {
 	}
 	if len(daemon.ActiveFlags()) > 0 {
 		d, _ := cntxt.Search()
-/*		if err != nil {
-			w.Warning("[WARNING] unable send signal to the daemon!")
-		}*/
 		daemon.SendCommands(d)
 		return
 	}
@@ -66,21 +57,13 @@ func main() {
 	err = daemon.ServeSignals()
 	if err != nil {
 		fmt.Printf("STOPPED!\n")
-/*		w.Notice("[NOTICE] zeplic has been stopped.")*/
-/*		w.Notice("[NOTICE] zeplic graceful shutdown.")*/
 		return
 	}
 }
 
 func Writer() error {
-/*	fileHandle, _ := os.Create("/root/output")
-	writer := bufio.NewWriter(fileHandle)
-	defer fileHandle.Close()
-	fmt.Fprintln(writer, "String I want to write")
-	writer.Flush()*/
-
-	leer, _ := ioutil.ReadFile("/root/test")
-	contents := string(leer)
+	read, _ := ioutil.ReadFile("/root/test")
+	contents := string(read)
 
 	fileHandle, _ := os.Create("/root/stest")
 	writer := bufio.NewWriter(fileHandle)
@@ -93,15 +76,7 @@ func Writer() error {
 }
 
 func Worker() {
-//	ticker := time.NewTicker(time.Millisecond)
 	for {
-/*
-		// Read JSON configuration file
-		j, _, _ := config.JSON()
-
-		// Invoke RealMain() function
-		os.Exit(api.RealMain(j))
-*/
 		select {
 		case <- quit:
 			done <- struct{}{}
@@ -109,15 +84,12 @@ func Worker() {
 		default:
 		}
 		go Writer()
-//		time.Sleep(time.Second)
 	}
 //	done <- struct{}{}
 //	ticker.Stop()
 }
 
 func TermHandler(sig os.Signal) error {
-/*	w.Notice("[NOTICE] zeplic is being stopped...")*/
-/*	w.Notice("[NOTICE] zeplic graceful shutdown.")*/
 	quit <- struct{}{}
 	if sig == syscall.SIGQUIT {
 		<-done
@@ -126,10 +98,5 @@ func TermHandler(sig os.Signal) error {
 }
 
 func ReloadHandler(sig os.Signal) error {
-/*	w.Warninge("[WARNING] zeplic configuration reloaded!")*/
-/*	done <- struct{}{}
-	if sig == syscall.SIGHUP {
-		<-done
-	}*/
 	return nil
 }

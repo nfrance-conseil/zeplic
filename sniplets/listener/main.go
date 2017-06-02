@@ -1,5 +1,5 @@
-// sniplet listener for json orders
-// deserilalize json
+// Sniplet Listener for JSON orders
+// Deserialize JSON
 
 package main;
 
@@ -10,7 +10,8 @@ import (
 	"net"
 	"os"
 )
-type  ZFSOrder struct {
+
+type ZFSOrder struct {
 	OrderUUID string
 	Action string
 	Dataset string

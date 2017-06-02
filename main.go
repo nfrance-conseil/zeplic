@@ -1,6 +1,6 @@
 // zeplic main package
 //
-// Version * - May 2017
+// Version * - June 2017
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -20,6 +20,9 @@ import (
 )
 
 func main () {
+	// Create log file if it does not exit
+	go config.LogCreate()
+
 	// Read JSON configuration file
 	j, _, _ := config.JSON()
 

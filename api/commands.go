@@ -2,10 +2,12 @@
 package api
 
 import (
+	"os/exec"
 	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/mistifyio/go-zfs"
+	"github.com/pborman/uuid"
 )
 
 // RealMain is a loop that executes 'ZFS' functions for each dataset enabled
@@ -71,6 +73,23 @@ func RealMain(j int) int {
 			} else {
 				w.Info("[INFO] the snapshot '"+dataset+"@"+SnapName(snap)+"' has been created.")
 			}
+
+			// Assign an uuid to the snapshot
+			list, err := zfs.Snapshots(dataset)
+			count := len(list)
+			take := list[count-1].Name
+			if strings.Contains(take, "BACKUP") {
+				take = list[count-1].Name
+			}
+			id := uuid.New()
+			args := make([]string, 1, 4)
+			args[0] = "zfs"
+			args = append(args, "set")
+			id = strings.Join([]string{":uuid=", id}, "")
+			args = append(args, id)
+			args = append(args, take)
+			idset := strings.Join(args, " ")
+			exec.Command("sh", "-c", idset).Run()
 
 			// Delete the backup snapshot
 			list, err := zfs.Snapshots(dataset)
@@ -154,5 +173,5 @@ func RealMain(j int) int {
 			}
 		}
 	}
-	return 1
+	return 0
 }

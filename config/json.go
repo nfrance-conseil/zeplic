@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go
+// Package config contains: json.go - message.go - syslog.go
 //
 // Json reads and extracts the information JSON configuration file
 //
@@ -47,8 +47,7 @@ func JSON() (int, string, error) {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		w.Err("[ERROR] config/json.go:40 *** Impossible to parse the JSON configuration file ***")
-		os.Exit(1)
+		w.Err("[ERROR] it was not possible to parse the JSON configuration file.")
 	}
 	return len(values.Dataset), jsonFile, nil
 }
