@@ -53,7 +53,7 @@ func fromJSON (r io.Reader) ([]interface{}, error) {
 		w.Err("[Error] it was impossible to parse the JSON struct from the socket.")
 	}
 	if z.OrderUUID == "" || z.SnapshotUUID == "" {
-		w.Err("[Error] inconsistant data structure in zfs order.")
+		w.Err("[Error] inconsistant data structure in ZFS order.")
 	}
 	order := []interface{}{z.OrderUUID, z.Action, z.Dataset, z.SnapshotName, z.SnapshotUUID, z.Destination, z.DestDataset, z.SkipIfNotWritten, z.RollbackIfNeeded, z.SkipIfRenamed}
 	return order, nil
