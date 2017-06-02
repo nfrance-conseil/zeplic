@@ -18,7 +18,7 @@ type ZFSOrder struct {
 	SnapshotName	 string // snapshot is dataset@snapshotname
 	SnapshotUUID	 string // mandatory
 	Destination	 string // hostname or ip for send
-	DestDataset	 string // dataset for recieve
+	DestDataset	 string // dataset for receive
 	SkipIfNotWritten bool   // should I take a snapshot if nothing is written
 	RollbackIfNeeded bool   // should I rollback if written is true on destination
 	SkipIfRenamed	 bool   // should I do the stuff if a snapshot has been renamed
