@@ -26,11 +26,11 @@ type ZFSOrder struct {
 
 // Status for response
 const (
-	WAS_RENAMED   = 1
-	WAS_WRITTEN   = 2
-	NOTHING_TO_DO = 3
-	ZFS_ERROR     = 4
-	NETWORK_ERROR = 5
+	WAS_RENAMED   = iota + 1
+	WAS_WRITTEN
+	NOTHING_TO_DO
+	ZFS_ERROR
+	NETWORK_ERROR
 )
 
 type ZFSResponse struct {
