@@ -55,12 +55,29 @@ func main () {
 	}
 
 	// Checking if the command-line arguments are correct
-	if len(os.Args) != 3 || os.Args[1] != "-z" {
-		flag.Usage()
+	switch len(os.Args) {
+	case 2:
+		if os.Args[1] != "--help" {
+			fmt.Printf("zeplic --help\n")
+			fmt.Println("")
+			os.Exit(1)
+		} else {
+			flag.Usage()
+			os.Exit(1)
+		}
+	case 3:
+		if os.Args[1] != "-z" {
+			fmt.Printf("zeplic --help\n")
+			fmt.Println("")
+			os.Exit(1)
+		} else {
+			flag.CommandLine.SetOutput(ioutil.Discard)
+			flag.Parse()
+		}
+	default:
+		fmt.Printf("zeplic --help\n")
+		fmt.Println("")
 		os.Exit(1)
-	} else {
-		flag.CommandLine.SetOutput(ioutil.Discard)
-		flag.Parse()
 	}
 
 	cntxt := &daemon.Context{
