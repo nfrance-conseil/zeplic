@@ -17,11 +17,19 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+//	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/director"
 //	"github.com/nfrance-conseil/zeplic/lib"
-	"github.com/sevlyar/go-daemon"
+//	"github.com/sevlyar/go-daemon"
+)
+
+// Define flag variable and channels
+var (
+	signal = flag.String("z", "", "")
+//	done = make(chan struct{})
+//	quit = make(chan struct{})
 )
 
 func main () {
@@ -29,17 +37,13 @@ func main () {
 	go config.LogCreate()
 
 	// Start syslog system service
-	w, _ := config.LogBook()
+/*	w, _ := config.LogBook()
 
 	// Read JSON configuration file
-/*	j, _, _ := config.JSON()
+	j, _, _ := config.JSON()
 
 	// Invoke RealMain() function
 	os.Exit(lib.RealMain(j))*/
-
-	// Define flag variable and channels
-	var signal = flag.String("z", "", "")
-//	var quit = make(chan struct{})
 
 	// Show zeplic help
 	flag.Usage = func() {
@@ -79,7 +83,8 @@ func main () {
 		fmt.Println("")
 		os.Exit(1)
 	}
-
+/*
+	// Create pid file
 	cntxt := &daemon.Context{
 		PidFileName: "/var/run/zeplic.pid",
 		PidFilePerm: 0644,
@@ -103,7 +108,7 @@ func main () {
 		os.Exit(1)
 	}
 	defer cntxt.Release()
-
+*/
 	// Checking the flag received
 	switch *signal {
 
