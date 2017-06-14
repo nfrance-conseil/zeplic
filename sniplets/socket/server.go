@@ -17,7 +17,7 @@ func main() {
 	l, _ := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	// Close the listener when the application closes
 	defer l.Close()
-	fmt.Println("[ZEPLIC] Listening on port 7766...")
+	fmt.Println("Listening on port 7766...")
 	for {
 		// Listen for an incoming connection.
 		conn, _ := l.Accept()

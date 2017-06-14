@@ -1,13 +1,13 @@
-// Package api contains: comnands.go - snapshot.go
-package api
+// Package lib contains: comnands.go - snapshot.go - uuid.go
+package lib
 
 import (
-	"os/exec"
+//	"os/exec"
 	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/mistifyio/go-zfs"
-	"github.com/pborman/uuid"
+//	"github.com/pborman/uuid"
 )
 
 // RealMain is a loop that executes 'ZFS' functions for each dataset enabled
@@ -81,7 +81,7 @@ func RealMain(j int) int {
 			if strings.Contains(take, "BACKUP") {
 				take = list[count-1].Name
 			}
-			id := uuid.New()
+/*			id := uuid.New()
 			args := make([]string, 1, 4)
 			args[0] = "zfs"
 			args = append(args, "set")
@@ -89,14 +89,15 @@ func RealMain(j int) int {
 			args = append(args, id)
 			args = append(args, take)
 			idset := strings.Join(args, " ")
-			exec.Command("sh", "-c", idset).Run()
+			exec.Command("sh", "-c", idset).Run()*/
+			go UUID(take)
 
 			// Delete the backup snapshot
-			list, err := zfs.Snapshots(dataset)
+			list, err = zfs.Snapshots(dataset)
 			if err != nil {
 				w.Err("[ERROR] it was not possible to access of snapshots list.")
 			}
-			count := len(list)
+			count = len(list)
 			for k := 0; k < count; k++ {
 				take := list[k].Name
 				if strings.Contains(take, "BACKUP") {

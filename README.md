@@ -22,7 +22,7 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Create a clone of last snapshot (optional function)
 - Rollback of last snapshot (optional function)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
-- ZFS orders (order with UUID, action, snapshot uuid, NotWritten, Rollback, Renamed...)
+- ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
 6. *In development...* **zeplic** runs as background
 
 ## How can you use it?
@@ -66,7 +66,7 @@ You can modify a sample JSON file that it has been created in your config path:
 **Let'zeplic!**
 
 ```sh
-$ zeplic
+$ zeplic -z run
 ```
 
 ### Syslog system service
@@ -82,3 +82,17 @@ $ /var/log/zeplic.log
 ### Daemon service
 
 *In development...* **zeplic** runs as background
+
+```
+$ zeplic --help
+Usage: zeplic -z <command>
+
+   agent	Listen ZFS orders from director
+   director	Send ZFS orders to agent
+   quit		Gracefully shutdown
+   reload	Restart zeplic to sleep state
+   run		Start zeplic as background
+   slave	Receive a new snapshot from agent
+   version	Show version of zeplic
+
+```

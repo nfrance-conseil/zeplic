@@ -33,6 +33,7 @@ build: .GOPATH/.ok
 	$Q printf "\nGetting dependencies... "
 	$Q go get $(if $V,-v) github.com/mistifyio/go-zfs
 	$Q go get $(if $V,-v) github.com/pborman/uuid
+	$Q go get $(if $V,-v) github.com/sevlyar/go-daemon
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
 	$Q printf "done!"
 	$Q printf "\n\nBUILD! To install, type: sudo make install\n\n"

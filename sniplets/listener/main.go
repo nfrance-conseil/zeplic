@@ -1,12 +1,12 @@
 // Sniplet Listener for JSON orders
 // Deserialize JSON
 
-package main;
+package main
 
 import (
 	"bufio"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 )
