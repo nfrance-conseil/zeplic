@@ -31,7 +31,7 @@ all: build
 build: .GOPATH/.ok
 	$Q printf "\nLet's build zeplic..."
 	$Q printf "\nGetting dependencies... "
-	$Q go get $(if $V,-v) github.com/mistifyio/go-zfs
+#	$Q go get $(if $V,-v) github.com/mistifyio/go-zfs
 	$Q go get $(if $V,-v) github.com/pborman/uuid
 	$Q go get $(if $V,-v) github.com/sevlyar/go-daemon
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
@@ -97,6 +97,8 @@ install:
 	$Q printf "done!"
 	$Q printf "\nCreating a sample JSON file in $(SYSCONFDIR)/zeplic/... "
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
+	$Q echo -n > $(LOGDIR)/zeplic.log
+	$Q echo -n > $(PIDDIR)/zeplic.pid
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
 	$Q printf "\nConfiguring your syslog daemon service... "
@@ -125,7 +127,9 @@ SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
 SYSLOG		 := /etc/rsyslog.conf
 endif
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSLOG)"'
+LOGDIR		 := /var/log/
+PIDDIR		 := /var/run/
+COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogPath=$(SYSLOG)" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(LOGDIR)/zeplic.log"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

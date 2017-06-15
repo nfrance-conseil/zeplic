@@ -21,7 +21,7 @@ import (
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/director"
-//	"github.com/nfrance-conseil/zeplic/lib"
+	"github.com/nfrance-conseil/zeplic/lib"
 //	"github.com/sevlyar/go-daemon"
 )
 
@@ -34,16 +34,7 @@ var (
 
 func main () {
 	// Create log file if it does not exit
-	go config.LogCreate()
-
-	// Start syslog system service
-/*	w, _ := config.LogBook()
-
-	// Read JSON configuration file
-	j, _, _ := config.JSON()
-
-	// Invoke RealMain() function
-	os.Exit(lib.RealMain(j))*/
+	go config.LogFile()
 
 	// Show zeplic help
 	flag.Usage = func() {
@@ -141,8 +132,14 @@ func main () {
 
 	// RUN
 	case "run":
-		fmt.Printf("[INFO] run case inoperative...\n\n")
-		os.Exit(1)
+		// Start syslog system service
+//		w, _ := config.LogBook()
+
+		// Read JSON configuration file
+		j, _, _ := config.JSON()
+
+		// Invoke RealMain() function
+		os.Exit(lib.RealMain(j))
 
 	// RELOAD
 	case "reload":

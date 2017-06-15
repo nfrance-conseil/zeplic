@@ -11,12 +11,12 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 )
 
 var (
+	SyslogPath string
 	SyslogFilePath string
 	SyslogLocal syslog.Priority
 )
@@ -39,7 +39,7 @@ func between(value string, a string, b string) string {
 }
 
 func SyslogLocalVar() syslog.Priority {
-	s, _ := ioutil.ReadFile(SyslogFilePath)
+	s, _ := ioutil.ReadFile(SyslogPath)
 	scan := string(s)
 	exp := regexp.MustCompile(`.*local.*zeplic.log`)
 	match := exp.FindStringSubmatch(scan)
@@ -74,20 +74,12 @@ func SyslogLocalVar() syslog.Priority {
 	return SyslogLocal
 }
 
-// LogCreate creates a new log file if it does not exist
-func LogCreate() error {
-	// Open or create log file
-	logFile := "/var/log/zeplic.log"
-	_, err := os.Stat(logFile)
+// LogFile check if a Logfile already exists
+func LogFile() error {
+	_, err := os.Stat(SyslogFilePath)
 	if os.IsNotExist(err) {
-		file, err := os.Create(logFile)
-		// Send a HUP signal to syslog daemon
-		exec.Command("sh", "-c", "pkill -SIGHUP syslogd").Run()
-		defer file.Close()
-		if err != nil {
-			fmt.Printf("\n[ERROR] config/syslog.go:83 *** Error creating log file '%s' ***\n\n", logFile)
-			os.Exit(1)
-		}
+		fmt.Printf("\nThe Logfile '%s' does not exist. Please, type 'sudo make install' again...\n\n", SyslogFilePath)
+		os.Exit(1)
 	}
 	return err
 }
@@ -97,7 +89,7 @@ func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
 	sysLog, err := syslog.New(SyslogLocalVar()|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 	if err != nil {
-		fmt.Printf("\n[ERROR] config/syslog.go:98 *** Unable to establish a new connection to the system log daemon ***\n\n")
+		fmt.Printf("\n[ERROR] config/syslog.go:90 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)
 	}
 	return sysLog, nil
