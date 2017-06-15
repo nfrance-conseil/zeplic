@@ -97,8 +97,6 @@ install:
 	$Q printf "done!"
 	$Q printf "\nCreating a sample JSON file in $(SYSCONFDIR)/zeplic/... "
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
-	$Q echo -n > $(LOGDIR)/zeplic.log
-	$Q echo -n > $(PIDDIR)/zeplic.pid
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
 	$Q printf "\nConfiguring your syslog daemon service... "
@@ -110,6 +108,8 @@ install:
 		done ; \
 		true ; \
 	   fi
+	$Q if [ ! -f "$(LOGDIR)/zeplic.log" ] ; then echo -n > $(LOGDIR)/zeplic.log ; fi
+	$Q echo -n > $(PIDDIR)/zeplic.pid
 	$Q printf "done!"
 	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
 
