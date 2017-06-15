@@ -1,4 +1,4 @@
-// Package config contains: json.go - message.go - syslog.go
+// Package config contains: json.go - syslog.go - usage.go
 //
 // Json reads and extracts the information JSON configuration file
 //
@@ -27,7 +27,7 @@ type Data struct {
 	Retain	int	`json:"retain"`
 	Backup	bool	`json:"backup"`
 	Clone	Copy
-	Roll	bool	`json:"rollback"`
+//	Roll	bool	`json:"rollback"`
 }
 
 // Pool extracts the interface of JSON file
@@ -66,8 +66,8 @@ func Extract(i int) ([]interface{}) {
 	retain := values.Dataset[i].Retain
 	takebackup := values.Dataset[i].Backup
 	takeclone := values.Dataset[i].Clone.Enable
-	takerollback := values.Dataset[i].Roll
+//	takerollback := values.Dataset[i].Roll
 
-	pieces := []interface{}{takedataset, clone, dataset, snap, retain, takebackup, takeclone, takerollback}
+	pieces := []interface{}{takedataset, clone, dataset, snap, retain, takebackup, takeclone/*, takerollback*/}
 	return pieces
 }

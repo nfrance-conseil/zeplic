@@ -9,8 +9,7 @@
 		"clone": {
 			"enable": true,
 			"name": "tank/clone"
-		},
-		"rollback": false
+		}
 	},
 	{
 		"enable": false,
@@ -21,7 +20,6 @@
 		"clone": {
 			"enable": false,
 			"name": "tank/klon"
-		},
-		"rollback": false
+		}
 	}]
 }
