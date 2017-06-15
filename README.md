@@ -17,10 +17,12 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Destroy dataset (disable)
 - Create dataset if it does not exist
 - Create a new snapshot with an uuid
+- Send a snapshot or incremental stream via socket TCP (director mode)
 - Snapshots retention policy
+- Destroy a snapshot (director mode)
 - Create a backup snapshot (optional function)
 - Create a clone of last snapshot (optional function)
-- Rollback of last snapshot (optional function)
+- Rollback of snapshot (director mode)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
 - ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
 6. *In development...* **zeplic** runs as background
@@ -50,8 +52,7 @@ You can modify a sample JSON file that it has been created in your config path:
 		"clone": {
 			"enable": true,
 			"name": "tank/clone"
-		},
-		"rollback": false
+		}
 	},
 	{
 		"enable": false,
@@ -67,6 +68,25 @@ You can modify a sample JSON file that it has been created in your config path:
 
 ```sh
 $ zeplic -z run
+```
+
+### Director mode
+*In development...*
+
+You can send an order to the agent node (zeplic -z agent) on port 7711:
+- Create a snapshot
+- Destroy a snapshot
+
+```
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snapshot","Destination":"","SnapshotUUID":"","SnapshotName":"","DestDataset":"$DATASET_OF_SNAPSHOT","RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+```
+
+You can send a snapshot between the agent node (zeplic -z agent) to the slave node (zeplic -z slave):
+
+```
+echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
 ```
 
 ### Syslog system service
