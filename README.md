@@ -97,7 +97,7 @@ $ /var/log/zeplic.log
 ```
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
-- *In development...* Information of the synchronisation between nodes
+- Information of the synchronisation between nodes
 
 ### Daemon service
 
