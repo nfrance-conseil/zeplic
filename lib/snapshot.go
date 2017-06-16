@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistifyio/go-zfs"
+	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
 
 // After gets substring after a string

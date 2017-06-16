@@ -14,7 +14,7 @@ import (
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
-	"github.com/mistifyio/go-zfs"
+	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
 
 // ZFSOrderFromAgent is the struct for ZFS orders from agent

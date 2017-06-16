@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
-	"github.com/mistifyio/go-zfs"
+	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
 
 var (
