@@ -31,17 +31,18 @@ func UUID(SnapshotName string) error {
 // Asign an uuid received to snapshot
 func ReceiveUUID(id string, SnapshotName string, DestDataset string) {
 	check := Before(SnapshotName, "@")
+	var name string
 	if check == DestDataset {
-		SnapshotName = SnapshotName
+		name = SnapshotName
 	} else {
-		SnapshotName = strings.Replace(SnapshotName, check, DestDataset, -1)
+		name = strings.Replace(SnapshotName, check, DestDataset, -1)
 	}
 	args := make([]string, 1, 4)
 	args[0] = "zfs"
 	args = append(args, "set")
 	id = strings.Join([]string{":uuid=", id}, "")
 	args = append(args, id)
-	args = append(args, SnapshotName)
+	args = append(args, name)
 	idset := strings.Join(args, " ")
 	exec.Command("sh", "-c", idset).Run()
 }
