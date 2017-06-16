@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// Struct for net.Listen
 	ConnHost = ""     // Hostname or IP
 	ConnPort = "7766" // Port
 	ConnType = "tcp"  // TCP

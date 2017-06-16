@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// Struct for net.Dial
 	ConnHost = "192.168.99.5" // Hostname or IP
 	ConnPort = "7766"	  // Port
 	ConnType = "tcp"	  // TCP
