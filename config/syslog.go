@@ -75,7 +75,6 @@ func SyslogLocalVar() syslog.Priority {
 		SyslogLocal := syslog.LOG_LOCAL7
 		return SyslogLocal
 	}
-	return SyslogLocal
 }
 
 // LogFile check if a Logfile already exists
