@@ -32,7 +32,7 @@ type ZFSOrderFromDirector struct {
 	SkipIfNotWritten bool   // should I take a snapshot if nothing is written
 }
 
-// ZFSOrderSlave is the struct for ZFS orders to slave
+// ZFSOrderToSlave is the struct for ZFS orders to slave
 type ZFSOrderToSlave struct {
 	Hostname	string `json:"Source"`
 	OrderUUID	string `json:"OrderUUID"`

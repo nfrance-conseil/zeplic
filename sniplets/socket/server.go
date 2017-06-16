@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	ConnHost = ""
-	ConnPort = "7766"
-	ConnType = "tcp"
+	ConnHost = ""     // Hostname or IP
+	ConnPort = "7766" // Port
+	ConnType = "tcp"  // TCP
 )
 
 func main() {
