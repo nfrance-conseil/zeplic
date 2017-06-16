@@ -31,7 +31,7 @@ all: build
 build: .GOPATH/.ok
 	$Q printf "\nLet's build zeplic..."
 	$Q printf "\nGetting dependencies... "
-#	$Q go get $(if $V,-v) github.com/mistifyio/go-zfs
+	$Q go get $(if $V,-v) github.com/IgnacioCarbajoVallejo/go-zfs
 	$Q go get $(if $V,-v) github.com/pborman/uuid
 	$Q go get $(if $V,-v) github.com/sevlyar/go-daemon
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
