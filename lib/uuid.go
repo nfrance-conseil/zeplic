@@ -15,7 +15,7 @@ import (
 )
 
 // Asign a new uuid
-func UUID(SnapshotName string) {
+func UUID(SnapshotName string) error {
 	id := uuid.New()
 	args := make([]string, 1, 4)
 	args[0] = "zfs"
@@ -24,7 +24,8 @@ func UUID(SnapshotName string) {
 	args = append(args, id)
 	args = append(args, SnapshotName)
 	idset := strings.Join(args, " ")
-	exec.Command("sh", "-c", idset).Run()
+	err := exec.Command("sh", "-c", idset).Run()
+	return err
 }
 
 // Asign an uuid received to snapshot

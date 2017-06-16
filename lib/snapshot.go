@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/mistifyio/go-zfs"
 )
 
 // Get substring after a string
@@ -32,6 +34,19 @@ func Before(value string, a string) string {
 	return value[0:pos]
 }
 
+// Get substring
+func Reverse(value string, a string) string {
+	pos := strings.Index(value, a)
+	if pos == -1 {
+		return ""
+	}
+	adjustedPos := pos + len(a)
+	if adjustedPos >= len(value) {
+		return ""
+	}
+	return value[adjustedPos:len(value)]
+}
+
 // DatasetName returns the dataset name of snapshot
 func DatasetName(SnapshotName string) string {
 	dataset := Before(SnapshotName, "@")
@@ -46,11 +61,16 @@ func SnapName(name string) string {
 	return snapDate
 }
 
-// SnapBackup defines the name of a backup snapshot: BACKUP_yyyy-Month-dd_HH:MM:SS
-func SnapBackup() string {
-	year, month, day := time.Now().Date()
-	hour, min, sec := time.Now().Clock()
-	backup := fmt.Sprintf("%s_%d-%s-%02d_%02d:%02d:%02d", "BACKUP", year, month, day, hour, min, sec)
+// SnapBackup defines the name of a backup snapshot: BACKUP_from_yyyy-Month-dd
+func SnapBackup(dataset string) string {
+	// Get the older snapshot
+	list, _ := zfs.Snapshots(dataset)
+	oldSnapshot := list[0].Name
+
+	// Get date
+	rev := Reverse(oldSnapshot, "_")
+	date := Before(rev, "_")
+	backup := fmt.Sprintf("%s_%s", "BACKUP_from", date)
 	return backup
 }
 

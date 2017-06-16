@@ -33,22 +33,6 @@ var (
 )
 
 func main () {
-	// Create log file if it does not exit
-	go config.LogFile()
-
-	// Show zeplic help
-	flag.Usage = func() {
-		fmt.Printf("Usage: zeplic -z <command>\n\n")
-		fmt.Printf("   agent\tListen ZFS orders from director\n")
-		fmt.Printf("   director\tSend ZFS orders to agent\n")
-		fmt.Printf("   quit\t\tGracefully shutdown\n")
-		fmt.Printf("   reload\tRestart zeplic to sleep state\n")
-		fmt.Printf("   run\t\tStart zeplic as background\n")
-		fmt.Printf("   slave\tReceive a new snapshot from agent\n")
-		fmt.Printf("   version\tShow version of zeplic\n")
-		fmt.Println("")
-	}
-
 	// Checking if the command-line arguments are correct
 	switch len(os.Args) {
 	case 2:
@@ -57,7 +41,7 @@ func main () {
 			fmt.Println("")
 			os.Exit(1)
 		} else {
-			flag.Usage()
+			config.Usage()
 			os.Exit(1)
 		}
 	case 3:
@@ -66,6 +50,8 @@ func main () {
 			fmt.Println("")
 			os.Exit(1)
 		} else {
+			// Check if a Logfile already exists
+			go config.LogFile()
 			flag.CommandLine.SetOutput(ioutil.Discard)
 			flag.Parse()
 		}
@@ -170,7 +156,7 @@ func main () {
 
 	// Show zeplic help
 	default:
-		flag.Usage()
+		config.Usage()
 		os.Exit(1)
 	}
 }
