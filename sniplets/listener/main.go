@@ -1,21 +1,22 @@
-// sniplet listener for json orders
-// deserilalize json
+// Sniplet Listener for JSON orders
+// Deserialize JSON
 
-package main;
+package main
 
 import (
-	"os"
-	"net"
 	"bufio"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"net"
+	"os"
 )
-type  ZFSOrder struct {
+
+// ZFSOrder is the struct for ZFS orders
+type ZFSOrder struct {
 	OrderUUID string
 	Action string
 	Dataset string
 	Name string
-
 }
 
 func listenServer(c net.Conn) {
@@ -35,17 +36,16 @@ func main () {
 	err := os.Remove("/tmp/listener.sock")
 	l, err := net.Listen("unix", "/tmp/listener.sock")
 	if err != nil {
-		println("listen error", err.Error())
+		println("Listen error", err.Error())
 		return
 	}
 	for {
 		fd, err := l.Accept()
 		defer fd.Close()
 		if err != nil {
-            		println("accept error", err.Error())
-            		return
-        	}
-        	go listenServer(fd)
+			println("Accept error", err.Error())
+			return
+		}
+		go listenServer(fd)
 	}
 }
-

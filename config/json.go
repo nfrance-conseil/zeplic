@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go
+// Package config contains: json.go - syslog.go - usage.go
 //
 // Json reads and extracts the information JSON configuration file
 //
@@ -11,6 +11,7 @@ import (
 	"os"
 )
 
+// ConfigFilePath returns the path of JSON config file
 var ConfigFilePath string
 
 // Copy contains Clone options
@@ -27,7 +28,7 @@ type Data struct {
 	Retain	int	`json:"retain"`
 	Backup	bool	`json:"backup"`
 	Clone	Copy
-	Roll	bool	`json:"rollback"`
+//	Roll	bool	`json:"rollback"`
 }
 
 // Pool extracts the interface of JSON file
@@ -47,8 +48,7 @@ func JSON() (int, string, error) {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		w.Err("[ERROR] config/json.go:40 *** Impossible to parse the JSON configuration file ***")
-		os.Exit(1)
+		w.Err("[ERROR] it was not possible to parse the JSON configuration file.")
 	}
 	return len(values.Dataset), jsonFile, nil
 }
@@ -67,8 +67,8 @@ func Extract(i int) ([]interface{}) {
 	retain := values.Dataset[i].Retain
 	takebackup := values.Dataset[i].Backup
 	takeclone := values.Dataset[i].Clone.Enable
-	takerollback := values.Dataset[i].Roll
+//	takerollback := values.Dataset[i].Roll
 
-	pieces := []interface{}{takedataset, clone, dataset, snap, retain, takebackup, takeclone, takerollback}
+	pieces := []interface{}{takedataset, clone, dataset, snap, retain, takebackup, takeclone/*, takerollback*/}
 	return pieces
 }

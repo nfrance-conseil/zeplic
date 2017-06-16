@@ -4,15 +4,22 @@
 		"enable": true,
 		"name": "tank/test",
 		"snapshot": "SNAP",
-		"retain": 3,
+		"retain": 5,
 		"backup": true,
 		"clone": {
 			"enable": true,
 			"name": "tank/clone"
-		},
-		"rollback": false
+		}
 	},
 	{
-		"enable": false
+		"enable": false,
+		"name": "tank/storage",
+		"snapshot": "TEST",
+		"retain": 1,
+		"backup": false,
+		"clone": {
+			"enable": false,
+			"name": "tank/klon"
+		}
 	}]
 }
