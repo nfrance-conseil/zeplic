@@ -7,10 +7,12 @@ import (
 )
 
 const (
-	// Struct for net.Listen
-	ConnHost = ""     // Hostname or IP
-	ConnPort = "7766" // Port
-	ConnType = "tcp"  // TCP
+	// ConnHost is the hostname or IP
+	ConnHost = ""
+	// ConnPort is 7766
+	ConnPort = "7766"
+	// ConnType is TCP
+	ConnType = "tcp"
 )
 
 func main() {

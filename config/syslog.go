@@ -16,9 +16,11 @@ import (
 )
 
 var (
-	// Syslog variables struct
-	SyslogPath string	    // SyslogPath returns the path of syslog system service
-	SyslogFilePath string	    // SyslogFilePath returns /var/log/zeplic.log
+	// SyslogPath returns the path of syslog system service
+	SyslogPath string
+	// SyslogFilePath /var/log/zeplic.log
+	SyslogFilePath string
+	// SyslogLocal applies the priority
 	SyslogLocal syslog.Priority
 )
 

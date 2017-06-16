@@ -9,10 +9,12 @@ import (
 )
 
 const (
-	// Struct for net.Dial
-	ConnHost = "192.168.99.5" // Hostname or IP
-	ConnPort = "7766"	  // Port
-	ConnType = "tcp"	  // TCP
+	// ConnHost is the hostname or IP
+	ConnHost = "192.168.99.5"
+	// ConnPort is 7766
+	ConnPort = "7766"
+	// ConnType is TCP
+	ConnType = "tcp"
 )
 
 func main() {
