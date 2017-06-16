@@ -14,7 +14,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
-// Asign a new uuid
+// UUID asigns a new uuid
 func UUID(SnapshotName string) error {
 	id := uuid.New()
 	args := make([]string, 1, 4)
@@ -28,7 +28,7 @@ func UUID(SnapshotName string) error {
 	return err
 }
 
-// Asign an uuid received to snapshot
+// ReceiveUUID asigns an uuid received to snapshot
 func ReceiveUUID(id string, SnapshotName string, DestDataset string) {
 	check := Before(SnapshotName, "@")
 	var name string
@@ -47,7 +47,7 @@ func ReceiveUUID(id string, SnapshotName string, DestDataset string) {
 	exec.Command("sh", "-c", idset).Run()
 }
 
-// Search the name of snapshot from its uuid
+// SearchName searchs the name of snapshot from its uuid
 func SearchName(uuid string) string {
 	search := fmt.Sprintf("zfs get -rHp -t snapshot -o name,value :uuid | awk '{if ($2 == \"%s\") print $1}'", uuid)
 	cmd, _ := exec.Command("sh", "-c", search).Output()
@@ -56,7 +56,7 @@ func SearchName(uuid string) string {
 	return snapshot
 }
 
-// Search the uuid of snapshot from its name
+// SearchUUID searchs the uuid of snapshot from its name
 func SearchUUID(SnapshotName string) string {
 	search := fmt.Sprintf("zfs get -rHp -t snapshot -o name,value :uuid | awk '{if ($1 == \"%s\") print $2}'", SnapshotName)
 	cmd, _ := exec.Command("sh", "-c", search).Output()

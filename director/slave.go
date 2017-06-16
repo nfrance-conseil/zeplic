@@ -17,7 +17,7 @@ import (
 	"github.com/mistifyio/go-zfs"
 )
 
-// Struct for ZFS orders from agent
+// ZFSOrderFromAgent is the struct for ZFS orders from agent
 // Case: send_snapshot
 type ZFSOrderFromAgent struct {
 	Source		string // hostname of agent
@@ -27,7 +27,7 @@ type ZFSOrderFromAgent struct {
 	DestDataset	string // dataset for receive
 }
 
-// Struc for ZFS response to agent
+// ZFSResponseToAgent is the struct for ZFS response to agent
 type ZFSResponseToAgent struct {
 	OrderUUID	string	`json:"OrderUUID"`
 	IsSuccess	bool	`json:"IsSuccess"`
@@ -35,7 +35,7 @@ type ZFSResponseToAgent struct {
 	Error		string	`json:"Error"`
 }
 
-// Handle incoming requests from agent
+// HandleRequestSlave incoming requests from agent
 func HandleRequestSlave (connSlave net.Conn) bool {
 	// Start syslog system service
 	w, _ := config.LogBook()
@@ -74,7 +74,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	if err != nil {
 		// Status for DestDataset
 		ack = nil
-		ack = strconv.AppendInt(ack, DATASET_FALSE, 10)
+		ack = strconv.AppendInt(ack, DatasetFalse, 10)
 		connSlave.Write(ack)
 
 		// Receive the snapshot
@@ -83,10 +83,10 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		// Check for response to agent
 		if err != nil {
 			Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,ZFS_ERROR,Error}
+			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
 			w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 		} else {
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WAS_WRITTEN,""}
+			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 			w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 		}
 
@@ -95,7 +95,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		if count == 0 {
 			// Status for DestDataset
 			ack = nil
-			ack = strconv.AppendInt(ack, DATASET_FALSE, 10)
+			ack = strconv.AppendInt(ack, DatasetFalse, 10)
 			connSlave.Write(ack)
 
 			// Receive the snapshot
@@ -104,16 +104,16 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			// Check for response to agent
 			if err != nil {
 				Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,ZFS_ERROR,Error}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
 				w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 			} else {
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WAS_WRITTEN,""}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 				w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 			}
 		} else {
 			// Status for DestDataset
 			ack = nil
-			ack = strconv.AppendInt(ack, DATASET_TRUE, 10)
+			ack = strconv.AppendInt(ack, DatasetTrue, 10)
 			connSlave.Write(ack)
 
 			// Get the last snapshot in DestDataset
@@ -125,15 +125,15 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			renamed := lib.Renamed(a.SnapshotName, LastSnapshotName)
 			if LastSnapshotUUID == a.SnapshotUUID {
 				if renamed == true {
-					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WAS_RENAMED,""}
+					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasRenamed,""}
 					w.Info("[INFO] the snapshot '"+a.SnapshotName+"' already existed but it was renamed to '"+LastSnapshotName+"'.")
 				} else {
-					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,NOTHING_TO_DO,""}
+					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,NothingToDo,""}
 					w.Info("[INFO] the snapshot '"+LastSnapshotName+"' already existed.")
 				}
 			} else {
 				// Information to agent where Error field contains the uuid of last snapshot in slave
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,NOT_EMPTY,LastSnapshotUUID}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,NotEmpty,LastSnapshotUUID}
 				stream = true
 			}
 		}
@@ -169,28 +169,28 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 
 		switch snapExist {
 		// Case: the most actual snapshot in slave is not correlative
-		case ZFS_ERROR:
+		case Zerror:
 			Error := fmt.Sprintf("[ERROR from '%s'] the most actual snapshot '%s' is not correlative with the snapshot sent.", hostname, LastSnapshotName)
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,ZFS_ERROR,Error}
+			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
 			w.Err("[ERROR] the snapshot '"+LastSnapshotName+"' is not correlative.")
 
 		// Case: the last snapshot in slave is the most actual
-		case MOST_ACTUAL:
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,NOTHING_TO_DO,""}
+		case MostActual:
+			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,NothingToDo,""}
 			w.Info("[INFO] the snapshot '"+LastSnapshotName+"' is the most actual.")
 
 		// Case: receive incremental stream
-		case INCREMENTAL:
+		case Incremental:
 			// Receive incremental stream
 			zfs.ReceiveSnapshotRollback(conn2Slave,a.DestDataset,true)
 
 			// Check for response to agent
 			if err != nil {
 				Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,ZFS_ERROR,Error}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
 				w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 			} else {
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WAS_WRITTEN,""}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 				w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 			}
 		}

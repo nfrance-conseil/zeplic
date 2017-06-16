@@ -11,6 +11,7 @@ import (
 	"os"
 )
 
+// ConfigFilePath returns the path of JSON config file
 var ConfigFilePath string
 
 // Copy contains Clone options

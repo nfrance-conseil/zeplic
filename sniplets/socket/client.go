@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	CONN_HOST = "192.168.99.5"
-	CONN_PORT = "7766"
-	CONN_TYPE = "tcp"
+	ConnHost = "192.168.99.5"
+	ConnPort = "7766"
+	ConnType = "tcp"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	ds2, _ := zfs.GetDataset(take2)
 
 	// New connection
-	conn, _ := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	conn, _ := net.Dial(ConnType, ConnHost+":"+ConnPort)
 
 	// Read data of server side
 	buff := bufio.NewReader(conn)
@@ -47,7 +47,7 @@ func main() {
 		fmt.Printf("\n[INFO] the snapshot '%s' has been sent.\n", take2)
 	default :
 		// Send an incremental stream of snapshots
-		zfs.SendSnapshotIncremental(conn, ds1, ds2, zfs.IncrementalStream)
+		zfs.SendSnapshotIncremental(conn, ds1, ds2, true, zfs.IncrementalStream)
 		conn.Close()
 		fmt.Printf("\n[INFO] the snapshot '%s' has been sent.\n", take2)
 	}

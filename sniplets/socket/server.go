@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	CONN_HOST = ""
-	CONN_PORT = "7766"
-	CONN_TYPE = "tcp"
+	ConnHost = ""
+	ConnPort = "7766"
+	ConnType = "tcp"
 )
 
 func main() {
 	// Listen for incoming connections
-	l, _ := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	l, _ := net.Listen(ConnType, ConnHost+":"+ConnPort)
 	// Close the listener when the application closes
 	defer l.Close()
 	fmt.Println("Listening on port 7766...")
@@ -38,7 +38,7 @@ func handleRequest(conn net.Conn) {
 	}
 
 	// Receive snapshot
-	zfs.ReceiveSnapshot(conn, "tank/replication", false)
+	zfs.ReceiveSnapshot(conn, "tank/replication")
 
 	// Update the list of snapshots
 	list, _ = zfs.Snapshots("tank/replication")

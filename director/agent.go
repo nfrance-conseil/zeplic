@@ -19,7 +19,7 @@ import (
 	"github.com/mistifyio/go-zfs"
 )
 
-// Struct for ZFS orders from director
+// ZFSOrderFromDirector is the struct for ZFS orders from director
 type ZFSOrderFromDirector struct {
 	OrderUUID	 string	// mandatory
 	Action		 string // take_snapshot, send_snapshot, destroy_snapshot
@@ -32,7 +32,7 @@ type ZFSOrderFromDirector struct {
 	SkipIfNotWritten bool   // should I take a snapshot if nothing is written
 }
 
-// Struc for ZFS orders to slave
+// ZFSOrderSlave is the struct for ZFS orders to slave
 type ZFSOrderToSlave struct {
 	Hostname	string `json:"Source"`
 	OrderUUID	string `json:"OrderUUID"`
@@ -41,7 +41,7 @@ type ZFSOrderToSlave struct {
 	DestDataset	string `json:"DestDataset"`
 }
 
-// Struct for ZFS response from slave
+// ZFSResponseFromSlave is the struct for ZFS response from slave
 type ZFSResponseFromSlave struct {
 	OrderUUID    string  // reference to a valid order
 	IsSuccess    bool    // true or false
@@ -49,7 +49,7 @@ type ZFSResponseFromSlave struct {
 	Error	     string  // error string if needed
 }
 
-// Handle incoming requests from director
+// HandleRequestAgent incoming requests from director
 func HandleRequestAgent (connAgent net.Conn) bool {
 	// Start syslog system service
 	w, _ := config.LogBook()
@@ -77,7 +77,6 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 	// Switch for action order
 	switch d.Action {
 
-// REMAKE WITH COMMANDS!
 	// Create a new snapshot
 	case "take_snapshot":
 		// Check if the DestDataset exists and it is enable
@@ -85,31 +84,12 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			w.Err("[ERROR] inconsistant data structure in ZFS order.")
 			break
 		}
-		// Get dataset from d.DestDataset
-		ds, err := zfs.GetDataset(d.DestDataset)
-		// Create dataset if it does not exist
-		if err != nil {
-			_, err := zfs.CreateFilesystem(d.DestDataset, nil)
-			if err != nil {
-				w.Err("[ERROR] it was not possible to create the dataset '"+d.DestDataset+"'.")
-				break
-			} else {
-				w.Info("[INFO] the dataset '"+d.DestDataset+"' has been created.")
-			}
-			ds, _ = zfs.GetDataset(d.DestDataset)
-		}
-		// Name of snapshot using SnapName function
-		SnapshotName := lib.SnapName("DIRECTOR")
-		// Create the snapshot
-		ds.Snapshot(SnapshotName, false)
-		// Get the last snapshot created
-		list, _ := zfs.Snapshots(d.DestDataset)
-		count := len(list)
-		SnapshotCreated := list[count-1].Name
-		// Set it an uuid
-		lib.UUID(SnapshotCreated)
-		// Print the name of last snapshot created (it has an uuid)
-		w.Info("[INFO] the snapshot '"+SnapshotCreated+"' has been created.")
+
+		// Read JSON configuration file
+		j, _, _ := config.JSON()
+
+		// Call to function CommandOrder for create the snapshot
+		lib.CommandOrder(j, d.DestDataset)
 
 	// Send snapshot to d.Destination
 	case "send_snapshot":
@@ -143,7 +123,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		switch dsExist {
 
 		// Case: dataset exist on destination
-		case DATASET_TRUE:
+		case DatasetTrue:
 			// Check uuid of last snapshot on destination
 			connToSlave.Close()
 
@@ -168,16 +148,16 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			if r.IsSuccess == true {
 				switch r.Status {
 				// Snapshot renamed
-				case WAS_RENAMED:
+				case WasRenamed:
 					w.Info("[INFO] the snapshot '"+SnapshotName+"' has been renamed to '"+r.Error+"'.")
 				// Nothing to do
-				case NOTHING_TO_DO:
+				case NothingToDo:
 					w.Info("[INFO] the snapshot '"+SnapshotName+"' already existed.")
 				}
 			} else {
 				switch r.Status {
 				// Slave are snapshots
-				case NOT_EMPTY:
+				case NotEmpty:
 					// Take the uuid of last snapshot on destination
 					slaveUUID := r.Error
 					// Take the dataset name of snapshot to send to slave
@@ -215,18 +195,18 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					// Choose the correct option
 					if index == (count-1) {
 						ack = nil
-						ack = strconv.AppendInt(ack, MOST_ACTUAL, 10)
+						ack = strconv.AppendInt(ack, MostActual, 10)
 						send = false
 					} else if index < (count-1) && index != -1 {
 						snap1 := lib.SearchName(slaveUUID)
 						ds1, _ = zfs.GetDataset(snap1)
 						ds2, _ = zfs.GetDataset(SnapshotName)
 						ack = nil
-						ack = strconv.AppendInt(ack, INCREMENTAL, 10)
+						ack = strconv.AppendInt(ack, Incremental, 10)
 						send = true
 					} else {
 						ack = nil
-						ack = strconv.AppendInt(ack, ZFS_ERROR, 10)
+						ack = strconv.AppendInt(ack, Zerror, 10)
 						send = false
 					}
 
@@ -262,14 +242,14 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					}
 					if r2.IsSuccess == true {
 						switch r2.Status {
-						case WAS_WRITTEN:
+						case WasWritten:
 							w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
-						case NOTHING_TO_DO:
+						case NothingToDo:
 							w.Info("[INFO] the node '"+d.Destination+"' has a snapshot more actual.")
 						}
 					} else {
 						switch r2.Status {
-						case ZFS_ERROR:
+						case Zerror:
 							w.Err(""+r2.Error+"")
 						}
 					}
@@ -279,7 +259,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 
 		// Case: dataset does not exit on destination or it's empty
 //		// *** Use -R option ? No option ? ***
-		case DATASET_FALSE:
+		case DatasetFalse:
 			// Send snapshot to slave
 			ds.SendSnapshot(connToSlave, zfs.ReplicationStream)
 			connToSlave.Close()
@@ -305,13 +285,13 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			if r.IsSuccess == true {
 				switch r.Status {
 				// Snapshot written
-				case WAS_WRITTEN:
+				case WasWritten:
 					w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
 				}
 			} else {
 				switch r.Status {
 				// ZFS error
-				case ZFS_ERROR:
+				case Zerror:
 					w.Err(""+r.Error+"")
 				}
 			}

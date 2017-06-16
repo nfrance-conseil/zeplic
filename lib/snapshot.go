@@ -12,7 +12,7 @@ import (
 	"github.com/mistifyio/go-zfs"
 )
 
-// Get substring after a string
+// After gets substring after a string
 func After(value string, a string) string {
 	pos := strings.LastIndex(value, a)
 	if pos == -1 {
@@ -25,7 +25,7 @@ func After(value string, a string) string {
 	return value[adjustedPos:len(value)]
 }
 
-// Get substring before a string
+// Before gets substring before a string
 func Before(value string, a string) string {
 	pos := strings.Index(value, a)
 	if pos == -1 {
@@ -34,7 +34,7 @@ func Before(value string, a string) string {
 	return value[0:pos]
 }
 
-// Get substring
+// Reverse gets substring
 func Reverse(value string, a string) string {
 	pos := strings.Index(value, a)
 	if pos == -1 {
@@ -80,7 +80,6 @@ func Renamed(SnapshotReceived string, SnapshotToCheck string) bool {
 	toCheck := After(SnapshotToCheck, "@")
 	if received == toCheck {
 		return false
-	} else {
-		return true
 	}
+	return true
 }

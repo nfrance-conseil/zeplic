@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	SyslogPath string
-	SyslogFilePath string
+	SyslogPath string	    // SyslogPath returns the path of syslog system service
+	SyslogFilePath string	    // SyslogFilePath returns /var/log/zeplic.log
 	SyslogLocal syslog.Priority
 )
 
@@ -38,6 +38,7 @@ func between(value string, a string, b string) string {
 	return value[posFirstAdjusted:posLast]
 }
 
+// SyslogLocalVar returns the priority of LOG_LOCAL variable
 func SyslogLocalVar() syslog.Priority {
 	s, _ := ioutil.ReadFile(SyslogPath)
 	scan := string(s)

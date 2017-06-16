@@ -75,6 +75,7 @@ func main() {
 	}
 }
 
+// Writer writes a string into a file
 func Writer() error {
 	read, _ := ioutil.ReadFile("/root/test")
 	contents := string(read)
@@ -88,6 +89,7 @@ func Writer() error {
 	return nil
 }
 
+// TermHandler is the struct for quit signal
 func TermHandler(sig os.Signal) error {
 	quit <- struct{}{}
 	if sig == syscall.SIGQUIT {
@@ -96,6 +98,7 @@ func TermHandler(sig os.Signal) error {
 	return nil
 }
 
+// ReloadHandler is the struct for reload signal
 func ReloadHandler(sig os.Signal) error {
 /*	reload <- struct{}{}
 	if sig == syscall.SIGHUP {

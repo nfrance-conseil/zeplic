@@ -174,7 +174,7 @@ func DeleteBackup(dataset string) {
 	}
 }
 
-// Return the number of snapshots we want to keep
+// Policy apply the retention policy
 func Policy(dataset string, retain int) {
 	list, err := zfs.Snapshots(dataset)
 	if err != nil {

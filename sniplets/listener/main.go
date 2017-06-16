@@ -11,6 +11,7 @@ import (
 	"os"
 )
 
+// ZFSOrder is the struct for ZFS orders
 type ZFSOrder struct {
 	OrderUUID string
 	Action string
