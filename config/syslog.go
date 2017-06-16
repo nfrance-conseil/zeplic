@@ -8,13 +8,13 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+//	"io/ioutil"
 	"log/syslog"
 	"os"
-	"regexp"
-	"strings"
+//	"regexp"
+//	"strings"
 )
-
+/*
 var (
 	// SyslogPath returns the path of syslog system service
 	SyslogPath string
@@ -86,11 +86,11 @@ func LogFile() error {
 	}
 	return err
 }
-
+*/
 // LogBook creates a new connection with the syslog service
 func LogBook() (*syslog.Writer, error) {
 	// Establishe a new connection to the system log daemon
-	sysLog, err := syslog.New(SyslogLocalVar()|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
+	sysLog, err := syslog.Dial("udp", "localhost:514", syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 	if err != nil {
 		fmt.Printf("\n[ERROR] config/syslog.go:90 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)

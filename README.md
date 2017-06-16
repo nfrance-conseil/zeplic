@@ -91,10 +91,7 @@ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapsho
 
 ### Syslog system service
 
-Check all actions of **zeplic** in:
-```
-$ /var/log/zeplic.log
-```
+Configure **zeplic** to send log messages to remote syslog server:
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes

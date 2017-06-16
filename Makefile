@@ -21,8 +21,6 @@
 # SOFTWARE.
 
 IMPORT_PATH := github.com/nfrance-conseil/zeplic
-CHECK := 0
-i := 0
 
 .PHONY: all
 all: build
@@ -99,18 +97,9 @@ install:
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
-	$Q printf "\nConfiguring your syslog daemon service... "
-	$Q $(eval CHECK := $(shell if grep -q \!zeplic "$(SYSLOG)" ; then echo $$(( $(CHECK) +1 )) ; else echo $(CHECK) ; fi ) )
-	$Q if [ $(CHECK) -eq 0 ] ; then \
-		i=$(i) ; \
-		while [ $${i} -le 7 ] ; do \
-		if grep -q local$$i.* "$(SYSLOG)" ; then i=`expr $$i + 1` ; else printf "\n\!zeplic\nlocal$$i.*\t\t\t\t\t-/var/log/zeplic.log\n" >> $(SYSLOG) && break ; fi ; \
-		done ; \
-		true ; \
-	   fi
-	$Q if [ ! -f "$(LOGDIR)/zeplic.log" ] ; then echo -n > $(LOGDIR)/zeplic.log ; fi
+#	$Q printf "\nConfiguring your syslog daemon service... "
+#	$Q printf "done!"
 	$Q echo -n > $(PIDDIR)/zeplic.pid
-	$Q printf "done!"
 	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
 
 ##### =====> Internals <===== #####
@@ -121,15 +110,13 @@ OS 		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
 SYSCONFDIR 	 := /usr/local/etc
 BINDIR           := /usr/local/bin
-SYSLOG		 := /etc/syslog.conf
 else
 SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
-SYSLOG		 := /etc/rsyslog.conf
 endif
 LOGDIR		 := /var/log/
 PIDDIR		 := /var/run/
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogPath=$(SYSLOG)" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(LOGDIR)/zeplic.log"'
+COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

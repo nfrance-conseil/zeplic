@@ -51,7 +51,7 @@ func main () {
 			os.Exit(1)
 		} else {
 			// Check if a Logfile already exists
-			go config.LogFile()
+//			go config.LogFile()
 			flag.CommandLine.SetOutput(ioutil.Discard)
 			flag.Parse()
 		}
