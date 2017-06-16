@@ -35,7 +35,7 @@ func main() {
 		Args:        []string{"[zdaemon]"},
 	}
 	if len(daemon.ActiveFlags()) > 0 {
-		d, _ := cntxt.Search()
+		d, err := cntxt.Search()
 		if err != nil {
 			fmt.Println("[WARNING] unable send signal to the daemon!")
 		}
