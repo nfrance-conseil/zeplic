@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go - usage.go
+// Package config contains: json.go - syslog.go
 //
 // Json reads and extracts the information JSON configuration file
 //
