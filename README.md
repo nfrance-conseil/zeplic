@@ -67,13 +67,13 @@ You can modify a sample JSON file that it has been created in your config path:
 **Let'zeplic!**
 
 ```sh
-$ zeplic -z run
+$ zeplic --run
 ```
 
 ### Director mode
 *In development...*
 
-You can send an order to the agent node (zeplic -z agent) on port 7711:
+You can send an order to the agent node (zeplic --agent) on port 7711:
 - Create a snapshot
 - Destroy a snapshot
 
@@ -83,7 +83,7 @@ $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snaps
 $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
 ```
 
-You can send a snapshot between the agent node (zeplic -z agent) to the slave node (zeplic -z slave):
+You can send a snapshot between the agent node (zeplic --agent) to the slave node (zeplic --slave):
 
 ```
 echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
@@ -102,14 +102,14 @@ Configure **zeplic** to send log messages to remote syslog server:
 
 ```
 $ zeplic --help
-Usage: zeplic -z <command>
-
-   agent	Listen ZFS orders from director
-   director	Send ZFS orders to agent
-   quit		Gracefully shutdown
-   reload	Restart zeplic to sleep state
-   run		Start zeplic as background
-   slave	Receive a new snapshot from agent
-   version	Show version of zeplic
+Usage: zeplic [-adrsv] [--help] [--quit] [--reload] [parameters ...]
+ -a, --agent     Listen ZFS orders from director
+ -d, --director  Send ZFS orders to agent
+     --help      Help
+     --quit      Gracefully shutdown
+     --reload    Restart zeplic to sleep state
+ -r, --run       Start zeplic as background
+ -s, --slave     Receive a new snapshot from agent
+ -v, --version   Show version of zeplic
 
 ```
