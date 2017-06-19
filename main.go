@@ -22,7 +22,7 @@ import (
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/director"
 	"github.com/nfrance-conseil/zeplic/lib"
-	"github.com/pborman/getopt"
+	"github.com/pborman/getopt/v2"
 //	"github.com/sevlyar/go-daemon"
 )
 
