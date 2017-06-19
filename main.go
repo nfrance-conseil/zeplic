@@ -106,14 +106,11 @@ func main () {
 
 	// RUN
 	case *optRun:
-		// Start syslog system service
-//		w, _ := config.LogBook()
-
 		// Read JSON configuration file
 		j, _, _ := config.JSON()
 
 		// Invoke RealMain() function
-		os.Exit(lib.RealMain(j))
+		os.Exit(lib.Runner(j))
 
 	// SLAVE
 	case *optSlave:

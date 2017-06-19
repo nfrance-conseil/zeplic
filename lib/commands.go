@@ -16,14 +16,14 @@ var (
 )
 
 // CommandOrder takes a snapshot based on the order received from director
-func CommandOrder(j int, dataset string) {
+func CommandOrder(j int, DestDataset string) {
 	// Check if dataset is configured
 	index := -1
 	for i := 0; i < j; i++ {
 		pieces := config.Extract(i)
-		take := pieces[2].(string)
+		dataset := pieces[2].(string)
 
-		if take == dataset {
+		if dataset == DestDataset {
 			index = i
 			break
 		} else {
@@ -35,26 +35,29 @@ func CommandOrder(j int, dataset string) {
 		// Extract data of dataset
 		pieces := config.Extract(index)
 		enable := pieces[0].(bool)
-		take := pieces[2].(string)
+//		delClone := pieces[1].(string)
+		dataset := pieces[2].(string)
 		snapshot := pieces[3].(string)
 		retain := pieces[4].(int)
+		backup := pieces[5].(bool)
+//		getClone := pieces[6].(bool)
 
-		if take == dataset && enable == true {
-			ds := Dataset(take)
-			Snapshot(take, snapshot, ds)
-			DeleteBackup(take)
-			Policy(take, retain)
-			Backup(pieces[5].(bool), take, ds)
-		} else if take == dataset && enable == false {
+		if dataset == DestDataset && enable == true {
+			ds := Dataset(dataset)
+			Snapshot(dataset, snapshot, ds)
+			DeleteBackup(dataset)
+			Policy(dataset, retain)
+			Backup(backup, dataset, ds)
+		} else if dataset == DestDataset && enable == false {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
 		}
 	} else {
-		w.Notice("[NOTICE] the dataset '"+dataset+"' is not configured.")
+		w.Notice("[NOTICE] the dataset '"+DestDataset+"' is not configured.")
 	}
 }
 
-// RealMain is a loop that executes 'ZFS' functions for each dataset enabled
-func RealMain(j int) int {
+// Runner is a loop that executes 'ZFS' functions for each dataset enabled
+func Runner(j int) int {
 	for i := 0; i < j; i++ {
 		// Extract all data stored in JSON file
 		pieces := config.Extract(i)
@@ -62,20 +65,25 @@ func RealMain(j int) int {
 		// This value returns if the dataset is enable
 		takedataset := pieces[0].(bool)
 
-		// Execute the functions
+		// Get variables
+		clone := pieces[1].(string)
+		dataset := pieces[2].(string)
+		snapshot := pieces[3].(string)
+		retain := pieces[4].(int)
+		backup := pieces[5].(bool)
+		getClone := pieces[6].(bool)
+
+		// Execute functions
 		if takedataset == true {
-			clone := pieces[1].(string)
-			dataset := pieces[2].(string)
-			snapshot := pieces[3].(string)
 			DeleteClone(clone)
 			ds := Dataset(dataset)
 			s, SnapshotName := Snapshot(dataset, snapshot, ds)
 			DeleteBackup(dataset)
-			Policy(dataset, pieces[4].(int))
-			Backup(pieces[5].(bool), dataset, ds)
-			Clone(pieces[6].(bool), clone, dataset, SnapshotName, s)
-		} else if takedataset == false && pieces[2].(string) != "" {
-			w.Notice("[NOTICE] the dataset '"+pieces[2].(string)+"' is disabled.")
+			Policy(dataset, retain)
+			Backup(backup, dataset, ds)
+			Clone(getClone, clone, dataset, SnapshotName, s)
+		} else if takedataset == false && dataset != "" {
+			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
 		}
 	}
 	return 0
