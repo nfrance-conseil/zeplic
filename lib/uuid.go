@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - snapshot.go - uuid.go
+// Package lib contains: commands.go - snapshot.go - uuid.go - written.go
 //
 // UUID sets an uuid to the snapshot
 // Search snapshot name from its uuid and vice versa

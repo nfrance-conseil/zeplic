@@ -1,4 +1,4 @@
-// Package lib contains: comnands.go - snapshot.go - uuid.go
+// Package lib contains: comnands.go - snapshot.go - uuid.go - written.go
 //
 // Commands provides all ZFS functions to manage the datasets and backups
 //

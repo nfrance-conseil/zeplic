@@ -312,23 +312,28 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		// Search the snapshot name from its uuid
 		SnapshotName := lib.SearchName(d.SnapshotUUID)
 
-		// Check if the snapshot was renamed
-		if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
-			w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
-		} else {
-			// Read JSON configuration file
-			j, _, _ := config.JSON()
+		// Check if something was written
+		written := lib.Written(SnapshotName)
 
-			// Call to function CommandOrder for create the snapshot
-			destroy, clone := lib.DestroyOrder(j, SnapshotName)
-
-			// Print the name of snapshot destroyed (using its uuid)
-			if destroy == true && d.SnapshotName != SnapshotName {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
-			} else if destroy == true && d.SnapshotName == SnapshotName {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
+		if d.SkipIfNotWritten == false || d.SkipIfNotWritten == true && written > 0 {
+			// Check if the snapshot was renamed
+			if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
+				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
 			} else {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
+				// Read JSON configuration file
+				j, _, _ := config.JSON()
+
+				// Call to function CommandOrder for create the snapshot
+				destroy, clone := lib.DestroyOrder(j, SnapshotName)
+
+				// Print the name of snapshot destroyed (using its uuid)
+				if destroy == true && d.SnapshotName != SnapshotName {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
+				} else if destroy == true && d.SnapshotName == SnapshotName {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
+				} else {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
+				}
 			}
 		}
 	default:

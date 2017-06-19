@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - snapshot.go - uuid.go
+// Package lib contains: commands.go - snapshot.go - uuid.go - written.go
 //
 // Snapshot makes the structure of snapshot's names
 //
