@@ -15,8 +15,8 @@ var (
 	w, _ = config.LogBook()
 )
 
-// CommandOrder takes a snapshot based on the order received from director
-func CommandOrder(j int, DestDataset string) {
+// TakeOrder takes a snapshot based on the order received from director
+func TakeOrder(j int, DestDataset string) {
 	// Check if dataset is configured
 	index := -1
 	for i := 0; i < j; i++ {
@@ -35,7 +35,7 @@ func CommandOrder(j int, DestDataset string) {
 		// Extract data of dataset
 		pieces := config.Extract(index)
 		enable := pieces[0].(bool)
-//		delClone := pieces[1].(string)
+		clone := pieces[1].(string)
 		dataset := pieces[2].(string)
 		snapshot := pieces[3].(string)
 		retain := pieces[4].(int)
@@ -46,7 +46,7 @@ func CommandOrder(j int, DestDataset string) {
 			ds := Dataset(dataset)
 			Snapshot(dataset, snapshot, ds)
 			DeleteBackup(dataset)
-			Policy(dataset, retain)
+			Policy(dataset, retain, clone)
 			Backup(backup, dataset, ds)
 		} else if dataset == DestDataset && enable == false {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
@@ -54,6 +54,41 @@ func CommandOrder(j int, DestDataset string) {
 	} else {
 		w.Notice("[NOTICE] the dataset '"+DestDataset+"' is not configured.")
 	}
+}
+
+// DestroyOrder destroys a snapshot based on the order received from director
+func DestroyOrder(j int, SnapshotName string) (bool, string) {
+	// Define return variables
+	var destroy bool
+	var clone string
+
+	// Get the snapshot
+	snap, err := zfs.GetDataset(SnapshotName)
+	if err != nil {
+		w.Err("[ERROR] it was not possible to get the snapshot '"+SnapshotName+"'.")
+	}
+
+	// Get dataset of snapshot
+	ds := DatasetName(SnapshotName)
+	for i := 0; i < j; i++ {
+		pieces := config.Extract(i)
+		dataset := pieces[2].(string)
+
+		if dataset == ds {
+			clone = pieces[1].(string)
+			break
+		} else {
+			continue
+		}
+	}
+
+	err = snap.Destroy(zfs.DestroyDefault)
+	if err != nil {
+		destroy = false
+	} else {
+		destroy = true
+	}
+	return destroy, clone
 }
 
 // Runner is a loop that executes 'ZFS' functions for each dataset enabled
@@ -79,7 +114,7 @@ func Runner(j int) int {
 			ds := Dataset(dataset)
 			s, SnapshotName := Snapshot(dataset, snapshot, ds)
 			DeleteBackup(dataset)
-			Policy(dataset, retain)
+			Policy(dataset, retain, clone)
 			Backup(backup, dataset, ds)
 			Clone(getClone, clone, dataset, SnapshotName, s)
 		} else if takedataset == false && dataset != "" {
@@ -183,7 +218,7 @@ func DeleteBackup(dataset string) {
 }
 
 // Policy apply the retention policy
-func Policy(dataset string, retain int) {
+func Policy(dataset string, retain int, clone string) {
 	list, err := zfs.Snapshots(dataset)
 	if err != nil {
 		w.Err("[ERROR] it was not possible to access of snapshots list.")
@@ -197,7 +232,7 @@ func Policy(dataset string, retain int) {
 		}
 		err = snap.Destroy(zfs.DestroyDefault)
 		if err != nil {
-			w.Err("[ERROR] it was not possible to destroy the snapshot '"+take+"'.")
+			w.Err("[ERROR] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
 		} else {
 			w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
 		}

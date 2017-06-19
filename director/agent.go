@@ -89,7 +89,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		j, _, _ := config.JSON()
 
 		// Call to function CommandOrder for create the snapshot
-		lib.CommandOrder(j, d.DestDataset)
+		lib.TakeOrder(j, d.DestDataset)
 
 	// Send snapshot to d.Destination
 	case "send_snapshot":
@@ -316,15 +316,19 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
 			w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
 		} else {
-			// Take the snapshot...
-			ds, _ := zfs.GetDataset(SnapshotName)
-			// ... and destroy it
-			ds.Destroy(zfs.DestroyDefault)
+			// Read JSON configuration file
+			j, _, _ := config.JSON()
+
+			// Call to function CommandOrder for create the snapshot
+			destroy, clone := lib.DestroyOrder(j, SnapshotName)
+
 			// Print the name of snapshot destroyed (using its uuid)
-			if d.SnapshotName != SnapshotName {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (and renamed to '"+SnapshotName+"') has been destroyed.")
-			} else {
+			if destroy == true && d.SnapshotName != SnapshotName {
+				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
+			} else if destroy == true && d.SnapshotName == SnapshotName {
 				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
+			} else {
+				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
 			}
 		}
 	default:
