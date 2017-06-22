@@ -15,7 +15,7 @@ var (
 	Version     string
 )
 
-// Version shows the version of zeplic
+// ShowVersion shows the version of zeplic
 func ShowVersion() string {
 	version := fmt.Sprintf("zeplic preliminar version: %s - %s\n\n", Version, BuildTime)
 	return version

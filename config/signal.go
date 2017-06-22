@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	// Version gets the version of last ommit
+	// PidFilePath gets the path of pid file
 	PidFilePath string
 	// Variable to connect with syslog service
 	w, _ = LogBook()
