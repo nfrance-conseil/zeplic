@@ -30,9 +30,13 @@ import (
 )
 
 var (
+	// BuildTime gets date of last build
 	BuildTime   string
+	// PidFilePath gets the path of pid file
 	PidFilePath string
+	// Version gets the version of last ommit
 	Version     string
+	// Variable to connect with syslog service
 	w, _ = config.LogBook()
 )
 
