@@ -13,7 +13,6 @@ install:
   - go get -v github.com/pborman/uuid
   - go get -v github.com/pborman/getopt/v2
   - go get -v github.com/sevlyar/go-daemon
-  - go get -v github.com/kardianos/osext
   - go get -v github.com/golang/lint/golint
 
 script:

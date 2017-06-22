@@ -100,13 +100,13 @@ install:
 	$Q printf "done!"
 #	$Q printf "\nConfiguring your syslog daemon service... "
 #	$Q printf "done!"
-	$Q echo -n > $(PIDDIR)/zeplic.pid
+	$Q echo -n > $(PIDDIR)
 	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
 
 ##### =====> Internals <===== #####
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
-DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
+DATE             := $(shell date -u '+%Y-%m-%d %H:%M UTC')
 OS 		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
 SYSCONFDIR 	 := /usr/local/etc
@@ -115,8 +115,8 @@ else
 SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
 endif
-PIDDIR		 := /var/run/
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
+PIDDIR		 := /var/run/zeplic.pid
+COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "main.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
