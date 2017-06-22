@@ -99,7 +99,7 @@ Configure **zeplic** to send log messages to remote syslog server:
 
 ```
 $ zeplic --help
-Usage: zeplic [-adrsv] [--help] [--quit] [--reload] [parameters ...]
+Usage: zeplic [-adrsv] [--help] [--quit] [parameters ...]
  -a, --agent     Listen ZFS orders from director
  -d, --director  Send ZFS orders to agent
      --help      Help
