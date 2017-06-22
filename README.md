@@ -25,7 +25,6 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Rollback of snapshot (director mode)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
 - ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
-6. *In development...* **zeplic** runs as background
 
 ## How can you use it?
 
@@ -96,9 +95,7 @@ Configure **zeplic** to send log messages to remote syslog server:
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes
 
-### Daemon service
-
-*In development...* **zeplic** runs as background
+### Help menu
 
 ```
 $ zeplic --help
@@ -107,8 +104,7 @@ Usage: zeplic [-adrsv] [--help] [--quit] [--reload] [parameters ...]
  -d, --director  Send ZFS orders to agent
      --help      Help
      --quit      Gracefully shutdown
-     --reload    Restart zeplic to sleep state
- -r, --run       Start zeplic as background
+ -r, --run       Execute ZFS functions
  -s, --slave     Receive a new snapshot from agent
  -v, --version   Show version of zeplic
 
