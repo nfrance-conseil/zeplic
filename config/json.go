@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go
+// Package config contains: json.go - signal - syslog.go - version.go
 //
 // Json reads and extracts the information JSON configuration file
 //
@@ -42,7 +42,7 @@ func JSON() (int, string, error) {
 	jsonFile := ConfigFilePath
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		fmt.Printf("\nThe file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
+		fmt.Printf("The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
 		os.Exit(1)
 	}
 	var values Pool

@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go
+// Package config contains: json.go - signal.go - syslog.go - version.go
 //
 // Syslog establishes a new connection with the syslog daemon
 // and writes (firstly, can create the file) in the log file,

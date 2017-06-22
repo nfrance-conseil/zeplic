@@ -14,11 +14,12 @@ package main
 import (
 //	"flag"
 	"fmt"
-	"io/ioutil"
+//	"io/ioutil"
 	"net"
 	"os"
+//	"os/exec"
 //	"os/signal"
-	"strconv"
+//	"strconv"
 //	"syscall"
 //	"time"
 
@@ -30,26 +31,20 @@ import (
 )
 
 var (
-	// BuildTime gets date of last build
-	BuildTime   string
-	// PidFilePath gets the path of pid file
-	PidFilePath string
-	// Version gets the version of last ommit
-	Version     string
 	// Variable to connect with syslog service
 	w, _ = config.LogBook()
 )
 
-func main () {
+func main() {
 	// Available flags
 	optAgent    := getopt.BoolLong("agent", 'a', "Listen ZFS orders from director")
 	optDirector := getopt.BoolLong("director", 'd', "Send ZFS orders to agent")
-	optHelp	    := getopt.BoolLong("help", 0, "Show help menu")
+	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
 //	optReload   := getopt.BoolLong("reload", 0, "Restart zeplic to sleep state")
 	optRun	    := getopt.BoolLong("run", 'r', "Execute ZFS functions")
 	optSlave    := getopt.BoolLong("slave", 's', "Receive a new snapshot from agent")
-//	optStandby  := getopt.BoolLong("stadby", 'z', "Standby mode")
+//	optStandby  := getopt.BoolLong("standby", 'z', "Standby mode")
 	optVersion  := getopt.BoolLong("version", 'v', "Show version of zeplic")
 	getopt.Parse()
 
@@ -58,17 +53,15 @@ func main () {
 		os.Exit(0)
 	}
 
-	// zeplic pid info
-	pid := os.Getpid()
-	pidBytes := []byte(strconv.Itoa(pid))
-	ioutil.WriteFile(PidFilePath, pidBytes, 0644)
-//	go Standby()
+//	go Standby(c)
 
 	// Cases...
 	switch {
 
 	// AGENT
 	case *optAgent:
+		go config.Pid()
+
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7711")
 		defer l.Close()
@@ -86,6 +79,7 @@ func main () {
 
 	// DIRECTOR
 	case *optDirector:
+//		config.Pid()
 		fmt.Printf("[INFO] director case inoperative...\n\n")
 		os.Exit(0)
 
@@ -97,16 +91,25 @@ func main () {
 
 	// QUIT
 	case *optQuit:
-//		w.Notice("[NOTICE] zeplic graceful shutdown...")
-//		c := make(chan os.Signal, 2)
-//		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		fmt.Printf("[INFO] quit case inoperative...\n\n")
-		os.Exit(0)
+		err := config.Leave()
+		if err == 1 {
+			fmt.Printf("[INFO] zeplic is not runnig...\n\n")
+			os.Exit(0)
+		} else {
+			os.Exit(0)
+		}
 
 	// RELOAD
-//	case *optReload:
-//		fmt.Printf("[INFO] reload case inoperative...\n\n")
-//		os.Exit(0)
+/*	case *optReload:
+		err, process := config.Reload()
+		if err == 1 {
+			fmt.Printf("[INFO] zeplic is not running...\n\n")
+			os.Exit(0)
+		} else {
+			exec.Command("sh", "-c", process).Run()
+			pid := os.Getpid()
+			syscall.Kill(pid, syscall.SIGTERM)
+		}*/
 
 	// RUN
 	case *optRun:
@@ -118,6 +121,8 @@ func main () {
 
 	// SLAVE
 	case *optSlave:
+		go config.Pid()
+
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7722")
 		defer l.Close()
@@ -139,7 +144,8 @@ func main () {
 
 	// VERSION
 	case *optVersion:
-		fmt.Printf("zeplic preliminar version: %s - %s\n\n", Version, BuildTime)
+		version := config.ShowVersion()
+		fmt.Printf("%s", version)
 		os.Exit(0)
 	}
 }

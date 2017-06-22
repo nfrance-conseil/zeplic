@@ -35,7 +35,7 @@ build: .GOPATH/.ok
 	$Q go get $(if $V,-v) github.com/sevlyar/go-daemon
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
 	$Q printf "done!"
-	$Q printf "\n\nBUILD! To install, type: sudo make install\n\n"
+	$Q printf "\n\nBUILT! To install, type: sudo make install\n\n"
 
 ### Code not in the repository root? Another binary? Add to the path like this.
 # .PHONY: otherbin
@@ -101,7 +101,7 @@ install:
 #	$Q printf "\nConfiguring your syslog daemon service... "
 #	$Q printf "done!"
 	$Q echo -n > $(PIDDIR)
-	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
+	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json & syslog.json\n\n"
 
 ##### =====> Internals <===== #####
 
@@ -116,7 +116,7 @@ SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
 endif
 PIDDIR		 := /var/run/zeplic.pid
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "main.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
+COMPILE_FLAGS    := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
