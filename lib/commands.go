@@ -187,7 +187,10 @@ func Snapshot(dataset, name string, ds *zfs.Dataset) (*zfs.Dataset, string) {
 	} else {
 		w.Info("[INFO] the snapshot '"+dataset+"@"+SnapshotName+"' has been created.")
 		// Assign an uuid to the snapshot
-		go UUID(take)
+		err := UUID(take)
+		if err != nil {
+			w.Err("[ERROR] it was not possible to assign an uuid to the snapshot '"+take+"'.")
+		}
 	}
 	return s, SnapshotName
 }
@@ -260,7 +263,10 @@ func Backup(backup bool, dataset string, ds *zfs.Dataset) {
 		} else {
 			w.Info("[INFO] the backup snapshot '"+dataset+"@"+SnapBackup(dataset)+"' has been created.")
 			// Assign an uuid to the snapshot
-			go UUID(take)
+			err := UUID(take)
+			if err != nil {
+				w.Err("[ERROR] it was not possible to assign an uuid to the snapshot '"+take+"'.")
+			}
 		}
 	}
 }
