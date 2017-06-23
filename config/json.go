@@ -36,7 +36,7 @@ type Pool struct {
 	Dataset	[]Data	`json:"datasets"`
 }
 
-// JSON reads the 'JSON' file and checks how many datasets are there
+// JSON reads the 'JSON' file and checks how many datasets are enabled
 func JSON() (int, string, error) {
 	w, _ := LogBook()
 	jsonFile := ConfigFilePath

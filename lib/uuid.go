@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/nfrance-conseil/zeplic/utils"
 	"github.com/pborman/uuid"
 )
 
@@ -30,7 +31,7 @@ func UUID(SnapshotName string) error {
 
 // ReceiveUUID asigns an uuid received to snapshot
 func ReceiveUUID(id string, SnapshotName string, DestDataset string) {
-	check := Before(SnapshotName, "@")
+	check := utils.Before(SnapshotName, "@")
 	var name string
 	if check == DestDataset {
 		name = SnapshotName
