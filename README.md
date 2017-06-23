@@ -4,7 +4,7 @@
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
-**zeplic is available for Linux and FreeBSD**
+**zeplic is available for Linux and BSD os**
 
 ## Utils
 
@@ -30,14 +30,14 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 - First, clone this repository and type `make|gmake` 
 - After, type `sudo make|gmake install` to install **zeplic**
-- If you want, you can clean all dependencies with `make|gmake clean`.
+- To clean all dependencies, type `make|gmake clean`.
 - The next step is to configure **zeplic**:
 
 ### Configuration
 
 You can modify a sample JSON file that it has been created in your config path:
 - `/etc/zeplic/` for Linux
-- `/usr/local/etc/zeplic/` for FreeBSD
+- `/usr/local/etc/zeplic/` for BSD os
 
 ```sh
 {
