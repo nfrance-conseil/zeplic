@@ -240,8 +240,8 @@ func Policy(ds *zfs.Dataset, retain int) {
 		}
 		err = snap.Destroy(zfs.DestroyDefault)
 		if err != nil {
-			clone := Origin(take)
-			w.Warning("[WARNING] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
+			origin := list[k].Origin
+			w.Warning("[WARNING] the snapshot '"+take+"' has dependent clones: '"+origin+"'.")
 		} else {
 			w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
 		}

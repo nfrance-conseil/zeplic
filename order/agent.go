@@ -314,7 +314,8 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		SnapshotName := lib.SearchName(d.SnapshotUUID)
 
 		// Check if something was written
-		written := lib.Written(SnapshotName)
+		snap, _ := zfs.GetDataset(SnapshotName)
+		written := snap.Written
 
 		if d.SkipIfNotWritten == false || d.SkipIfNotWritten == true && written > 0 {
 			// Check if the snapshot was renamed
