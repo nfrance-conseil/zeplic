@@ -38,7 +38,7 @@ type ZFSResponseToAgent struct {
 // HandleRequestSlave incoming requests from agent
 func HandleRequestSlave (connSlave net.Conn) bool {
 	// Start syslog system service
-	w, _ := config.LogBook()
+	w := config.LogBook()
 
 	// Resolve hostname
 	hostname, err := os.Hostname()
@@ -63,9 +63,9 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	stream := false
 
 	// Check if the dataset received exists
-	_, err = zfs.GetDataset(a.DestDataset)
+	ds, err := zfs.GetDataset(a.DestDataset)
 	// Get the last snapshot in DestDataset
-	list, _ := zfs.Snapshots(a.DestDataset)
+	list, _ := ds.Snapshots()
 	count := len(list)
 
 	// Struct for response

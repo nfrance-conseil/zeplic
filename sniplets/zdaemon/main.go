@@ -77,10 +77,10 @@ func main() {
 
 // Writer writes a string into a file
 func Writer() error {
-	read, _ := ioutil.ReadFile("/root/test")
+	read, _ := ioutil.ReadFile("$HOME/rtest")
 	contents := string(read)
 
-	fileHandle, _ := os.Create("/root/stest")
+	fileHandle, _ := os.Create("$HOME/wtest")
 	writer := bufio.NewWriter(fileHandle)
 	defer fileHandle.Close()
 	fmt.Fprintln(writer, contents)

@@ -18,7 +18,7 @@ var (
 	// PidFilePath gets the path of pid file
 	PidFilePath string
 	// Variable to connect with syslog service
-	w, _ = LogBook()
+	w = LogBook()
 )
 
 // Leave sends a SIGTERM signal to zeplic process ID
@@ -50,26 +50,3 @@ func Pid() error {
 	ioutil.WriteFile(PidFilePath, pidBytes, 0644)
 	return nil
 }
-/*
-// Reload sends a SIGHUP signal to zeplic process ID
-func Reload() (int, string) {
-	pidBytes, _ := ioutil.ReadFile(PidFilePath)
-	pid, _ := strconv.Atoi(string(pidBytes))
-
-	// Restart original zeplic process
-	search := fmt.Sprintf("ps -o command= -p %d", pid)
-	cmd, _ := exec.Command("sh", "-c", search).Output()
-	out := bytes.Trim(cmd, "\x0A")
-	process := string(out)
-
-	var err int
-	if process == "" || pid == 0 {
-		err = 1
-	} else {
-		err = 0
-		syscall.Kill(pid, syscall.SIGHUP)
-		w.Notice("[NOTICE] restarting zeplic...")
-	}
-	return err, process
-}
-*/

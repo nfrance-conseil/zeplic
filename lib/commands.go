@@ -1,4 +1,4 @@
-// Package lib contains: comnands.go - snapshot.go - uuid.go - written.go
+// Package lib contains: comnands.go - origin.go - snapshot.go - uuid.go - written.go
 //
 // Commands provides all ZFS functions to manage the datasets and backups
 //
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	w, _ = config.LogBook()
+	w = config.LogBook()
 )
 
 // TakeOrder takes a snapshot based on the order received from director
@@ -20,8 +20,8 @@ func TakeOrder(j int, DestDataset string) {
 	// Check if dataset is configured
 	index := -1
 	for i := 0; i < j; i++ {
-		pieces := config.Extract(i)
-		dataset := pieces[2].(string)
+		pieces	:= config.Extract(i)
+		dataset := pieces[3].(string)
 
 		if dataset == DestDataset {
 			index = i
@@ -33,20 +33,18 @@ func TakeOrder(j int, DestDataset string) {
 
 	if index > -1 {
 		// Extract data of dataset
-		pieces := config.Extract(index)
-		enable := pieces[0].(bool)
-		clone := pieces[1].(string)
-		dataset := pieces[2].(string)
-		snapshot := pieces[3].(string)
-		retain := pieces[4].(int)
-		backup := pieces[5].(bool)
-//		getClone := pieces[6].(bool)
+		pieces	 := config.Extract(index)
+		enable	 := pieces[0].(bool)
+		dataset	 := pieces[3].(string)
+		snapshot := pieces[4].(string)
+		retain	 := pieces[5].(int)
+		backup	 := pieces[6].(bool)
 
 		if dataset == DestDataset && enable == true {
 			ds := Dataset(dataset)
 			Snapshot(dataset, snapshot, ds)
-			DeleteBackup(dataset)
-			Policy(dataset, retain, clone)
+			DeleteBackup(ds)
+			Policy(ds, retain)
 			Backup(backup, dataset, ds)
 		} else if dataset == DestDataset && enable == false {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
@@ -71,11 +69,11 @@ func DestroyOrder(j int, SnapshotName string) (bool, string) {
 	// Get dataset of snapshot
 	ds := DatasetName(SnapshotName)
 	for i := 0; i < j; i++ {
-		pieces := config.Extract(i)
-		dataset := pieces[2].(string)
+		pieces	:= config.Extract(i)
+		dataset := pieces[3].(string)
 
 		if dataset == ds {
-			clone = pieces[1].(string)
+			clone = pieces[2].(string)
 			break
 		} else {
 			continue
@@ -98,45 +96,52 @@ func Runner(j int) int {
 		pieces := config.Extract(i)
 
 		// This value returns if the dataset is enable
-		takedataset := pieces[0].(bool)
+		enable := pieces[0].(bool)
 
 		// Get variables
-		clone := pieces[1].(string)
-		dataset := pieces[2].(string)
-		snapshot := pieces[3].(string)
-		retain := pieces[4].(int)
-		backup := pieces[5].(bool)
-		getClone := pieces[6].(bool)
+		delClone := pieces[1].(bool)
+		clone	 := pieces[2].(string)
+		dataset	 := pieces[3].(string)
+		snapshot := pieces[4].(string)
+		retain	 := pieces[5].(int)
+		backup	 := pieces[6].(bool)
+		getClone := pieces[7].(bool)
 
 		// Execute functions
-		if takedataset == true {
-			DeleteClone(clone)
+		if enable == true {
+			DeleteClone(delClone, clone)
 			ds := Dataset(dataset)
 			s, SnapshotName := Snapshot(dataset, snapshot, ds)
-			DeleteBackup(dataset)
-			Policy(dataset, retain, clone)
+			DeleteBackup(ds)
+			Policy(ds, retain)
 			Backup(backup, dataset, ds)
 			Clone(getClone, clone, dataset, SnapshotName, s)
-		} else if takedataset == false && dataset != "" {
+			continue
+		} else if enable == false && dataset != "" {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
+			continue
+		} else {
+			continue
 		}
 	}
 	return 0
 }
 
 // DeleteClone deletes an existing clone
-func DeleteClone(clone string) {
+func DeleteClone(delClone bool, clone string) {
 	// Get clones dataset
 	cl, err := zfs.GetDataset(clone)
 	if err != nil {
 		w.Info("[INFO] the clone '"+clone+"' does not exist.")
 	} else {
 		// Destroy clones dataset
-		err := cl.Destroy(zfs.DestroyRecursiveClones)
-		if err != nil {
-			w.Err("[ERROR] it was not possible to destroy the clone '"+clone+"'.")
-		} else {
-			w.Info("[INFO] the clone '"+clone+"' has been destroyed.")
+		if delClone == true {
+			err := cl.Destroy(zfs.DestroyRecursiveClones)
+			if err != nil {
+				w.Err("[ERROR] it was not possible to destroy the clone '"+clone+"'.")
+			} else {
+				w.Info("[INFO] the clone '"+clone+"' has been destroyed.")
+			}
 		}
 	}
 }
@@ -170,12 +175,12 @@ func Dataset(dataset string) (*zfs.Dataset) {
 }
 
 // Snapshot creates a new snapshot
-func Snapshot(dataset, name string, ds *zfs.Dataset) (*zfs.Dataset, string) {
+func Snapshot(dataset string, name string, ds *zfs.Dataset) (*zfs.Dataset, string) {
 	SnapshotName := SnapName(name)
 	s, err := ds.Snapshot(SnapshotName, false)
 
 	// Get the snapshot created
-	list, err := zfs.Snapshots(dataset)
+	list, _ := ds.Snapshots()
 	count := len(list)
 	take := list[count-1].Name
 	if strings.Contains(take, "BACKUP") {
@@ -185,7 +190,7 @@ func Snapshot(dataset, name string, ds *zfs.Dataset) (*zfs.Dataset, string) {
 	if err != nil {
 		w.Err("[ERROR] it was not possible to create the snapshot '"+dataset+"@"+SnapshotName+"'.")
 	} else {
-		w.Info("[INFO] the snapshot '"+dataset+"@"+SnapshotName+"' has been created.")
+		w.Info("[INFO] the snapshot '"+take+"' has been created.")
 		// Assign an uuid to the snapshot
 		err := UUID(take)
 		if err != nil {
@@ -196,9 +201,9 @@ func Snapshot(dataset, name string, ds *zfs.Dataset) (*zfs.Dataset, string) {
 }
 
 // DeleteBackup deletes the backup snapshot
-func DeleteBackup(dataset string) {
+func DeleteBackup(ds *zfs.Dataset) {
 	// Delete the backup snapshot
-	list, err := zfs.Snapshots(dataset)
+	list, err := ds.Snapshots()
 	if err != nil {
 		w.Err("[ERROR] it was not possible to access of snapshots list.")
 	}
@@ -221,8 +226,8 @@ func DeleteBackup(dataset string) {
 }
 
 // Policy apply the retention policy
-func Policy(dataset string, retain int, clone string) {
-	list, err := zfs.Snapshots(dataset)
+func Policy(ds *zfs.Dataset, retain int) {
+	list, err := ds.Snapshots()
 	if err != nil {
 		w.Err("[ERROR] it was not possible to access of snapshots list.")
 	}
@@ -235,11 +240,12 @@ func Policy(dataset string, retain int, clone string) {
 		}
 		err = snap.Destroy(zfs.DestroyDefault)
 		if err != nil {
-			w.Err("[ERROR] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
+			clone := Origin(take)
+			w.Warning("[WARNING] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
 		} else {
 			w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
 		}
-		list, err = zfs.Snapshots(dataset)
+		list, err = ds.Snapshots()
 		if err != nil {
 			w.Err("[ERROR] it was not possible to access of snapshots list.")
 		}
@@ -250,18 +256,18 @@ func Policy(dataset string, retain int, clone string) {
 // Backup creates a backup snapshot
 func Backup(backup bool, dataset string, ds *zfs.Dataset) {
 	if backup == true {
-		_, err := ds.Snapshot(SnapBackup(dataset), false)
+		_, err := ds.Snapshot(SnapBackup(ds), false)
 
 		// Get the snapshot created
-		list, err := zfs.Snapshots(dataset)
+		list, err := ds.Snapshots()
 		count := len(list)
 		take := list[count-1].Name
 
 		// Check if it was created
 		if err != nil {
-			w.Err("[ERROR] it was not possible to create the backup snapshot '"+dataset+"@"+SnapBackup(dataset)+"'.")
+			w.Err("[ERROR] it was not possible to create the backup snapshot '"+dataset+"@"+SnapBackup(ds)+"'.")
 		} else {
-			w.Info("[INFO] the backup snapshot '"+dataset+"@"+SnapBackup(dataset)+"' has been created.")
+			w.Info("[INFO] the backup snapshot '"+take+"' has been created.")
 			// Assign an uuid to the snapshot
 			err := UUID(take)
 			if err != nil {

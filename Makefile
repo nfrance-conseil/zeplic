@@ -98,10 +98,12 @@ install:
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
-#	$Q printf "\nConfiguring your syslog daemon service... "
+#	$Q printf "\nCreating a sample config file for syslog service in $(SYSCONFDIR)/zeplic/... "
+#	$Q install $(if $V,-v) -m 644 samples/syslog.json.sample $(SYSCONFDIR)/zeplic
 #	$Q printf "done!"
 	$Q echo -n > $(PIDDIR)
-	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json & syslog.json\n\n"
+	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json\n\n"
+# & syslog.go
 
 ##### =====> Internals <===== #####
 
@@ -117,6 +119,7 @@ BINDIR           := /usr/bin
 endif
 PIDDIR		 := /var/run/zeplic.pid
 COMPILE_FLAGS    := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
+# -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

@@ -2,24 +2,26 @@
 	"datasets": [
 	{
 		"enable": true,
-		"name": "tank/test",
-		"snapshot": "SNAP",
+		"name": "tank/foo",
+		"snapshot": "FOO",
 		"retain": 5,
 		"backup": true,
 		"clone": {
 			"enable": true,
-			"name": "tank/clone"
+			"name": "tank/foo_clone",
+			"delete": true
 		}
 	},
 	{
 		"enable": false,
-		"name": "tank/storage",
-		"snapshot": "TEST",
-		"retain": 1,
+		"name": "tank/bar",
+		"snapshot": "BAR",
+		"retain": 3,
 		"backup": false,
 		"clone": {
 			"enable": false,
-			"name": "tank/klon"
+			"name": "tank/bar_clone",
+			"delete": false
 		}
 	}]
 }

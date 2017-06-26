@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - snapshot.go - uuid.go - written.go
+// Package lib contains: commands.go - origin.go - snapshot.go - uuid.go - written.go
 //
 // Snapshot makes the structure of snapshot's names
 //
@@ -27,9 +27,9 @@ func SnapName(name string) string {
 }
 
 // SnapBackup defines the name of a backup snapshot: BACKUP_from_yyyy-Month-dd
-func SnapBackup(dataset string) string {
+func SnapBackup(ds *zfs.Dataset) string {
 	// Get the older snapshot
-	list, _ := zfs.Snapshots(dataset)
+	list, _ := ds.Snapshots()
 	oldSnapshot := list[0].Name
 
 	// Get date

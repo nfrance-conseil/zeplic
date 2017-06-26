@@ -32,7 +32,7 @@ import (
 
 var (
 	// Variable to connect with syslog service
-	w, _ = config.LogBook()
+	w = config.LogBook()
 )
 
 func main() {

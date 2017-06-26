@@ -52,7 +52,7 @@ type ZFSResponseFromSlave struct {
 // HandleRequestAgent incoming requests from director
 func HandleRequestAgent (connAgent net.Conn) bool {
 	// Start syslog system service
-	w, _ := config.LogBook()
+	w := config.LogBook()
 
 	// Resolve hostname
 	hostname, err := os.Hostname()
@@ -162,7 +162,8 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					slaveUUID := r.Error
 					// Take the dataset name of snapshot to send to slave
 					DatasetName := lib.DatasetName(SnapshotName)
-					list, _ := zfs.Snapshots(DatasetName)
+					ds, _ := zfs.GetDataset(DatasetName)
+					list, _ := ds.Snapshots()
 					count := len(list)
 
 					// Reject the backup snapshot
@@ -336,6 +337,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 				}
 			}
 		}
+
 	default:
 		w.Err("[ERROR] the action '"+d.Action+"' is not supported.")
 		break

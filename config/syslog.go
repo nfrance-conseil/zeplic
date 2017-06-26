@@ -12,12 +12,12 @@ import (
 )
 
 // LogBook creates a new connection with the syslog service
-func LogBook() (*syslog.Writer, error) {
+func LogBook() *syslog.Writer {
 	// Establishe a new connection to the system log daemon
 	sysLog, err := syslog.Dial("udp", "localhost:514", syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 	if err != nil {
-		fmt.Printf("\n[ERROR] config/syslog.go:90 *** Unable to establish a new connection to the system log daemon ***\n\n")
+		fmt.Printf("\n[ERROR] config/syslog.go:17 *** Unable to establish a new connection to the system log daemon ***\n\n")
 		os.Exit(1)
 	}
-	return sysLog, nil
+	return sysLog
 }

@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - snapshot.go - uuid.go - written.go
+// Package lib contains: commands.go - origin.go - snapshot.go - uuid.go - written.go
 //
 // Written finds the size of data written after take a snapshot
 //
