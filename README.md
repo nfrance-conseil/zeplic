@@ -44,18 +44,19 @@ You can modify a sample JSON file that it has been created in your config path:
 	"datasets": [
 	{
 		"enable": true,
-		"name": "tank/test",
-		"snapshot": "SNAP",
+		"name": "tank/foo",
+		"snapshot": "FOO",
 		"retain": 5,
 		"backup" true,
 		"clone": {
 			"enable": true,
-			"name": "tank/clone"
+			"name": "tank/foo_clone",
+			"delete": true
 		}
 	},
 	{
 		"enable": false,
-		"name": "tank/storage",
+		"name": "tank/bar",
 		...
 	}]
 }
