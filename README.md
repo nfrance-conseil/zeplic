@@ -12,16 +12,14 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 2. Check your datasets enabled
 3. Store log messages using syslog system service
 4. Run ZFS functions...
-- Destroy an existing clone
-- Select datasets
-- Destroy dataset (disable)
+- Destroy an existing clone (optional)
 - Create dataset if it does not exist
 - Create a new snapshot with an uuid
 - Send a snapshot or incremental stream via socket TCP (director mode)
 - Snapshots retention policy
 - Destroy a snapshot (director mode)
-- Create a backup snapshot (optional function)
-- Create a clone of last snapshot (optional function)
+- Create a backup snapshot (optional)
+- Create a clone of last snapshot (optional)
 - Rollback of snapshot (director mode)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
 - ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
