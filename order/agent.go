@@ -333,7 +333,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
 				} else if destroy == true && d.SnapshotName == SnapshotName {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
-				} else {
+				} else if clone != "" {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
 				}
 			}
