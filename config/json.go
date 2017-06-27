@@ -60,15 +60,15 @@ func Extract(i int) ([]interface{}) {
 	var values Pool
 	json.Unmarshal(configFile, &values)
 
-	takedataset := values.Dataset[i].Enable
+	enable	    := values.Dataset[i].Enable
 	delClone    := values.Dataset[i].Clone.Delete
 	clone	    := values.Dataset[i].Clone.Name
 	dataset	    := values.Dataset[i].Name
 	snapshot    := values.Dataset[i].Snap
 	retain	    := values.Dataset[i].Retain
-	takebackup  := values.Dataset[i].Backup
-	takeclone   := values.Dataset[i].Clone.Enable
+	getBackup   := values.Dataset[i].Backup
+	getClone    := values.Dataset[i].Clone.Enable
 
-	pieces := []interface{}{takedataset, delClone, clone, dataset, snapshot, retain, takebackup, takeclone}
+	pieces := []interface{}{enable, delClone, clone, dataset, snapshot, retain, getBackup, getClone}
 	return pieces
 }

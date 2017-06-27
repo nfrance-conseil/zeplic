@@ -33,19 +33,19 @@ func TakeOrder(j int, DestDataset string) {
 
 	if index > -1 {
 		// Extract data of dataset
-		pieces	 := config.Extract(index)
-		enable	 := pieces[0].(bool)
-		dataset	 := pieces[3].(string)
-		snapshot := pieces[4].(string)
-		retain	 := pieces[5].(int)
-		backup	 := pieces[6].(bool)
+		pieces	  := config.Extract(index)
+		enable	  := pieces[0].(bool)
+		dataset	  := pieces[3].(string)
+		snapshot  := pieces[4].(string)
+		retain	  := pieces[5].(int)
+		getBackup := pieces[6].(bool)
 
 		if dataset == DestDataset && enable == true {
 			ds := Dataset(dataset)
 			Snapshot(dataset, snapshot, ds)
 			DeleteBackup(ds)
 			Policy(ds, retain)
-			Backup(backup, dataset, ds)
+			Backup(getBackup, dataset, ds)
 		} else if dataset == DestDataset && enable == false {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
 		}
@@ -99,13 +99,13 @@ func Runner(j int) int {
 		enable := pieces[0].(bool)
 
 		// Get variables
-		delClone := pieces[1].(bool)
-		clone	 := pieces[2].(string)
-		dataset	 := pieces[3].(string)
-		snapshot := pieces[4].(string)
-		retain	 := pieces[5].(int)
-		backup	 := pieces[6].(bool)
-		getClone := pieces[7].(bool)
+		delClone  := pieces[1].(bool)
+		clone	  := pieces[2].(string)
+		dataset	  := pieces[3].(string)
+		snapshot  := pieces[4].(string)
+		retain	  := pieces[5].(int)
+		getBackup := pieces[6].(bool)
+		getClone  := pieces[7].(bool)
 
 		// Execute functions
 		if enable == true {
@@ -114,7 +114,7 @@ func Runner(j int) int {
 			s, SnapshotName := Snapshot(dataset, snapshot, ds)
 			DeleteBackup(ds)
 			Policy(ds, retain)
-			Backup(backup, dataset, ds)
+			Backup(getBackup, dataset, ds)
 			Clone(getClone, clone, dataset, SnapshotName, s)
 			continue
 		} else if enable == false && dataset != "" {

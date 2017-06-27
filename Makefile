@@ -127,7 +127,7 @@ _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) 1>&2 ) 3>&1 | \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)))
 
-# memoize allpackages, so that it's executed only once and only if used
+# memorize allpackages, so that it's executed only once and only if used
 allpackages = $(if $(__allpackages),,$(eval __allpackages := $$(_allpackages)))$(__allpackages)
 
 export GOPATH := $(CURDIR)/.GOPATH
