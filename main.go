@@ -116,7 +116,7 @@ func main() {
 		// Read JSON configuration file
 		j, _, _ := config.JSON()
 
-		// Invoke RealMain() function
+		// Invoke Runner() function
 		os.Exit(lib.Runner(j))
 
 	// SLAVE
