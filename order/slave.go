@@ -64,9 +64,10 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 
 	// Check if the dataset received exists
 	ds, err := zfs.GetDataset(a.DestDataset)
-	// Get the last snapshot in DestDataset
-	list, _ := ds.Snapshots()
-	count := len(list)
+
+	// Define list and count
+	var list []*zfs.Dataset
+	var count int
 
 	// Struct for response
 	ResponseToAgent := ZFSResponseToAgent{}
@@ -91,6 +92,9 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		}
 
 	} else {
+		// Get the last snapshot in DestDataset
+		list, _ = ds.Snapshots()
+		count = len(list)
 		// Dataset is empty
 		if count == 0 {
 			// Status for DestDataset
