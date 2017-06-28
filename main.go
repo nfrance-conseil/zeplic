@@ -93,7 +93,7 @@ func main() {
 	case *optQuit:
 		err := config.Leave()
 		if err == 1 {
-			fmt.Printf("[INFO] zeplic is not runnig...\n\n")
+			fmt.Printf("[INFO] zeplic is not running...\n\n")
 			os.Exit(0)
 		} else {
 			os.Exit(0)
