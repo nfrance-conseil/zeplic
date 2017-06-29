@@ -68,6 +68,12 @@ You can modify a sample JSON file that it has been created in your config path:
 $ zeplic --run
 ```
 
+Schedule a task with crontab to backup your file systems
+
+```
+MM	HH	*	*	*	root	$BINPATH/zeplic --run
+```
+
 ### Director mode
 *In development...*
 
@@ -93,6 +99,17 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes
+
+```
+Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
+Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-June-29_10:00:00' has been created.
+Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@BACKUP_from_2017-June-28' has been destroyed.
+Jun 29 10:00:00 hostname zeplic[1176]: [WARNING] the snapshot 'tank/foo@FOO_2017-June-23_10:00:00' has dependent clones: 'tank/test_clone'.
+Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-June-24_10:00:00' has been destroyed.
+Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the backup snapshot 'tank/foo@BACKUP_from_2017-June-25' has been created.
+Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-June-29_10:00:00' has been clone.
+Jun 29 10:00:00 hostname zeplic[1176]: [NOTICE] the dataset 'tank/bar' is disabled.
+```
 
 ### Help menu
 
