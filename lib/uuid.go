@@ -23,7 +23,7 @@ func UUID(ds *zfs.Dataset) error {
 	return err
 }
 
-// Received UUID asigns an uuid received to snapshot
+// ReceiveUUID asigns an uuid received to snapshot
 func ReceiveUUID(id string, SnapshotName string, DestDataset string) error {
 	check := utils.Before(SnapshotName, "@")
 	var name string
