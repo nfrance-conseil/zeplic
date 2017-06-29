@@ -66,7 +66,7 @@ func DestroyOrder(j int, SnapshotName string) (bool, string) {
 	}
 
 	// Check if the snapshot was cloned
-	clone := SearchClone(SnapshotName)
+	clone := SearchClone(snap)
 
 	err = snap.Destroy(zfs.DestroyDefault)
 	if err != nil {
@@ -255,7 +255,7 @@ func Policy(dataset string, ds *zfs.Dataset, retain int) {
 			}
 			err = snap.Destroy(zfs.DestroyDefault)
 			if err != nil {
-				clone := SearchClone(take)
+				clone := SearchClone(snap)
 				w.Warning("[WARNING] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
 			} else {
 				w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
