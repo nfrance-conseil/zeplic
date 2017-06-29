@@ -123,7 +123,11 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			// Get the last snapshot in DestDataset
 			LastSnapshotName := list[count-1].Name
 			// Get its uuid
-			LastSnapshotUUID := lib.SearchUUID(LastSnapshotName)
+			snap, err := zfs.GetDataset(LastSnapshotName)
+			if err != nil {
+				w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+			}
+			LastSnapshotUUID := lib.SearchUUID(snap)
 
 			// Check if the snapshot was renamed
 			renamed := lib.Renamed(a.SnapshotName, LastSnapshotName)

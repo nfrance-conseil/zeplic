@@ -184,7 +184,11 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 
 					// Check if the uuid received exists
 					for i := 0; i < count; i++ {
-						uuid := lib.SearchUUID(list[i].Name)
+						snap, err := zfs.GetDataset(list[i].Name)
+						if err != nil {
+							w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+						}
+						uuid := lib.SearchUUID(snap)
 						if uuid == slaveUUID {
 							index = i
 							break
