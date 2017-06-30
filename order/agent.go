@@ -68,7 +68,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 	}
 	err = json.Unmarshal(director, &d)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+		w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 	}
 	if d.OrderUUID == "" || d.Action == "" || (d.Action == "send_snapshot" && d.Destination == "") {
 		w.Err("[ERROR] inconsistant data structure in ZFS order.")
@@ -110,7 +110,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID,SnapshotName,d.DestDataset}
 		ots, err := json.Marshal(ZFSOrderToSlave)
 		if err != nil {
-			w.Err("[ERROR] it was impossible to encode the JSON struct.")
+			w.Err("[ERROR] it was not possible to encode the JSON struct.")
 		}
 		connToSlave.Write([]byte(ots))
 		connToSlave.Write([]byte("\n"))
@@ -142,7 +142,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			}
 			err = json.Unmarshal(response, &r)
 			if err != nil {
-				w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 				break
 			}
 			if r.IsSuccess == true {
@@ -242,7 +242,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					}
 					err = json.Unmarshal(response2, &r2)
 					if err != nil {
-						w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+						w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 						break
 					}
 					if r2.IsSuccess == true {
@@ -284,7 +284,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			}
 			err = json.Unmarshal(response, &r)
 			if err != nil {
-				w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 				break
 			}
 			if r.IsSuccess == true {
@@ -338,7 +338,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 				} else if destroy == true && d.SnapshotName == SnapshotName {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
 				} else if clone != "" {
-					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
+					w.Warning("[WARNING] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
 				}
 			}
 		}

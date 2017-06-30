@@ -54,7 +54,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	}
 	err = json.Unmarshal(agent, &a)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+		w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 	}
 
 	// Struct for Status constant
@@ -153,7 +153,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	// Marshal response to agent
 	rta, err := json.Marshal(ResponseToAgent)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to enconde the JSON struct.")
+		w.Err("[ERROR] it was not possible to encode the JSON struct.")
 	} else {
 		connToAgent.Write([]byte(rta))
 		connToAgent.Write([]byte("\n"))
@@ -208,7 +208,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		// Marshal response to agent
 		rta, err = json.Marshal(ResponseToAgent)
 		if err != nil {
-			w.Err("[ERROR] it was impossible to encode the JSON struct.")
+			w.Err("[ERROR] it was not possible to encode the JSON struct.")
 		} else {
 			conn2ToAgent.Write([]byte(rta))
 			conn2ToAgent.Write([]byte("\n"))

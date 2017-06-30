@@ -118,7 +118,7 @@ $ zeplic --help
 Usage: zeplic [-adrsv] [--help] [--quit] [parameters ...]
  -a, --agent     Listen ZFS orders from director
  -d, --director  Send ZFS orders to agent
-     --help      Help
+     --help      Show help menu
      --quit      Gracefully shutdown
  -r, --run       Execute ZFS functions
  -s, --slave     Receive a new snapshot from agent
