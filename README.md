@@ -27,9 +27,9 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 ## How can you use it?
 
-- First, clone this repository and type `make|gmake` 
-- After, type `sudo make|gmake install` to install **zeplic**
-- To clean all dependencies, type `make|gmake clean`.
+- First, clone this repository and type `(g)make`
+- `sudo (g)make install` to install **zeplic**
+- To clean all dependencies, type `(g)make clean`
 - The next step is to configure **zeplic**:
 
 ### Configuration
