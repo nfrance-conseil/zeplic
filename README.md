@@ -91,7 +91,7 @@ $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_sn
 You can send a snapshot between the agent node (zeplic --agent) to the slave node (zeplic --slave):
 
 ```
-echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
 ```
 
 ### Syslog system service
