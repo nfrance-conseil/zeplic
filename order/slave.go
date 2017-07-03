@@ -1,8 +1,8 @@
-// Package director contains: agent.go - !director.go - slave.go
+// Package order contains: agent.go - !director.go - slave.go
 //
 // Slave receives a snapshot from agent
 //
-package director
+package order
 
 import (
 	"bufio"
@@ -38,7 +38,7 @@ type ZFSResponseToAgent struct {
 // HandleRequestSlave incoming requests from agent
 func HandleRequestSlave (connSlave net.Conn) bool {
 	// Start syslog system service
-	w, _ := config.LogBook()
+	w := config.LogBook()
 
 	// Resolve hostname
 	hostname, err := os.Hostname()
@@ -54,7 +54,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	}
 	err = json.Unmarshal(agent, &a)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+		w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 	}
 
 	// Struct for Status constant
@@ -63,10 +63,11 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	stream := false
 
 	// Check if the dataset received exists
-	_, err = zfs.GetDataset(a.DestDataset)
-	// Get the last snapshot in DestDataset
-	list, _ := zfs.Snapshots(a.DestDataset)
-	count := len(list)
+	ds, err := zfs.GetDataset(a.DestDataset)
+
+	// Define list and count
+	var list []*zfs.Dataset
+	var count int
 
 	// Struct for response
 	ResponseToAgent := ZFSResponseToAgent{}
@@ -91,6 +92,9 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		}
 
 	} else {
+		// Get the last snapshot in DestDataset
+		list, _ = ds.Snapshots()
+		count = len(list)
 		// Dataset is empty
 		if count == 0 {
 			// Status for DestDataset
@@ -119,7 +123,11 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			// Get the last snapshot in DestDataset
 			LastSnapshotName := list[count-1].Name
 			// Get its uuid
-			LastSnapshotUUID := lib.SearchUUID(LastSnapshotName)
+			snap, err := zfs.GetDataset(LastSnapshotName)
+			if err != nil {
+				w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+			}
+			LastSnapshotUUID := lib.SearchUUID(snap)
 
 			// Check if the snapshot was renamed
 			renamed := lib.Renamed(a.SnapshotName, LastSnapshotName)
@@ -145,7 +153,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	// Marshal response to agent
 	rta, err := json.Marshal(ResponseToAgent)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to enconde the JSON struct.")
+		w.Err("[ERROR] it was not possible to encode the JSON struct.")
 	} else {
 		connToAgent.Write([]byte(rta))
 		connToAgent.Write([]byte("\n"))
@@ -200,7 +208,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		// Marshal response to agent
 		rta, err = json.Marshal(ResponseToAgent)
 		if err != nil {
-			w.Err("[ERROR] it was impossible to encode the JSON struct.")
+			w.Err("[ERROR] it was not possible to encode the JSON struct.")
 		} else {
 			conn2ToAgent.Write([]byte(rta))
 			conn2ToAgent.Write([]byte("\n"))

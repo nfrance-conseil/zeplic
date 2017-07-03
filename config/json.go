@@ -1,4 +1,4 @@
-// Package config contains: json.go - syslog.go - usage.go
+// Package config contains: json.go - signal.go - syslog.go - version.go
 //
 // Json reads and extracts the information JSON configuration file
 //
@@ -18,6 +18,7 @@ var ConfigFilePath string
 type Copy struct {
 	Enable	bool	`json:"enable"`
 	Name	string	`json:"name"`
+	Delete	bool	`json:"delete"`
 }
 
 // Data contains the information of each dataset
@@ -28,7 +29,6 @@ type Data struct {
 	Retain	int	`json:"retain"`
 	Backup	bool	`json:"backup"`
 	Clone	Copy
-//	Roll	bool	`json:"rollback"`
 }
 
 // Pool extracts the interface of JSON file
@@ -38,11 +38,11 @@ type Pool struct {
 
 // JSON reads the 'JSON' file and checks how many datasets are there
 func JSON() (int, string, error) {
-	w, _ := LogBook()
+	w := LogBook()
 	jsonFile := ConfigFilePath
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		fmt.Printf("\nThe file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
+		fmt.Printf("[INFO] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
 		os.Exit(1)
 	}
 	var values Pool
@@ -60,15 +60,15 @@ func Extract(i int) ([]interface{}) {
 	var values Pool
 	json.Unmarshal(configFile, &values)
 
-	takedataset := values.Dataset[i].Enable
-	clone := values.Dataset[i].Clone.Name
-	dataset	:= values.Dataset[i].Name
-	snap := values.Dataset[i].Snap
-	retain := values.Dataset[i].Retain
-	takebackup := values.Dataset[i].Backup
-	takeclone := values.Dataset[i].Clone.Enable
-//	takerollback := values.Dataset[i].Roll
+	enable	    := values.Dataset[i].Enable
+	delClone    := values.Dataset[i].Clone.Delete
+	clone	    := values.Dataset[i].Clone.Name
+	dataset	    := values.Dataset[i].Name
+	snapshot    := values.Dataset[i].Snap
+	retain	    := values.Dataset[i].Retain
+	getBackup   := values.Dataset[i].Backup
+	getClone    := values.Dataset[i].Clone.Enable
 
-	pieces := []interface{}{takedataset, clone, dataset, snap, retain, takebackup, takeclone/*, takerollback*/}
+	pieces := []interface{}{enable, delClone, clone, dataset, snapshot, retain, getBackup, getClone}
 	return pieces
 }

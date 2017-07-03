@@ -1,8 +1,8 @@
-// Package director contains: agent.go - !director.go - slave.go
+// Package order contains: agent.go - !director.go - slave.go
 //
 // Agent executes the orders received from director
 //
-package director
+package order
 
 import (
 	"bufio"
@@ -52,7 +52,7 @@ type ZFSResponseFromSlave struct {
 // HandleRequestAgent incoming requests from director
 func HandleRequestAgent (connAgent net.Conn) bool {
 	// Start syslog system service
-	w, _ := config.LogBook()
+	w := config.LogBook()
 
 	// Resolve hostname
 	hostname, err := os.Hostname()
@@ -68,7 +68,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 	}
 	err = json.Unmarshal(director, &d)
 	if err != nil {
-		w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+		w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 	}
 	if d.OrderUUID == "" || d.Action == "" || (d.Action == "send_snapshot" && d.Destination == "") {
 		w.Err("[ERROR] inconsistant data structure in ZFS order.")
@@ -89,7 +89,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		j, _, _ := config.JSON()
 
 		// Call to function CommandOrder for create the snapshot
-		lib.CommandOrder(j, d.DestDataset)
+		lib.TakeOrder(j, d.DestDataset)
 
 	// Send snapshot to d.Destination
 	case "send_snapshot":
@@ -110,7 +110,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID,SnapshotName,d.DestDataset}
 		ots, err := json.Marshal(ZFSOrderToSlave)
 		if err != nil {
-			w.Err("[ERROR] it was impossible to encode the JSON struct.")
+			w.Err("[ERROR] it was not possible to encode the JSON struct.")
 		}
 		connToSlave.Write([]byte(ots))
 		connToSlave.Write([]byte("\n"))
@@ -142,7 +142,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			}
 			err = json.Unmarshal(response, &r)
 			if err != nil {
-				w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 				break
 			}
 			if r.IsSuccess == true {
@@ -162,7 +162,8 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					slaveUUID := r.Error
 					// Take the dataset name of snapshot to send to slave
 					DatasetName := lib.DatasetName(SnapshotName)
-					list, _ := zfs.Snapshots(DatasetName)
+					ds, _ := zfs.GetDataset(DatasetName)
+					list, _ := ds.Snapshots()
 					count := len(list)
 
 					// Reject the backup snapshot
@@ -183,7 +184,11 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 
 					// Check if the uuid received exists
 					for i := 0; i < count; i++ {
-						uuid := lib.SearchUUID(list[i].Name)
+						snap, err := zfs.GetDataset(list[i].Name)
+						if err != nil {
+							w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+						}
+						uuid := lib.SearchUUID(snap)
 						if uuid == slaveUUID {
 							index = i
 							break
@@ -237,7 +242,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					}
 					err = json.Unmarshal(response2, &r2)
 					if err != nil {
-						w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+						w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 						break
 					}
 					if r2.IsSuccess == true {
@@ -279,7 +284,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			}
 			err = json.Unmarshal(response, &r)
 			if err != nil {
-				w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
 				break
 			}
 			if r.IsSuccess == true {
@@ -312,21 +317,32 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		// Search the snapshot name from its uuid
 		SnapshotName := lib.SearchName(d.SnapshotUUID)
 
-		// Check if the snapshot was renamed
-		if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
-			w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
-		} else {
-			// Take the snapshot...
-			ds, _ := zfs.GetDataset(SnapshotName)
-			// ... and destroy it
-			ds.Destroy(zfs.DestroyDefault)
-			// Print the name of snapshot destroyed (using its uuid)
-			if d.SnapshotName != SnapshotName {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (and renamed to '"+SnapshotName+"') has been destroyed.")
+		// Check if something was written
+		snap, _ := zfs.GetDataset(SnapshotName)
+		written := snap.Written
+
+		if d.SkipIfNotWritten == false || d.SkipIfNotWritten == true && written > 0 {
+			// Check if the snapshot was renamed
+			if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
+				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
 			} else {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
+				// Read JSON configuration file
+				j, _, _ := config.JSON()
+
+				// Call to function CommandOrder for create the snapshot
+				destroy, clone := lib.DestroyOrder(j, SnapshotName)
+
+				// Print the name of snapshot destroyed (using its uuid)
+				if destroy == true && d.SnapshotName != SnapshotName {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
+				} else if destroy == true && d.SnapshotName == SnapshotName {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
+				} else if clone != "" {
+					w.Warning("[WARNING] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
+				}
 			}
 		}
+
 	default:
 		w.Err("[ERROR] the action '"+d.Action+"' is not supported.")
 		break

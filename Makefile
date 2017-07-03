@@ -21,8 +21,6 @@
 # SOFTWARE.
 
 IMPORT_PATH := github.com/nfrance-conseil/zeplic
-CHECK := 0
-i := 0
 
 .PHONY: all
 all: build
@@ -33,10 +31,11 @@ build: .GOPATH/.ok
 	$Q printf "\nGetting dependencies... "
 	$Q go get $(if $V,-v) github.com/IgnacioCarbajoVallejo/go-zfs
 	$Q go get $(if $V,-v) github.com/pborman/uuid
+	$Q go get $(if $V,-v) github.com/pborman/getopt/v2
 	$Q go get $(if $V,-v) github.com/sevlyar/go-daemon
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
 	$Q printf "done!"
-	$Q printf "\n\nBUILD! To install, type: sudo make install\n\n"
+	$Q printf "\n\nBUILT! To install, type: sudo make install\n\n"
 
 ### Code not in the repository root? Another binary? Add to the path like this.
 # .PHONY: otherbin
@@ -99,37 +98,28 @@ install:
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
-	$Q printf "\nConfiguring your syslog daemon service... "
-	$Q $(eval CHECK := $(shell if grep -q \!zeplic "$(SYSLOG)" ; then echo $$(( $(CHECK) +1 )) ; else echo $(CHECK) ; fi ) )
-	$Q if [ $(CHECK) -eq 0 ] ; then \
-		i=$(i) ; \
-		while [ $${i} -le 7 ] ; do \
-		if grep -q local$$i.* "$(SYSLOG)" ; then i=`expr $$i + 1` ; else printf "\n\!zeplic\nlocal$$i.*\t\t\t\t\t-/var/log/zeplic.log\n" >> $(SYSLOG) && break ; fi ; \
-		done ; \
-		true ; \
-	   fi
-	$Q if [ ! -f "$(LOGDIR)/zeplic.log" ] ; then echo -n > $(LOGDIR)/zeplic.log ; fi
-	$Q echo -n > $(PIDDIR)/zeplic.pid
-	$Q printf "done!"
-	$Q printf "\n\nINSTALL! Remember to config your JSON file.\n\n"
+#	$Q printf "\nCreating a sample config file for syslog service in $(SYSCONFDIR)/zeplic/... "
+#	$Q install $(if $V,-v) -m 644 samples/syslog.json.sample $(SYSCONFDIR)/zeplic
+#	$Q printf "done!"
+	$Q echo -n > $(PIDDIR)
+	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json\n\n"
+# & syslog.go
 
 ##### =====> Internals <===== #####
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
-DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
+DATE             := $(shell date -u '+%Y-%m-%d %H:%M UTC')
 OS 		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
 SYSCONFDIR 	 := /usr/local/etc
 BINDIR           := /usr/local/bin
-SYSLOG		 := /etc/syslog.conf
 else
 SYSCONFDIR       := /etc
 BINDIR           := /usr/bin
-SYSLOG		 := /etc/rsyslog.conf
 endif
-LOGDIR		 := /var/log/
-PIDDIR		 := /var/run/
-COMPILE_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogPath=$(SYSLOG)" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(LOGDIR)/zeplic.log"'
+PIDDIR		 := /var/run/zeplic.pid
+COMPILE_FLAGS    := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
+# -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
@@ -137,7 +127,7 @@ _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) 1>&2 ) 3>&1 | \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)))
 
-# memoize allpackages, so that it's executed only once and only if used
+# memorize allpackages, so that it's executed only once and only if used
 allpackages = $(if $(__allpackages),,$(eval __allpackages := $$(_allpackages)))$(__allpackages)
 
 export GOPATH := $(CURDIR)/.GOPATH

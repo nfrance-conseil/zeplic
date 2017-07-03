@@ -12,85 +12,56 @@
 package main
 
 import (
-	"flag"
+//	"flag"
 	"fmt"
-	"io/ioutil"
+//	"io/ioutil"
 	"net"
 	"os"
+//	"os/exec"
+//	"os/signal"
+//	"strconv"
+//	"syscall"
 //	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
-	"github.com/nfrance-conseil/zeplic/director"
+	"github.com/nfrance-conseil/zeplic/order"
 	"github.com/nfrance-conseil/zeplic/lib"
+	"github.com/pborman/getopt/v2"
 //	"github.com/sevlyar/go-daemon"
 )
 
-// Define flag variable and channels
 var (
-	signal = flag.String("z", "", "")
-//	done = make(chan struct{})
-//	quit = make(chan struct{})
+	// Variable to connect with syslog service
+	w = config.LogBook()
 )
 
-func main () {
-	// Checking if the command-line arguments are correct
-	switch len(os.Args) {
-	case 2:
-		if os.Args[1] != "--help" {
-			fmt.Printf("zeplic --help\n")
-			fmt.Println("")
-			os.Exit(1)
-		} else {
-			config.Usage()
-			os.Exit(1)
-		}
-	case 3:
-		if os.Args[1] != "-z" {
-			fmt.Printf("zeplic --help\n")
-			fmt.Println("")
-			os.Exit(1)
-		} else {
-			// Check if a Logfile already exists
-			go config.LogFile()
-			flag.CommandLine.SetOutput(ioutil.Discard)
-			flag.Parse()
-		}
-	default:
-		fmt.Printf("zeplic --help\n")
-		fmt.Println("")
-		os.Exit(1)
+func main() {
+	// Available flags
+	optAgent    := getopt.BoolLong("agent", 'a', "Listen ZFS orders from director")
+	optDirector := getopt.BoolLong("director", 'd', "Send ZFS orders to agent")
+	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
+	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
+//	optReload   := getopt.BoolLong("reload", 0, "Restart zeplic to sleep state")
+	optRun	    := getopt.BoolLong("run", 'r', "Execute ZFS functions")
+	optSlave    := getopt.BoolLong("slave", 's', "Receive a new snapshot from agent")
+//	optStandby  := getopt.BoolLong("standby", 'z', "Standby mode")
+	optVersion  := getopt.BoolLong("version", 'v', "Show version of zeplic")
+	getopt.Parse()
+
+	if len(os.Args) == 1 || len(os.Args) > 2 {
+		fmt.Printf("zeplic --help\n\n")
+		os.Exit(0)
 	}
-/*
-	// Create pid file
-	cntxt := &daemon.Context{
-		PidFileName: "/var/run/zeplic.pid",
-		PidFilePerm: 0644,
-		WorkDir:     "./",
-		Umask:       027,
-		Args:        []string{"[Z]"},
-	}
-	if len(daemon.ActiveFlags()) > 0 {
-		d, err := cntxt.Search()
-		if err != nil {
-			w.Warning("[WARNING] unable send signal to the daemon!")
-		}
-		daemon.SendCommands(d)
-		return
-	}
-	d, err := cntxt.Reborn()
-	if d != nil {
-		return
-	}
-	if err != nil {
-		os.Exit(1)
-	}
-	defer cntxt.Release()
-*/
-	// Checking the flag received
-	switch *signal {
+
+//	go Standby(c)
+
+	// Cases...
+	switch {
 
 	// AGENT
-	case "agent":
+	case *optAgent:
+		go config.Pid()
+
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7711")
 		defer l.Close()
@@ -103,37 +74,55 @@ func main () {
 			connAgent, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = director.HandleRequestAgent(connAgent)
+			stop = order.HandleRequestAgent(connAgent)
 		}
 
 	// DIRECTOR
-	case "director":
+	case *optDirector:
+//		config.Pid()
 		fmt.Printf("[INFO] director case inoperative...\n\n")
-		os.Exit(1)
+		os.Exit(0)
+
+	// HELP
+	case *optHelp:
+		getopt.Usage()
+		fmt.Println("")
+		os.Exit(0)
 
 	// QUIT
-	case "quit":
-		fmt.Printf("[INFO] quit case inoperative...\n\n")
-		os.Exit(1)
+	case *optQuit:
+		err := config.Leave()
+		if err == 1 {
+			fmt.Printf("[INFO] zeplic is not running...\n\n")
+			os.Exit(0)
+		} else {
+			os.Exit(0)
+		}
+
+	// RELOAD
+/*	case *optReload:
+		err, process := config.Reload()
+		if err == 1 {
+			fmt.Printf("[INFO] zeplic is not running...\n\n")
+			os.Exit(0)
+		} else {
+			exec.Command("sh", "-c", process).Run()
+			pid := os.Getpid()
+			syscall.Kill(pid, syscall.SIGTERM)
+		}*/
 
 	// RUN
-	case "run":
-		// Start syslog system service
-//		w, _ := config.LogBook()
-
+	case *optRun:
 		// Read JSON configuration file
 		j, _, _ := config.JSON()
 
-		// Invoke RealMain() function
-		os.Exit(lib.RealMain(j))
-
-	// RELOAD
-	case "reload":
-		fmt.Printf("[INFO] reload case inoperative...\n\n")
-		os.Exit(1)
+		// Invoke Runner() function
+		os.Exit(lib.Runner(j))
 
 	// SLAVE
-	case "slave":
+	case *optSlave:
+		go config.Pid()
+
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7722")
 		defer l.Close()
@@ -146,17 +135,26 @@ func main () {
 			connSlave, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = director.HandleRequestSlave(connSlave)
+			stop = order.HandleRequestSlave(connSlave)
 		}
 
-	// VERSION
-	case "version":
-		fmt.Printf("[INFO] version case inoperative...\n\n")
-		os.Exit(1)
+	// STANDBY
+//	case *optStandby:
+		// Loop to sleep (run as background)
 
-	// Show zeplic help
-	default:
-		config.Usage()
-		os.Exit(1)
+	// VERSION
+	case *optVersion:
+		version := config.ShowVersion()
+		fmt.Printf("%s", version)
+		os.Exit(0)
 	}
 }
+/*
+func Standby(c chan os.Signal) {
+	<-c
+	os.Exit(0)
+	for {
+		time.Sleep(time.Second)
+	}
+}
+*/
