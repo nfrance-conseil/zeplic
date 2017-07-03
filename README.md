@@ -15,14 +15,15 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Destroy an existing clone (optional)
 - Create dataset if it does not exist
 - Create a new snapshot with an uuid
-- Send a snapshot or incremental stream via socket TCP (director mode)
 - Snapshots retention policy
-- Destroy a snapshot (director mode)
 - Create a backup snapshot (optional)
 - Create a clone of last snapshot (optional)
-- Rollback of snapshot (director mode)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
 - ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
+- Create a new snapshot
+- Destroy a snapshot
+- Rollback of snapshot
+- Send a snapshot via socket TCP
 
 ## How can you use it?
 
@@ -68,7 +69,7 @@ You can modify a sample JSON file that it has been created in your config path:
 $ zeplic --run
 ```
 
-Schedule a task with crontab to backup your file systems
+Schedule a task with crontab to backup your files systems
 
 ```
 MM	HH	*	*	*	root	$BINPATH/zeplic --run
