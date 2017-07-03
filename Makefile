@@ -48,7 +48,7 @@ clean:
 	$Q rm -rf bin .GOPATH
 
 test: .GOPATH/.ok
-	$Q go test $(if $V,-v) -i -race $(allpackages) # install -race libs to speed up next run
+	$Q go test $(if $V,-v) -v -race $(allpackages) # install -race libs to speed up next run
 ifndef CI
 	$Q go vet $(allpackages)
 	$Q GODEBUG=cgocheck=2 go test -race $(allpackages)
