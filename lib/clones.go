@@ -1,4 +1,4 @@
-// Package lib contains: clones.go - comnands.go - snapshot.go - uuid.go
+// Package lib contains: clones.go - commands.go - snapshot.go - uuid.go
 //
 // Clones searchs the dataset where the snapshot was cloned
 //

@@ -106,18 +106,19 @@ install:
 
 ##### =====> Internals <===== #####
 
-VERSION          := $(shell git describe --tags --always --dirty="-dev")
-DATE             := $(shell date -u '+%Y-%m-%d %H:%M UTC')
-OS 		 := $(shell uname)
+VERSION		 := 0.1.0
+COMMIT		 := $(shell git describe --tags --always --dirty="-dev")
+DATE		 := $(shell date -u '+%Y-%m-%d %H:%M UTC')
+OS		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
-SYSCONFDIR 	 := /usr/local/etc
-BINDIR           := /usr/local/bin
+SYSCONFDIR	 := /usr/local/etc
+BINDIR		 := /usr/local/bin
 else
-SYSCONFDIR       := /etc
-BINDIR           := /usr/bin
+SYSCONFDIR	 := /etc
+BINDIR		 := /usr/bin
 endif
 PIDDIR		 := /var/run/zeplic.pid
-COMPILE_FLAGS    := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"'
+COMPILE_FLAGS	 := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.Commit=$(COMMIT)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

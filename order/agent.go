@@ -90,7 +90,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		j, _, _ := config.JSON()
 
 		// Call to function CommandOrder for create the snapshot
-		lib.TakeOrder(j, d.DestDataset)
+		lib.TakeOrder(j, d.DestDataset, d.SkipIfNotWritten)
 
 	// Send snapshot to d.Destination
 	case "send_snapshot":
@@ -101,215 +101,222 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 		}
 		// Search the snapshot name from its uuid
 		SnapshotName := lib.SearchName(d.SnapshotUUID)
-		// Take the snapshot
-		ds, _ := zfs.GetDataset(SnapshotName)
 
-		// Create a new connection with the destination
-		connToSlave, _ := net.Dial("tcp", d.Destination+":7722")
+		// Check if something was written
+		snap, _ := zfs.GetDataset(SnapshotName)
+		written := snap.Written
 
-		// Struct for ZFS orders to slave
-		ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID,SnapshotName,d.DestDataset}
-		ots, err := json.Marshal(ZFSOrderToSlave)
-		if err != nil {
-			w.Err("[ERROR] it was not possible to encode the JSON struct.")
-		}
-		connToSlave.Write([]byte(ots))
-		connToSlave.Write([]byte("\n"))
+		if d.SkipIfNotWritten == false || (d.SkipIfNotWritten == true && written > 0) {
 
-		// Read from destinantion if Dataset exists
-		buff := bufio.NewReader(connToSlave)
-		n, _ := buff.ReadByte()
-		dsExist, _ := strconv.Atoi(string(n))
+			// Take the snapshot
+			ds, _ := zfs.GetDataset(SnapshotName)
 
-		switch dsExist {
+			// Create a new connection with the destination
+			connToSlave, _ := net.Dial("tcp", d.Destination+":7722")
 
-		// Case: dataset exist on destination
-		case DatasetTrue:
-			// Check uuid of last snapshot on destination
-			connToSlave.Close()
-
-			// Reconnection to get ZFSResponse
-			l2, _ := net.Listen("tcp", ":7733")
-			defer l2.Close()
-			fmt.Println("[AGENT:7733] Receiving response from slave...")
-
-			conn2Agent, _ := l2.Accept()
-
-			var r ZFSResponseFromSlave
-			response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
+			// Struct for ZFS orders to slave
+			ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID,SnapshotName,d.DestDataset}
+			ots, err := json.Marshal(ZFSOrderToSlave)
 			if err != nil {
-				w.Err("[ERROR] an error has occurred while reading from the socket.")
-				break
+				w.Err("[ERROR] it was impossible to encode the JSON struct.")
 			}
-			err = json.Unmarshal(response, &r)
-			if err != nil {
-				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
-				break
-			}
-			if r.IsSuccess == true {
-				switch r.Status {
-				// Snapshot renamed
-				case WasRenamed:
-					w.Info("[INFO] the snapshot '"+SnapshotName+"' has been renamed to '"+r.Error+"'.")
-				// Nothing to do
-				case NothingToDo:
-					w.Info("[INFO] the snapshot '"+SnapshotName+"' already existed.")
+			connToSlave.Write([]byte(ots))
+			connToSlave.Write([]byte("\n"))
+
+			// Read from destinantion if Dataset exists
+			buff := bufio.NewReader(connToSlave)
+			n, _ := buff.ReadByte()
+			dsExist, _ := strconv.Atoi(string(n))
+
+			switch dsExist {
+
+			// Case: dataset exist on destination
+			case DatasetTrue:
+				// Check uuid of last snapshot on destination
+				connToSlave.Close()
+
+				// Reconnection to get ZFSResponse
+				l2, _ := net.Listen("tcp", ":7733")
+				defer l2.Close()
+				fmt.Println("[AGENT:7733] Receiving response from slave...")
+
+				conn2Agent, _ := l2.Accept()
+
+				var r ZFSResponseFromSlave
+				response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
+				if err != nil {
+					w.Err("[ERROR] an error has occurred while reading from the socket.")
+					break
 				}
-			} else {
-				switch r.Status {
-				// Slave are snapshots
-				case NotEmpty:
-					// Take the uuid of last snapshot on destination
-					slaveUUID := r.Error
-					// Take the dataset name of snapshot to send to slave
-					DatasetName := lib.DatasetName(SnapshotName)
-					ds, _ := zfs.GetDataset(DatasetName)
-					list, _ := ds.Snapshots()
-					count := len(list)
-
-					// Reject the backup snapshot
-					for i := 0; i < count; i++ {
-						if strings.Contains(list[i].Name, "BACKUP") {
-							count--
-						}
+				err = json.Unmarshal(response, &r)
+				if err != nil {
+					w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+					break
+				}
+				if r.IsSuccess == true {
+					switch r.Status {
+					// Snapshot renamed
+					case WasRenamed:
+						w.Info("[INFO] the snapshot '"+SnapshotName+"' has been renamed to '"+r.Error+"'.")
+					// Nothing to do
+					case NothingToDo:
+						w.Info("[INFO] the snapshot '"+SnapshotName+"' already existed.")
 					}
+				} else {
+					switch r.Status {
+					// Slave are snapshots
+					case NotEmpty:
+						// Take the uuid of last snapshot on destination
+						slaveUUID := r.Error
+						// Take the dataset name of snapshot to send to slave
+						DatasetName := lib.DatasetName(SnapshotName)
+						ds, _ := zfs.GetDataset(DatasetName)
+						list, _ := ds.Snapshots()
+						count := len(list)
 
-					// Struct for the flag
-					ack := make([]byte, 0)
-
-					// Define variables
-					var ds1 *zfs.Dataset
-					var ds2 *zfs.Dataset
-					var send bool
-					index := -1
-
-					// Check if the uuid received exists
-					for i := 0; i < count; i++ {
-						snap, err := zfs.GetDataset(list[i].Name)
-						if err != nil {
-							w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+						// Reject the backup snapshot
+						for i := 0; i < count; i++ {
+							if strings.Contains(list[i].Name, "BACKUP") {
+								count--
+							}
 						}
-						uuid := lib.SearchUUID(snap)
-						if uuid == slaveUUID {
-							index = i
-							break
+
+						// Struct for the flag
+						ack := make([]byte, 0)
+
+						// Define variables
+						var ds1 *zfs.Dataset
+						var ds2 *zfs.Dataset
+						var send bool
+						index := -1
+
+						// Check if the uuid received exists
+						for i := 0; i < count; i++ {
+							snap, err := zfs.GetDataset(list[i].Name)
+							if err != nil {
+								w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
+							}
+							uuid := lib.SearchUUID(snap)
+							if uuid == slaveUUID {
+								index = i
+								break
+							} else {
+								continue
+							}
+						}
+
+						// Choose the correct option
+						if index == (count-1) {
+							ack = nil
+							ack = strconv.AppendInt(ack, MostActual, 10)
+							send = false
+						} else if index < (count-1) && index != -1 {
+							snap1 := lib.SearchName(slaveUUID)
+							ds1, _ = zfs.GetDataset(snap1)
+							ds2, _ = zfs.GetDataset(SnapshotName)
+							ack = nil
+							ack = strconv.AppendInt(ack, Incremental, 10)
+							send = true
 						} else {
-							continue
+							ack = nil
+							ack = strconv.AppendInt(ack, Zerror, 10)
+							send = false
+						}
+
+						// New connection with the slave node
+						conn2ToSlave, _ := net.Dial("tcp", d.Destination+":7744")
+						// Send the flag to destination
+						conn2ToSlave.Write(ack)
+
+						if send == true {
+							// Send the incremental stream
+							zfs.SendSnapshotIncremental(conn2ToSlave, ds1, ds2, true, zfs.IncrementalPackage)
+							conn2ToSlave.Close()
+						} else {
+							conn2ToSlave.Close()
+						}
+
+						// Reconnection to get ZFSResponse
+						l3, _ := net.Listen("tcp", ":7755")
+						defer l3.Close()
+						fmt.Println("[Agent:7755] Receiving response from slave...")
+
+						conn3Agent, _ := l3.Accept()
+						var r2 ZFSResponseFromSlave
+						response2, err := bufio.NewReader(conn3Agent).ReadBytes('\x0A')
+						if err != nil {
+							w.Err("[ERROR] an error has occurred while reading from the socket.")
+							break
+						}
+						err = json.Unmarshal(response2, &r2)
+						if err != nil {
+							w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+							break
+						}
+						if r2.IsSuccess == true {
+							switch r2.Status {
+							case WasWritten:
+								w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
+							case NothingToDo:
+								w.Info("[INFO] the node '"+d.Destination+"' has a snapshot more actual.")
+							}
+						} else {
+							switch r2.Status {
+							case Zerror:
+								w.Err(""+r2.Error+"")
+							}
 						}
 					}
-
-					// Choose the correct option
-					if index == (count-1) {
-						ack = nil
-						ack = strconv.AppendInt(ack, MostActual, 10)
-						send = false
-					} else if index < (count-1) && index != -1 {
-						snap1 := lib.SearchName(slaveUUID)
-						ds1, _ = zfs.GetDataset(snap1)
-						ds2, _ = zfs.GetDataset(SnapshotName)
-						ack = nil
-						ack = strconv.AppendInt(ack, Incremental, 10)
-						send = true
-					} else {
-						ack = nil
-						ack = strconv.AppendInt(ack, Zerror, 10)
-						send = false
-					}
-
-					// New connection with the slave node
-					conn2ToSlave, _ := net.Dial("tcp", d.Destination+":7744")
-					// Send the flag to destination
-					conn2ToSlave.Write(ack)
-
-					if send == true {
-						// Send the incremental stream
-						zfs.SendSnapshotIncremental(conn2ToSlave, ds1, ds2, true, zfs.IncrementalPackage)
-						conn2ToSlave.Close()
-					} else {
-						conn2ToSlave.Close()
-					}
-
-					// Reconnection to get ZFSResponse
-					l3, _ := net.Listen("tcp", ":7755")
-					defer l3.Close()
-					fmt.Println("[Agent:7755] Receiving response from slave...")
-
-					conn3Agent, _ := l3.Accept()
-					var r2 ZFSResponseFromSlave
-					response2, err := bufio.NewReader(conn3Agent).ReadBytes('\x0A')
-					if err != nil {
-						w.Err("[ERROR] an error has occurred while reading from the socket.")
-						break
-					}
-					err = json.Unmarshal(response2, &r2)
-					if err != nil {
-						w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
-						break
-					}
-					if r2.IsSuccess == true {
-						switch r2.Status {
-						case WasWritten:
-							w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
-						case NothingToDo:
-							w.Info("[INFO] the node '"+d.Destination+"' has a snapshot more actual.")
-						}
-					} else {
-						switch r2.Status {
-						case Zerror:
-							w.Err(""+r2.Error+"")
-						}
-					}
-
 				}
-			}
 
-		// Case: dataset does not exit on destination or it's empty
-		case DatasetFalse:
-			// Send snapshot to slave
-			ds.SendSnapshot(connToSlave, zfs.ReplicationStream)
-			connToSlave.Close()
+			// Case: dataset does not exit on destination or it's empty
+			case DatasetFalse:
+				// Send snapshot to slave
+				ds.SendSnapshot(connToSlave, zfs.ReplicationStream)
+				connToSlave.Close()
 
-			// Reconnection to get ZFSResponse
-			l2, _ := net.Listen("tcp", ":7733")
-			defer l2.Close()
-			fmt.Println("[AGENT:7733] Receiving response from slave...")
+				// Reconnection to get ZFSResponse
+				l2, _ := net.Listen("tcp", ":7733")
+				defer l2.Close()
+				fmt.Println("[AGENT:7733] Receiving response from slave...")
 
-			conn2Agent, _ := l2.Accept()
+				conn2Agent, _ := l2.Accept()
 
-			var r ZFSResponseFromSlave
-			response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
-			if err != nil {
-				w.Err("[ERROR] an error has occurred while reading from the socket.")
+				var r ZFSResponseFromSlave
+				response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
+				if err != nil {
+					w.Err("[ERROR] an error has occurred while reading from the socket.")
+					break
+				}
+				err = json.Unmarshal(response, &r)
+				if err != nil {
+					w.Err("[ERROR] it was impossible to parse the JSON struct from the socket.")
+					break
+				}
+				if r.IsSuccess == true {
+					switch r.Status {
+					// Snapshot written
+					case WasWritten:
+						w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
+					}
+				} else {
+					switch r.Status {
+					// ZFS error
+					case Zerror:
+						w.Err(""+r.Error+"")
+					}
+				}
+
+			// Network error
+			default:
+				w.Err("[ERROR] it was not possible to receive any response from '"+d.Destination+"'.")
 				break
 			}
-			err = json.Unmarshal(response, &r)
-			if err != nil {
-				w.Err("[ERROR] it was not possible to parse the JSON struct from the socket.")
-				break
-			}
-			if r.IsSuccess == true {
-				switch r.Status {
-				// Snapshot written
-				case WasWritten:
-					w.Info("[INFO] the snapshot '"+SnapshotName+"' has been sent.")
-				}
-			} else {
-				switch r.Status {
-				// ZFS error
-				case Zerror:
-					w.Err(""+r.Error+"")
-				}
-			}
-
-		// Network error
-		default:
-			w.Err("[ERROR] it was not possible to receive any response from '"+d.Destination+"'.")
-			break
 		}
 
 	// Destroy snapshot
 	case "destroy_snapshot":
-		// Check if the uuid of snapshot has been sent
+		// Checking required information
 		if d.SnapshotUUID == "" || d.SnapshotName == "" {
 			w.Err("[ERROR] inconsistant data structure in ZFS order.")
 			break
@@ -326,19 +333,16 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
 				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
 			} else {
-				// Read JSON configuration file
-				j, _, _ := config.JSON()
-
-				// Call to function CommandOrder for create the snapshot
-				destroy, clone := lib.DestroyOrder(j, SnapshotName)
+				// Call to function DestroyOrder for destroy the snapshot
+				destroy, clone := lib.DestroyOrder(SnapshotName, d.SkipIfCloned)
 
 				// Print the name of snapshot destroyed (using its uuid)
 				if destroy == true && d.SnapshotName != SnapshotName {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
 				} else if destroy == true && d.SnapshotName == SnapshotName {
 					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
-				} else if clone != "" {
-					w.Warning("[WARNING] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
+				} else if destroy == false && clone != "" {
+					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
 				}
 			}
 		}

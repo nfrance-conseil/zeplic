@@ -1,4 +1,4 @@
-// Package lib contains: clones.go - comnands.go - snapshot.go - uuid.go
+// Package lib contains: clones.go - commands.go - snapshot.go - uuid.go
 //
 // Commands provides all ZFS functions to manage the datasets and backups
 //
@@ -16,7 +16,7 @@ var (
 )
 
 // TakeOrder takes a snapshot based on the order received from director
-func TakeOrder(j int, DestDataset string) {
+func TakeOrder(j int, DestDataset string, NotWritten bool) {
 	// Check if dataset is configured
 	index := -1
 	for i := 0; i < j; i++ {
@@ -42,10 +42,19 @@ func TakeOrder(j int, DestDataset string) {
 
 		if dataset == DestDataset && enable == true {
 			ds := Dataset(dataset)
-			Snapshot(dataset, snapshot, ds)
-			DeleteBackup(dataset, ds)
-			Policy(dataset, ds, retain)
-			Backup(getBackup, dataset, ds)
+
+			// Check the last snapshot in dataset
+			SnapshotName := LastSnapshot(ds, dataset)
+			snap, _ := zfs.GetDataset(SnapshotName)
+			written := snap.Written
+
+			// Create a new snapshot if something was written
+			if NotWritten == false || NotWritten == true && written > 0 {
+				Snapshot(dataset, snapshot, ds)
+				DeleteBackup(dataset, ds)
+				Policy(dataset, ds, retain)
+				Backup(getBackup, dataset, ds)
+			}
 		} else if dataset == DestDataset && enable == false {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
 		}
@@ -54,8 +63,43 @@ func TakeOrder(j int, DestDataset string) {
 	}
 }
 
+// LastSnapshot returns the name of last snapshot in 'dataset'
+func LastSnapshot(ds *zfs.Dataset, dataset string) string {
+	list, _ := ds.Snapshots()
+	count := len(list)
+	amount := count
+
+	// Check the number of snapshot in the correct dataset
+	for i := count-1; i > -1; i-- {
+		// Check the dataset
+		take := list[i].Name
+		dsName := DatasetName(take)
+		if dsName != dataset {
+			amount--
+			continue
+		} else {
+			continue
+		}
+	}
+
+	// Search if exist the backup snapshot
+	for j := 0; j < amount; j++ {
+		take := list[j].Name
+		if strings.Contains(take, "BACKUP") {
+			amount--
+			continue
+		} else {
+			continue
+		}
+	}
+
+	// Return the name of last snapshot
+	LastSnapshot := list[amount-1].Name
+	return LastSnapshot
+}
+
 // DestroyOrder destroys a snapshot based on the order received from director
-func DestroyOrder(j int, SnapshotName string) (bool, string) {
+func DestroyOrder(SnapshotName string, Cloned bool) (bool, string) {
 	// Define return variables
 	var destroy bool
 
@@ -68,11 +112,20 @@ func DestroyOrder(j int, SnapshotName string) (bool, string) {
 	// Check if the snapshot was cloned
 	clone := SearchClone(snap)
 
-	err = snap.Destroy(zfs.DestroyDefault)
-	if err != nil {
-		destroy = false
+	if Cloned == false {
+		err = snap.Destroy(zfs.DestroyRecursiveClones)
+		if err != nil {
+			w.Err("[ERROR] it was not possible to destroy the snapshot '"+SnapshotName+"'.")
+		} else {
+			destroy = true
+		}
 	} else {
-		destroy = true
+		err = snap.Destroy(zfs.DestroyDefault)
+		if err != nil {
+			destroy = false
+		} else {
+			destroy = true
+		}
 	}
 	return destroy, clone
 }
@@ -321,13 +374,11 @@ func Clone(takeclone bool, clone string, SnapshotName string, s *zfs.Dataset) {
 }
 
 // Rollback of last snapshot
-func Rollback(rollback bool, SnapshotName string, s *zfs.Dataset) {
-	if rollback == true {
-		err := s.Rollback(true)
-		if err != nil {
-			w.Err("[ERROR] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
-		} else {
-			w.Info("[INFO] the snapshot '"+SnapshotName+"' has been restored.")
-		}
+func Rollback(SnapshotName string, s *zfs.Dataset) {
+	err := s.Rollback(true)
+	if err != nil {
+		w.Err("[ERROR] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
+	} else {
+		w.Info("[INFO] the snapshot '"+SnapshotName+"' has been restored.")
 	}
 }

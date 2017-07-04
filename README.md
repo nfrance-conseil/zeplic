@@ -109,7 +109,7 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 }
 ```
 - *info(local): facility [LOCAL0-7]*
-- *info(remote): tcp|upd:IP:port*
+- *info(remote): tcp/upd:IP:port*
 
 ```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
@@ -136,3 +136,9 @@ Usage: zeplic [-adrsv] [--help] [--quit] [parameters ...]
  -v, --version   Show version of zeplic
 
 ```
+
+### Vendoring
+**zeplic** currently uses [govendor](https://github.com/kardianos/govendor) for vendoring
+
+### Version
+**zeplic** uses [Semantic Versioning](http://semver.org/)

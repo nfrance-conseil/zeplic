@@ -11,12 +11,14 @@ import (
 var (
 	// BuildTime gets date of last build
 	BuildTime   string
-	// Version gets the version of last ommit
+	// Commit gets the last commit
+	Commit	    string
+	// Version show the version of zeplic
 	Version     string
 )
 
 // ShowVersion shows the version of zeplic
 func ShowVersion() string {
-	version := fmt.Sprintf("zeplic preliminar version: %s - %s\n\n", Version, BuildTime)
+	version := fmt.Sprintf("zeplic v%s\nBuilt on %s [Commit: %s]\n\n", Version, BuildTime, Commit)
 	return version
 }
