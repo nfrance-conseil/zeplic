@@ -30,6 +30,7 @@ type ZFSOrderFromDirector struct {
 	RollbackIfNeeded bool   // should I rollback if written is true on destination
 	SkipIfRenamed	 bool   // should I do the stuff if a snapshot has been renamed
 	SkipIfNotWritten bool   // should I take a snapshot if nothing is written
+	SkipIfCloned	 bool	// should I delete a snapshot if it was cloned
 }
 
 // ZFSOrderToSlave is the struct for ZFS orders to slave
@@ -263,7 +264,6 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			}
 
 		// Case: dataset does not exit on destination or it's empty
-//		// *** Use -R option ? No option ? ***
 		case DatasetFalse:
 			// Send snapshot to slave
 			ds.SendSnapshot(connToSlave, zfs.ReplicationStream)
