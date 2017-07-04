@@ -104,12 +104,12 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 ```
 {
 	"enable": true,
-	"mode": "local"	 / "remote",
-	"info": "LOCAL0" / "protocol"
+	"mode": "local",
+	"info": "LOCAL0"
 }
 ```
-- *mode: local;  info: facility [LOCAL0-7]*
-- *mode: remote; info: tcp/upd:IP:port*
+- *info(local): facility [LOCAL0-7]*
+- *info(remote): tcp|upd:IP:port*
 
 ```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
