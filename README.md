@@ -102,6 +102,16 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 - Information of the synchronisation between nodes
 
 ```
+{
+	"enable": true,
+	"mode": "local"	 / "remote",
+	"info": "LOCAL0" / "protocol"
+}
+```
+- *mode: local;  info: facility [LOCAL0-7]*
+- *mode: remote; info: tcp/upd:IP:port*
+
+```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
 Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-June-29_10:00:00' has been created.
 Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@BACKUP_from_2017-June-28' has been destroyed.
