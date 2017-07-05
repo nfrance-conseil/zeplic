@@ -95,8 +95,12 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		// Get the last snapshot in DestDataset
 		list, _ = ds.Snapshots()
 		count = len(list)
+
+		// Get the correct number of snapshots in dataset
+		amount := lib.RealList(count, list, a.DestDataset)
+
 		// Dataset is empty
-		if count == 0 {
+		if amount == 0 {
 			// Status for DestDataset
 			ack = nil
 			ack = strconv.AppendInt(ack, DatasetFalse, 10)

@@ -12,7 +12,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
@@ -174,12 +173,8 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						list, _ := ds.Snapshots()
 						count := len(list)
 
-						// Reject the backup snapshot
-						for i := 0; i < count; i++ {
-							if strings.Contains(list[i].Name, "BACKUP") {
-								count--
-							}
-						}
+						// Get the correct number of snapshots in dataset
+						amount := lib.RealList(count, list, DatasetName)
 
 						// Struct for the flag
 						ack := make([]byte, 0)
@@ -191,14 +186,14 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						index := -1
 
 						// Check if the uuid received exists
-						for i := 0; i < count; i++ {
-							snap, err := zfs.GetDataset(list[i].Name)
+						for k := 0; k < amount; k++ {
+							snap, err := zfs.GetDataset(list[k].Name)
 							if err != nil {
 								w.Err("[ERROR] it was not possible to get the snapshot '"+snap.Name+"'.")
 							}
 							uuid := lib.SearchUUID(snap)
 							if uuid == slaveUUID {
-								index = i
+								index = k
 								break
 							} else {
 								continue

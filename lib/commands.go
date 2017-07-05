@@ -382,3 +382,34 @@ func Rollback(SnapshotName string, s *zfs.Dataset) {
 		w.Info("[INFO] the snapshot '"+SnapshotName+"' has been restored.")
 	}
 }
+
+// RealList returns the correct amount of snapshots in dataset
+func RealList (count int, list []*zfs.Dataset, dataset string) int {
+	amount := count
+
+	// Check the number of snapshot in the correct dataset
+	for i := count-1; i > -1; i-- {
+		// Check the dataset
+		take := list[i].Name
+		dsName := DatasetName(take)
+		if dsName != dataset {
+			amount--
+			continue
+		} else {
+			continue
+		}
+	}
+
+	// Search if exist the backup snapshot
+	for j := 0; j < amount; j++ {
+		take := list[j].Name
+		if strings.Contains(take, "BACKUP") {
+			amount--
+			continue
+		} else {
+			continue
+		}
+	}
+
+	return amount
+}
