@@ -22,7 +22,7 @@ var (
 	Facility syslog.Priority
 )
 
-// Facility returns the priority of LOCAL variable
+// Logger returns the facility of LOCAL variable
 func Logger(log string) syslog.Priority {
 	switch log {
 	case "LOCAL0":
@@ -67,46 +67,45 @@ func LogBook() *syslog.Writer {
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		return nil
-	} else {
-		var values Log
-		json.Unmarshal(configFile, &values)
+	}
+	var values Log
+	json.Unmarshal(configFile, &values)
 
-		// Variables
-		enable := values.Enable
-		mode := values.Mode
-		info := values.Info
+	// Variables
+	enable := values.Enable
+	mode := values.Mode
+	info := values.Info
 
-		switch {
-		case enable:
-			switch mode {
-			// Local
-			case "local":
-				facility := Logger(info)
-				// Establishe a new connection to the system log daemon
-				sysLog, err := syslog.New(facility|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
-				if err != nil {
-					fmt.Printf("[ERROR] config/syslog.go:86 *** Unable to establish a new connection with syslog service ***\n\n")
-					os.Exit(1)
-				}
-				return sysLog
-			// Remote
-			case "remote":
-				protocol := string(utils.Before(info, ":")) // TCP | UDP
-				addr := string(utils.Reverse(info, ":")) // IP address and Port
-				// Establishe a new connection to the system log daemon
-				sysLog, err := syslog.Dial(protocol, addr, syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
-				if err != nil {
-					fmt.Printf("[ERROR] config/syslog.go:97 *** Unable to establish a new connection with syslog service ***\n\n")
-					os.Exit(1)
-				}
-				return sysLog
-			default:
-				fmt.Printf("\n[ERROR] config/syslog.go:81 *** The mode chosen in your syslog config file is not correct (local | remote) ***\n\n")
+	switch {
+	case enable:
+		switch mode {
+		// Local
+		case "local":
+			facility := Logger(info)
+			// Establishe a new connection to the system log daemon
+			sysLog, err := syslog.New(facility|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
+			if err != nil {
+				fmt.Printf("[ERROR] config/syslog.go:86 *** Unable to establish a new connection with syslog service ***\n\n")
 				os.Exit(1)
-				return nil
 			}
+			return sysLog
+		// Remote
+		case "remote":
+			protocol := string(utils.Before(info, ":")) // TCP | UDP
+			addr := string(utils.Reverse(info, ":")) // IP address and Port
+			// Establishe a new connection to the system log daemon
+			sysLog, err := syslog.Dial(protocol, addr, syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
+			if err != nil {
+				fmt.Printf("[ERROR] config/syslog.go:97 *** Unable to establish a new connection with syslog service ***\n\n")
+				os.Exit(1)
+			}
+			return sysLog
 		default:
+			fmt.Printf("\n[ERROR] config/syslog.go:81 *** The mode chosen in your syslog config file is not correct (local | remote) ***\n\n")
+			os.Exit(1)
 			return nil
 		}
+	default:
+		return nil
 	}
 }
