@@ -389,7 +389,7 @@ func Rollback(SnapshotName string, s *zfs.Dataset) {
 }
 
 // RealList returns the correct amount of snapshots in dataset
-func RealList (count int, list []*zfs.Dataset, dataset string) int {
+func RealList (count int, list []*zfs.Dataset, dataset string) (int, int) {
 	amount := count
 
 	// Check the number of snapshot in the correct dataset
@@ -404,6 +404,7 @@ func RealList (count int, list []*zfs.Dataset, dataset string) int {
 			continue
 		}
 	}
+	backup := amount
 
 	// Search if exist the backup snapshot
 	for j := 0; j < amount; j++ {
@@ -416,5 +417,5 @@ func RealList (count int, list []*zfs.Dataset, dataset string) int {
 		}
 	}
 
-	return amount
+	return backup, amount
 }

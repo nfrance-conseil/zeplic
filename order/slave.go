@@ -18,7 +18,6 @@ import (
 )
 
 // ZFSOrderFromAgent is the struct for ZFS orders from agent
-// Case: send_snapshot
 type ZFSOrderFromAgent struct {
 	Source		string // hostname of agent
 	OrderUUID	string // mandatory
@@ -33,6 +32,11 @@ type ZFSResponseToAgent struct {
 	IsSuccess	bool	`json:"IsSuccess"`
 	Status		int64	`json:"Status"`
 	Error		string	`json:"Error"`
+}
+
+// ZFSListUUIDsToAgent is the struct to send the list of uuids in dataset
+type ZFSListUUIDsToAgent struct {
+	MapUUID		[]string `json:"MapUUID"`
 }
 
 // HandleRequestSlave incoming requests from agent
@@ -150,26 +154,62 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		count = len(list)
 
 		// Get the correct number of snapshots in dataset
-		amount := lib.RealList(count, list, a.DestDataset)
+		_, amount := lib.RealList(count, list, a.DestDataset)
 
 		// Dataset is empty
 		if amount == 0 {
-			// Status for DestDataset
-			ack = nil
-			ack = strconv.AppendInt(ack, DatasetFalse, 10)
-			connSlave.Write(ack)
+			if index > -1 {
+				// Extract data of dataset
+				pieces := config.Extract(index)
+				enable := pieces[0].(bool)
+				dataset := pieces[3].(string)
 
-			// Receive the snapshot
-			_, err := zfs.ReceiveSnapshotRollback(connSlave, a.DestDataset, true)
+				if dataset == a.DestDataset && enable == true {
+					// Status for DestDataset
+					ack = nil
+					ack = strconv.AppendInt(ack, DatasetFalse, 10)
+					connSlave.Write(ack)
 
-			// Check for response to agent
-			if err != nil {
-				Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-				w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+					// Receive the snapshot
+					_, err := zfs.ReceiveSnapshotRollback(connSlave, a.DestDataset, false)
+
+					// Take the snapshot received
+					ds, _ := zfs.GetDataset(dataset)
+					list, _ := ds.Snapshots()
+					SnapshotName := list[0].Name
+					s, _ := zfs.GetDataset(SnapshotName)
+
+					// Apply configuration
+					clone	  := pieces[2].(string)
+					getBackup := pieces[6].(bool)
+					getClone  := pieces[7].(bool)
+					lib.Backup(getBackup, dataset, ds)
+					lib.Clone(getClone, clone, SnapshotName, s)
+
+					// Check for response to agent
+					if err != nil {
+						Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
+						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
+						w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+					} else {
+						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
+						w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
+					}
+				} else if dataset == a.DestDataset && enable == false {
+					// Status for DestDataset
+					ack = nil
+					ack = strconv.AppendInt(ack, DatasetDisable, 10)
+					connSlave.Write(ack)
+					connSlave.Close()
+					w.Notice("[NOTICE] impossible to receive: the dataset '"+a.DestDataset+"' is disabled.")
+				}
 			} else {
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
-				w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
+				// Status for DestDataset
+				ack = nil
+				ack = strconv.AppendInt(ack, DatasetNotConf, 10)
+				connSlave.Write(ack)
+				connSlave.Close()
+				w.Notice("[NOTICE] impossible to receive: the dataset '"+a.DestDataset+"' is not configured.")
 			}
 		} else {
 			// Status for DestDataset
@@ -198,7 +238,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 				}
 			} else {
 				// Information to agent where Error field contains the uuid of last snapshot in slave
-				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,NotEmpty,LastSnapshotUUID}
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,NotEmpty,""}
 				stream = true
 			}
 		}
@@ -217,10 +257,42 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		connToAgent.Close()
 	}
 
+	// MapUUID to save the list of uuids
+	var MapUUID []string
+
+	// Get the last snapshot in DestDataset
+	list, _ = ds.Snapshots()
+	count = len(list)
+
+	// Get the correct number of snapshots in dataset
+	_, amount := lib.RealList(count, list, a.DestDataset)
+
 	if stream == true {
-		l2, _ := net.Listen("tcp", ":7744")
+		// Get the list of all uuids in DestDataset
+		for i := 0; i < amount; i++ {
+			take := list[i].Name
+			snap, _ := zfs.GetDataset(take)
+			uuid := lib.SearchUUID(snap)
+			MapUUID = append(MapUUID, uuid)
+		}
+		ListUUIDsToAgent := ZFSListUUIDsToAgent{MapUUID}
+
+		// Send the list of uuids in DestDataset
+		conn2ToAgent, err := net.Dial("tcp", a.Source+":7744")
+
+		// Marshal response to agent
+		lta, err := json.Marshal(ListUUIDsToAgent)
+		if err != nil {
+			w.Err("[ERROR] it was not possible to encode the JSON struct.")
+		} else {
+			conn2ToAgent.Write([]byte(lta))
+			conn2ToAgent.Write([]byte("\n"))
+			conn2ToAgent.Close()
+		}
+
+		l2, _ := net.Listen("tcp", ":7755")
 		defer l2.Close()
-		fmt.Println("[SLAVE:7744] Receiving incremental stream from agent...")
+		fmt.Println("[SLAVE:7755] Receiving incremental stream from agent...")
 
 		conn2Slave, _ := l2.Accept()
 
@@ -230,14 +302,28 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		snapExist, _ := strconv.Atoi(string(n))
 
 		// Last snapshot in slave node
-		LastSnapshotName := list[count-1].Name
+		LastSnapshotName := list[amount-1].Name
 
 		switch snapExist {
-		// Case: the most actual snapshot in slave is not correlative
+		// Case: receive the snapshot
 		case Zerror:
-			Error := fmt.Sprintf("[ERROR from '%s'] the most actual snapshot '%s' is not correlative with the snapshot sent.", hostname, LastSnapshotName)
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-			w.Err("[ERROR] the snapshot '"+LastSnapshotName+"' is not correlative.")
+			// Receive the snapshot
+			_, err := zfs.ReceiveSnapshotRollback(conn2Slave, a.DestDataset, true)
+
+			// Check for response to agent
+			if err != nil {
+				Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
+				w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+			} else {
+				ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
+				w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
+			}
+
+		// Case: the received snapshot already existed
+		case NothingToDo:
+			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,NothingToDo,""}
+			w.Info("[INFO] the snapshot '"+a.SnapshotName+"' is already existed.")
 
 		// Case: the last snapshot in slave is the most actual
 		case MostActual:
@@ -260,19 +346,55 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			}
 		}
 		// Send the last ZFSResponseToAgent
-		conn2ToAgent, err := net.Dial("tcp", a.Source+":7755")
+		conn3ToAgent, err := net.Dial("tcp", a.Source+":7766")
 
 		// Marshal response to agent
 		rta, err = json.Marshal(ResponseToAgent)
 		if err != nil {
 			w.Err("[ERROR] it was not possible to encode the JSON struct.")
 		} else {
-			conn2ToAgent.Write([]byte(rta))
-			conn2ToAgent.Write([]byte("\n"))
-			conn2ToAgent.Close()
+			conn3ToAgent.Write([]byte(rta))
+			conn3ToAgent.Write([]byte("\n"))
+			conn3ToAgent.Close()
 		}
 		// Close transmission
 		stream = false
+	}
+
+	pieces	  := config.Extract(index)
+	enable	  := pieces[0].(bool)
+	delClone  := pieces[1].(bool)
+	clone	  := pieces[2].(string)
+	dataset	  := pieces[3].(string)
+	retain	  := pieces[5].(int)
+	getBackup := pieces[6].(bool)
+	getClone  := pieces[7].(bool)
+
+	if enable == true {
+		// Delete an existing clone
+		lib.DeleteClone(delClone, clone)
+
+		// Delete the backup snapshot
+		ds, _ := zfs.GetDataset(dataset)
+		list, _ := ds.Snapshots()
+		count = len(list)
+		backup, amount := lib.RealList(count, list, dataset)
+		if backup != amount {
+			take := list[backup-1].Name
+			snap, _ := zfs.GetDataset(take)
+			lib.DeleteBackup(dataset, snap)
+		}
+
+		// Retain policy
+		lib.Policy(dataset, ds, retain)
+
+		// Create a backup snapshot
+		lib.Backup(getBackup, dataset, ds)
+
+		// Clone the last snapshot received
+		take := list[amount-1].Name
+		snap, _ := zfs.GetDataset(take)
+		lib.Clone(getClone, clone, take, snap)
 	}
 	stop := false
 	return stop

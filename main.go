@@ -1,4 +1,4 @@
-// zeplic main package - June 2017 version
+// zeplic main package - July 2017 version 0.1.0
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -12,22 +12,14 @@
 package main
 
 import (
-//	"flag"
 	"fmt"
-//	"io/ioutil"
 	"net"
 	"os"
-//	"os/exec"
-//	"os/signal"
-//	"strconv"
-//	"syscall"
-//	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/order"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/pborman/getopt/v2"
-//	"github.com/sevlyar/go-daemon"
 )
 
 var (
@@ -41,10 +33,8 @@ func main() {
 	optDirector := getopt.BoolLong("director", 'd', "Send ZFS orders to agent")
 	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
-//	optReload   := getopt.BoolLong("reload", 0, "Restart zeplic to sleep state")
 	optRun	    := getopt.BoolLong("run", 'r', "Execute ZFS functions")
 	optSlave    := getopt.BoolLong("slave", 's', "Receive a new snapshot from agent")
-//	optStandby  := getopt.BoolLong("standby", 'z', "Standby mode")
 	optVersion  := getopt.BoolLong("version", 'v', "Show version of zeplic")
 	getopt.Parse()
 
@@ -52,8 +42,6 @@ func main() {
 		fmt.Printf("zeplic --help\n\n")
 		os.Exit(0)
 	}
-
-//	go Standby(c)
 
 	// Cases...
 	switch {
@@ -99,18 +87,6 @@ func main() {
 			os.Exit(0)
 		}
 
-	// RELOAD
-/*	case *optReload:
-		err, process := config.Reload()
-		if err == 1 {
-			fmt.Printf("[INFO] zeplic is not running...\n\n")
-			os.Exit(0)
-		} else {
-			exec.Command("sh", "-c", process).Run()
-			pid := os.Getpid()
-			syscall.Kill(pid, syscall.SIGTERM)
-		}*/
-
 	// RUN
 	case *optRun:
 		// Read JSON configuration file
@@ -138,10 +114,6 @@ func main() {
 			stop = order.HandleRequestSlave(connSlave)
 		}
 
-	// STANDBY
-//	case *optStandby:
-		// Loop to sleep (run as background)
-
 	// VERSION
 	case *optVersion:
 		version := config.ShowVersion()
@@ -149,12 +121,3 @@ func main() {
 		os.Exit(0)
 	}
 }
-/*
-func Standby(c chan os.Signal) {
-	<-c
-	os.Exit(0)
-	for {
-		time.Sleep(time.Second)
-	}
-}
-*/

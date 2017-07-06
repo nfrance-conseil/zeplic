@@ -1,4 +1,4 @@
-# zeplic
+# zeplic v0.1.0-rc1
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
@@ -60,6 +60,13 @@ You can modify a sample JSON file that it has been created in your config path:
 	}]
 }
 ```
+
+- *enable*: to activate the dataset
+- *name*: name of dataset
+- *snapshot*: partial name of snapshot (name@snapshot_DATE)
+- *retain*: number of snapshots to save
+- *backup*: backup snapshot of dataset (double copy)
+- *clone*: make a clone of last snapshot created
 
 ### Running
 
