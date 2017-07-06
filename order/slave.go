@@ -71,25 +71,26 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 
 	// Struct for response
 	ResponseToAgent := ZFSResponseToAgent{}
-	// Dataset does not exist
-	if err != nil {
-		// Read the JSON configuration file
-		j, _, _ := config.JSON()
 
-		// Check if dataset is configured
-		index := -1
-		for i := 0; i < j; i++ {
-			pieces	:= config.Extract(i)
-			dataset := pieces[3].(string)
+	// Read the JSON configuration file
+	j, _, _ := config.JSON()
 
-			if dataset == a.DestDataset {
-				index = i
-				break
-			} else {
-				continue
-			}
+	// Check if dataset is configured
+	index := -1
+	for i := 0; i < j; i++ {
+		pieces	:= config.Extract(i)
+		dataset := pieces[3].(string)
+
+		if dataset == a.DestDataset {
+			index = i
+			break
+		} else {
+			continue
 		}
+	}
 
+	// Dataset does not exit
+	if err != nil {
 		if index > -1 {
 			// Extract data of dataset
 			pieces := config.Extract(index)
@@ -104,6 +105,19 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 
 				// Receive the snapshot
 				_, err := zfs.ReceiveSnapshotRollback(connSlave, a.DestDataset, false)
+
+				// Take the snapshot received
+				ds, _ := zfs.GetDataset(dataset)
+				list, _ := ds.Snapshots()
+				SnapshotName := list[0].Name
+				s, _ := zfs.GetDataset(SnapshotName)
+
+				// Apply configuration
+				clone	  := pieces[2].(string)
+				getBackup := pieces[6].(bool)
+				getClone  := pieces[7].(bool)
+				lib.Backup(getBackup, dataset, ds)
+				lib.Clone(getClone, clone, SnapshotName, s)
 
 				// Check for response to agent
 				if err != nil {
