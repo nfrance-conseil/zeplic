@@ -73,24 +73,63 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 	ResponseToAgent := ZFSResponseToAgent{}
 	// Dataset does not exist
 	if err != nil {
-		// Status for DestDataset
-		ack = nil
-		ack = strconv.AppendInt(ack, DatasetFalse, 10)
-		connSlave.Write(ack)
+		// Read the JSON configuration file
+		j, _, _ := config.JSON()
 
-		// Receive the snapshot
-		_, err := zfs.ReceiveSnapshotRollback(connSlave, a.DestDataset, false)
+		// Check if dataset is configured
+		index := -1
+		for i := 0; i < j; i++ {
+			pieces	:= config.Extract(i)
+			dataset := pieces[3].(string)
 
-		// Check for response to agent
-		if err != nil {
-			Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-			w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
-		} else {
-			ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
-			w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
+			if dataset == a.DestDataset {
+				index = i
+				break
+			} else {
+				continue
+			}
 		}
 
+		if index > -1 {
+			// Extract data of dataset
+			pieces := config.Extract(index)
+			enable := pieces[0].(bool)
+			dataset := pieces[3].(string)
+
+			if dataset == a.DestDataset && enable == true {
+				// Status for DestDataset
+				ack = nil
+				ack = strconv.AppendInt(ack, DatasetFalse, 10)
+				connSlave.Write(ack)
+
+				// Receive the snapshot
+				_, err := zfs.ReceiveSnapshotRollback(connSlave, a.DestDataset, false)
+
+				// Check for response to agent
+				if err != nil {
+					Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
+					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
+					w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+				} else {
+					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
+					w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
+				}
+			} else if dataset == a.DestDataset && enable == false {
+				// Status for DestDataset
+				ack = nil
+				ack = strconv.AppendInt(ack, DatasetDisable, 10)
+				connSlave.Write(ack)
+				connSlave.Close()
+				w.Notice("[NOTICE] impossible to receive: the dataset '"+a.DestDataset+"' is disabled.")
+			}
+		} else {
+			// Status for DestDataset
+			ack = nil
+			ack = strconv.AppendInt(ack, DatasetNotConf, 10)
+			connSlave.Write(ack)
+			connSlave.Close()
+			w.Notice("[NOTICE] impossible to receive: the dataset '"+a.DestDataset+"' is not configured.")
+		}
 	} else {
 		// Get the last snapshot in DestDataset
 		list, _ = ds.Snapshots()

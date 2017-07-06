@@ -302,6 +302,14 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 					}
 				}
 
+			// Case: dataset is disabled on destination
+			case DatasetDisable:
+				w.Err("[ERROR] the dataset '"+d.DestDataset+"' on destination is disabled.")
+
+			// Case: dataset is not configured on destination
+			case DatasetNotConf:
+				w.Err("[ERROR] the dataset '"+d.DestDataset+"' on destination is not configured.")
+
 			// Network error
 			default:
 				w.Err("[ERROR] it was not possible to receive any response from '"+d.Destination+"'.")
