@@ -194,10 +194,11 @@ func Dataset(dataset string) (*zfs.Dataset, error) {
 		} else {
 			w.Info("[INFO] the dataset '"+dataset+"' has been created.")
 		}
-		ds, err = zfs.GetDataset(dataset)
+		ds, err := zfs.GetDataset(dataset)
 		if err != nil {
 			w.Err("[ERROR > lib/commands.go:197] it was not possible to get the dataset '"+dataset+"'.")
 		}
+		return ds, err
 	}
 	return ds, err
 }
@@ -209,7 +210,7 @@ func Snapshot(dataset string, name string, ds *zfs.Dataset) (*zfs.Dataset, strin
 
 	// Check if it was created
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:208] it was not possible to create the snapshot '"+dataset+"@"+SnapshotName+"'.")
+		w.Err("[ERROR > lib/commands.go:209] it was not possible to create the snapshot '"+dataset+"@"+SnapshotName+"'.")
 	} else {
 		// Get the snapshot created
 		SnapshotName = s.Name
@@ -217,11 +218,11 @@ func Snapshot(dataset string, name string, ds *zfs.Dataset) (*zfs.Dataset, strin
 		// Assign an uuid to the snapshot
 		snap, err := zfs.GetDataset(SnapshotName)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:218] it was not possible to get the snapshot '"+snap.Name+"'.")
+			w.Err("[ERROR > lib/commands.go:219] it was not possible to get the snapshot '"+snap.Name+"'.")
 		}
 		err = UUID(snap)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:222] it was not possible to assign an uuid to the snapshot '"+SnapshotName+"'.")
+			w.Err("[ERROR > lib/commands.go:223] it was not possible to assign an uuid to the snapshot '"+SnapshotName+"'.")
 		}
 	}
 	return s, SnapshotName
@@ -232,7 +233,7 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 	// Get the backup snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:233] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:234] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 	for i := 0; i < count; i++ {
@@ -241,11 +242,11 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 		if dsName == dataset && strings.Contains(take, "BACKUP") {
 			snap, err := zfs.GetDataset(take)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:242] it was not possible to get the snapshot '"+take+"'.")
+				w.Err("[ERROR > lib/commands.go:243] it was not possible to get the snapshot '"+take+"'.")
 			}
 			err = snap.Destroy(zfs.DestroyDefault)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:246] it was not possible to destroy the snapshot '"+take+"'.")
+				w.Err("[ERROR > lib/commands.go:247] it was not possible to destroy the snapshot '"+take+"'.")
 			} else {
 				w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
 			}
@@ -259,7 +260,7 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 func Policy(dataset string, ds *zfs.Dataset, retain int) {
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:260] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:261] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 
@@ -273,7 +274,7 @@ func Policy(dataset string, ds *zfs.Dataset, retain int) {
 		if dsName == dataset {
 			snap, err := zfs.GetDataset(take)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:274] it was not possible to get the snapshot '"+take+"'.")
+				w.Err("[ERROR > lib/commands.go:275] it was not possible to get the snapshot '"+take+"'.")
 			}
 			err = snap.Destroy(zfs.DestroyDefault)
 			if err != nil {
@@ -295,13 +296,13 @@ func Backup(backup bool, dataset string, ds *zfs.Dataset) {
 	if backup == true {
 		_, err := ds.Snapshot(SnapBackup(dataset, ds), false)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:296] it was not possible to create the backup snapshot '"+dataset+"@"+SnapBackup(dataset, ds)+"'.")
+			w.Err("[ERROR > lib/commands.go:297] it was not possible to create the backup snapshot '"+dataset+"@"+SnapBackup(dataset, ds)+"'.")
 		}
 
 		// Get the backup snapshot created
 		list, err := ds.Snapshots()
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:302] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+			w.Err("[ERROR > lib/commands.go:303] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 		}
 		count := len(list)
 		for i := 0; i < count; i++ {
@@ -312,11 +313,11 @@ func Backup(backup bool, dataset string, ds *zfs.Dataset) {
 				// Assign an uuid to the snapshot
 				snap, err := zfs.GetDataset(take)
 				if err != nil {
-					w.Err("[ERROR > lib/commands.go:313] it was not possible to get the snapshot '"+snap.Name+"'.")
+					w.Err("[ERROR > lib/commands.go:314] it was not possible to get the snapshot '"+snap.Name+"'.")
 				}
 				err = UUID(snap)
 				if err != nil {
-					w.Err("[ERROR > lib/commands.go:317] it was not possible to assign an uuid to the snapshot '"+take+"'.")
+					w.Err("[ERROR > lib/commands.go:318] it was not possible to assign an uuid to the snapshot '"+take+"'.")
 				}
 				break
 			} else {
@@ -331,7 +332,7 @@ func Clone(takeclone bool, clone string, SnapshotName string, s *zfs.Dataset) {
 	if takeclone == true {
 		_, err := s.Clone(clone, nil)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:332] it was not possible to clone the snapshot '"+SnapshotName+"'.")
+			w.Err("[ERROR > lib/commands.go:333] it was not possible to clone the snapshot '"+SnapshotName+"'.")
 		} else {
 			w.Info("[INFO] the snapshot '"+SnapshotName+"' has been clone.")
 		}
@@ -342,7 +343,7 @@ func Clone(takeclone bool, clone string, SnapshotName string, s *zfs.Dataset) {
 func Rollback(SnapshotName string, s *zfs.Dataset) {
 	err := s.Rollback(true)
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:343] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
+		w.Err("[ERROR > lib/commands.go:344] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+SnapshotName+"' has been restored.")
 	}
@@ -384,7 +385,7 @@ func RealList (count int, list []*zfs.Dataset, dataset string) (int, int) {
 func LastSnapshot(ds *zfs.Dataset, dataset string) string {
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:385] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:386] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 
