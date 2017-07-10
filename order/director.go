@@ -10,6 +10,7 @@ const (
 	DatasetTrue    = iota + 1 // Dataset not empty
 	DatasetFalse		  // Dataset does not exist or empty
 	DatasetDisable		  // Dataset disabled
+	DatasetDocker             // Dataset docker
 	DatasetNotConf		  // Dataset not configured
 )
 

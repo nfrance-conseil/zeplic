@@ -24,6 +24,7 @@ type Copy struct {
 // Data contains the information of each dataset
 type Data struct {
 	Enable	bool	`json:"enable"`
+	Docker	bool	`json:"docker"`
 	Name	string	`json:"name"`
 	Snap	string	`json:"snapshot"`
 	Retain	int	`json:"retain"`
@@ -48,7 +49,7 @@ func JSON() (int, string, error) {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		w.Err("[ERROR] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/json.go:50] it was not possible to parse the JSON configuration file.")
 	}
 	return len(values.Dataset), jsonFile, nil
 }
@@ -61,6 +62,7 @@ func Extract(i int) ([]interface{}) {
 	json.Unmarshal(configFile, &values)
 
 	enable	    := values.Dataset[i].Enable
+	docker	    := values.Dataset[i].Docker
 	delClone    := values.Dataset[i].Clone.Delete
 	clone	    := values.Dataset[i].Clone.Name
 	dataset	    := values.Dataset[i].Name
@@ -69,6 +71,6 @@ func Extract(i int) ([]interface{}) {
 	getBackup   := values.Dataset[i].Backup
 	getClone    := values.Dataset[i].Clone.Enable
 
-	pieces := []interface{}{enable, delClone, clone, dataset, snapshot, retain, getBackup, getClone}
+	pieces := []interface{}{enable, docker, delClone, clone, dataset, snapshot, retain, getBackup, getClone}
 	return pieces
 }

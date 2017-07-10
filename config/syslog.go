@@ -85,7 +85,7 @@ func LogBook() *syslog.Writer {
 			// Establishe a new connection to the system log daemon
 			sysLog, err := syslog.New(facility|syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 			if err != nil {
-				fmt.Printf("[ERROR] config/syslog.go:86 *** Unable to establish a new connection with syslog service ***\n\n")
+				fmt.Printf("[ERROR > config/syslog.go:86] *** Unable to establish a new connection with syslog service ***\n\n")
 				os.Exit(1)
 			}
 			return sysLog
@@ -96,12 +96,12 @@ func LogBook() *syslog.Writer {
 			// Establishe a new connection to the system log daemon
 			sysLog, err := syslog.Dial(protocol, addr, syslog.LOG_DEBUG|syslog.LOG_ERR|syslog.LOG_WARNING|syslog.LOG_NOTICE|syslog.LOG_INFO, "zeplic")
 			if err != nil {
-				fmt.Printf("[ERROR] config/syslog.go:97 *** Unable to establish a new connection with syslog service ***\n\n")
+				fmt.Printf("[ERROR > config/syslog.go:97] *** Unable to establish a new connection with syslog service ***\n\n")
 				os.Exit(1)
 			}
 			return sysLog
 		default:
-			fmt.Printf("\n[ERROR] config/syslog.go:81 *** The mode chosen in your syslog config file is not correct (local | remote) ***\n\n")
+			fmt.Printf("\n[ERROR > config/syslog.go:81] *** The mode chosen in your syslog config file is not correct (local | remote) ***\n\n")
 			os.Exit(1)
 			return nil
 		}

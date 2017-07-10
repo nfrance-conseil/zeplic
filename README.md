@@ -43,6 +43,7 @@ You can modify a sample JSON file that it has been created in your config path:
 	"datasets": [
 	{
 		"enable": true,
+		"docker": false,
 		"name": "tank/foo",
 		"snapshot": "FOO",
 		"retain": 5,
@@ -55,6 +56,7 @@ You can modify a sample JSON file that it has been created in your config path:
 	},
 	{
 		"enable": false,
+		"docker": false,
 		"name": "tank/bar",
 		...
 	}]
@@ -62,6 +64,7 @@ You can modify a sample JSON file that it has been created in your config path:
 ```
 
 - *enable*: to activate the dataset
+- *docker*: dataset to receive the snapshots
 - *name*: name of dataset
 - *snapshot*: partial name of snapshot (name@snapshot_DATE)
 - *retain*: number of snapshots to save
