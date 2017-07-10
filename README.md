@@ -19,10 +19,9 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Create a backup snapshot (optional)
 - Create a clone of last snapshot (optional)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
-- ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
+- ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, SnapshotUUID, SnapshotName, DestDataset, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten, SkipIfCloned)
 - Create a new snapshot
 - Destroy a snapshot
-- Rollback of snapshot
 - Send a snapshot via socket TCP
 
 ## How can you use it?
