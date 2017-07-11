@@ -48,7 +48,7 @@ clean:
 	$Q rm -rf bin .GOPATH
 
 test: .GOPATH/.ok
-	$Q go test $(if $V,-v) -i -race $(allpackages) # install -race libs to speed up next run
+	$Q go test $(if $V,-v) -v -race $(allpackages) # install -race libs to speed up next run
 ifndef CI
 	$Q go vet $(allpackages)
 	$Q GODEBUG=cgocheck=2 go test -race $(allpackages)
@@ -98,28 +98,26 @@ install:
 	$Q mkdir -p $(SYSCONFDIR)/zeplic
 	$Q install $(if $V,-v) -m 644 samples/config.json.sample $(SYSCONFDIR)/zeplic
 	$Q printf "done!"
-#	$Q printf "\nCreating a sample config file for syslog service in $(SYSCONFDIR)/zeplic/... "
-#	$Q install $(if $V,-v) -m 644 samples/syslog.json.sample $(SYSCONFDIR)/zeplic
-#	$Q printf "done!"
+	$Q printf "\nCreating a sample config file for syslog service in $(SYSCONFDIR)/zeplic/... "
+	$Q install $(if $V,-v) -m 644 samples/syslog.json.sample $(SYSCONFDIR)/zeplic
+	$Q printf "done!"
 	$Q echo -n > $(PIDDIR)
-	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json\n\n"
-# & syslog.go
+	$Q printf "\n\nINSTALLED! Remember to config zeplic: config.json & syslog.json\n\n"
 
 ##### =====> Internals <===== #####
 
-VERSION          := $(shell git describe --tags --always --dirty="-dev")
-DATE             := $(shell date -u '+%Y-%m-%d %H:%M UTC')
-OS 		 := $(shell uname)
+VERSION		 := $(shell git tag)
+DATE		 := $(shell date -u '+%Y-%m-%d %H:%M UTC')
+OS		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
-SYSCONFDIR 	 := /usr/local/etc
-BINDIR           := /usr/local/bin
+SYSCONFDIR	 := /usr/local/etc
+BINDIR		 := /usr/local/bin
 else
-SYSCONFDIR       := /etc
-BINDIR           := /usr/bin
+SYSCONFDIR	 := /etc
+BINDIR		 := /usr/bin
 endif
 PIDDIR		 := /var/run/zeplic.pid
-COMPILE_FLAGS    := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json"'
-# -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"
+COMPILE_FLAGS	 := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.Commit=$(COMMIT)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/config.json" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

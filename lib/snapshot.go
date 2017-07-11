@@ -29,7 +29,10 @@ func SnapName(name string) string {
 // SnapBackup defines the name of a backup snapshot: BACKUP_from_yyyy-Month-dd
 func SnapBackup(dataset string, ds *zfs.Dataset) string {
 	// Get the older snapshot
-	list, _ := ds.Snapshots()
+	list, err := ds.Snapshots()
+	if err != nil {
+		w.Err("[ERROR > lib/snapshot.go:32] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+	}
 	count := len(list)
 
 	var oldSnapshot string

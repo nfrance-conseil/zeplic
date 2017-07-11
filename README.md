@@ -1,10 +1,10 @@
-# zeplic
+# zeplic v0.1.0-rc1
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
 ZFS Datasets distribution over datacenter - Let'zeplic
 
-**zeplic is available for Linux and BSD os**
+**zeplic is available for Linux and FreeBSD**
 
 ## Utils
 
@@ -19,10 +19,9 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Create a backup snapshot (optional)
 - Create a clone of last snapshot (optional)
 5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
-- ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, Snapshot UUID, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten)
+- ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, SnapshotUUID, SnapshotName, DestDataset, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten, SkipIfCloned)
 - Create a new snapshot
 - Destroy a snapshot
-- Rollback of snapshot
 - Send a snapshot via socket TCP
 
 ## How can you use it?
@@ -36,13 +35,14 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 
 You can modify a sample JSON file that it has been created in your config path:
 - `/etc/zeplic/` for Linux
-- `/usr/local/etc/zeplic/` for BSD os
+- `/usr/local/etc/zeplic/` for FreeBSD
 
 ```sh
 {
 	"datasets": [
 	{
 		"enable": true,
+		"docker": false,
 		"name": "tank/foo",
 		"snapshot": "FOO",
 		"retain": 5,
@@ -55,11 +55,20 @@ You can modify a sample JSON file that it has been created in your config path:
 	},
 	{
 		"enable": false,
+		"docker": false,
 		"name": "tank/bar",
 		...
 	}]
 }
 ```
+
+- *enable*: to activate the dataset
+- *docker*: dataset to receive the snapshots
+- *name*: name of dataset
+- *snapshot*: partial name of snapshot (name@snapshot_DATE)
+- *retain*: number of snapshots to save
+- *backup*: backup snapshot of dataset (double copy)
+- *clone*: make a clone of last snapshot created
 
 ### Running
 
@@ -83,15 +92,15 @@ You can send an order to the agent node (zeplic --agent) on port 7711:
 - Destroy a snapshot
 
 ```
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snapshot","Destination":"","SnapshotUUID":"","SnapshotName":"","DestDataset":"$DATASET_OF_SNAPSHOT","RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snapshot","Destination":"","SnapshotUUID":"","SnapshotName":"","DestDataset":"$DATASET_OF_SNAPSHOT","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
 
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
 ```
 
 You can send a snapshot between the agent node (zeplic --agent) to the slave node (zeplic --slave):
 
 ```
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":false,"SkipIfRenamed":false,"SkipIfNotWritten":false}' | nc -w 3 $IP_AGENT 7711
+$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
 ```
 
 ### Syslog system service
@@ -100,6 +109,16 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes
+
+```
+{
+	"enable": true,
+	"mode": "local",
+	"info": "LOCAL0"
+}
+```
+- *info(local): facility [LOCAL0-7]*
+- *info(remote): tcp/upd:IP:port*
 
 ```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
@@ -126,3 +145,9 @@ Usage: zeplic [-adrsv] [--help] [--quit] [parameters ...]
  -v, --version   Show version of zeplic
 
 ```
+
+### Vendoring
+**zeplic** currently uses [govendor](https://github.com/kardianos/govendor) for vendoring
+
+### Version
+**zeplic** uses [Semantic Versioning](http://semver.org/)

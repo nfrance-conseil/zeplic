@@ -1,4 +1,4 @@
-// Package lib contains: clones.go - comnands.go - snapshot.go - uuid.go
+// Package lib contains: clones.go - commands.go - snapshot.go - uuid.go
 //
 // Clones searchs the dataset where the snapshot was cloned
 //
@@ -12,7 +12,7 @@ import (
 func SearchClone(ds *zfs.Dataset) string {
 	clone, err := ds.GetProperty("clones")
 	if err != nil {
-		w.Err("[ERROR] it was not possible to find the clone of '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/clones.go:13] it was not possible to find the clone of the snapshot '"+ds.Name+"'.")
 	}
 	return clone
 }

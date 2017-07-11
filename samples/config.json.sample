@@ -2,6 +2,7 @@
 	"datasets": [
 	{
 		"enable": true,
+		"docker": false,
 		"name": "tank/foo",
 		"snapshot": "FOO",
 		"retain": 5,
@@ -14,6 +15,7 @@
 	},
 	{
 		"enable": false,
+		"docker": false,
 		"name": "tank/bar",
 		"snapshot": "BAR",
 		"retain": 3,

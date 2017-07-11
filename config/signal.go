@@ -24,7 +24,10 @@ var (
 // Leave sends a SIGTERM signal to zeplic process ID
 func Leave() int {
 	pidBytes, _ := ioutil.ReadFile(PidFilePath)
-	pid, _ := strconv.Atoi(string(pidBytes))
+	pid, err := strconv.Atoi(string(pidBytes))
+	if err != nil {
+		w.Err("[ERROR > config/signal.go:27] it was not possible to convert the string 'pid' to integer.")
+	}
 
 	// Search if zeplic process exists
 	search := fmt.Sprintf("ps -o command= -p %d", pid)
@@ -32,15 +35,15 @@ func Leave() int {
 	out := bytes.Trim(cmd, "\x0A")
 	process := string(out)
 
-	var err int
+	var check int
 	if process == "" || pid == 0 {
-		err = 1
+		check = 1
 	} else {
-		err = 0
+		check = 0
 		syscall.Kill(pid, syscall.SIGTERM)
 		w.Notice("[NOTICE] zeplic graceful shutdown...")
 	}
-	return err
+	return check
 }
 
 // Pid writes the pid of zeplic pid file

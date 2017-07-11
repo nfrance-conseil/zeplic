@@ -7,8 +7,11 @@ package order
 
 // Status for DestDataset
 const (
-	DatasetTrue   = iota + 1 // Dataset not empty
-	DatasetFalse		 // Dataset does not exist or empty
+	DatasetTrue    = iota + 1 // Dataset not empty
+	DatasetFalse		  // Dataset does not exist or empty
+	DatasetDisable		  // Dataset disabled
+	DatasetDocker             // Dataset docker
+	DatasetNotConf		  // Dataset not configured
 )
 
 // Status for response

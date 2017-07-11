@@ -34,7 +34,7 @@ func ReceiveUUID(id string, SnapshotName string, DestDataset string) error {
 	}
 	ds, err := zfs.GetDataset(name)
 	if err != nil {
-		w.Err("[ERROR] it was not possible to get the snapshot '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/uuid.go:35] it was not possible to get the snapshot '"+ds.Name+"'.")
 	}
 	err = ds.SetProperty(":uuid", id)
 	return err
@@ -43,7 +43,10 @@ func ReceiveUUID(id string, SnapshotName string, DestDataset string) error {
 // SearchName searchs the name of snapshot from its uuid
 func SearchName(uuid string) string {
 	search := fmt.Sprintf("zfs get -rHp -t snapshot -o name,value :uuid | awk '{if ($2 == \"%s\") print $1}'", uuid)
-	cmd, _ := exec.Command("sh", "-c", search).Output()
+	cmd, err := exec.Command("sh", "-c", search).Output()
+	if err != nil {
+		w.Err("[ERROR > lib/uuid.go:46] it was not possible to execute the command 'zfs get :uuid'.")
+	}
 	out := bytes.Trim(cmd, "\x0A")
 	snapshot := string(out)
 	return snapshot
@@ -53,7 +56,7 @@ func SearchName(uuid string) string {
 func SearchUUID(ds *zfs.Dataset) string {
 	uuid, err := ds.GetProperty(":uuid")
 	if err != nil {
-		w.Err("[ERROR] it was not possible to find the uuid of '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/uuid.go:57] it was not possible to find the uuid of the snapshot '"+ds.Name+"'.")
 	}
 	return uuid
 }
