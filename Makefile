@@ -36,7 +36,7 @@ build: .GOPATH/.ok
 	$Q go get $(if $V,-v) github.com/hashicorp/consul/api
 	$Q go install $(if $V,-v) $(COMPILE_FLAGS) $(IMPORT_PATH)
 	$Q printf "done!"
-	$Q printf "\n\nBUILT! To install, type: sudo make install\n\n"
+	$Q printf "\n\nBUILT! To install, type: sudo (g)make install\n\n"
 
 ### Code not in the repository root? Another binary? Add to the path like this.
 # .PHONY: otherbin

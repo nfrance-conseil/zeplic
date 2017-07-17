@@ -1,8 +1,8 @@
-// Package order contains: agent.go - director.go - slave.go
+// Package director contains: agent.go - director.go - slave.go
 //
 // Slave receives a snapshot from agent
 //
-package order
+package director
 
 import (
 	"bufio"

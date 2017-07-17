@@ -1,9 +1,9 @@
-// Package order contains: agent.go - director.go - slave.go
+// Package director contains: agent.go - director.go - slave.go
 //
 // Director sends an order to the agent
 // Make orders from synchronisation between nodes
 //
-package order
+package director
 
 import (
 	"encoding/json"

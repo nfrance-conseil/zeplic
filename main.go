@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
-	"github.com/nfrance-conseil/zeplic/order"
+	"github.com/nfrance-conseil/zeplic/director"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/pborman/getopt/v2"
 )
@@ -62,7 +62,7 @@ func main() {
 			connAgent, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			go order.HandleRequestAgent(connAgent)
+			go director.HandleRequestAgent(connAgent)
 		}
 
 	// DIRECTOR
@@ -75,7 +75,7 @@ func main() {
 		for {
 			select {
 			case <- ticker.C:
-//				go order.Director()
+//				go director.Director()
 				fmt.Println("")
 				fmt.Printf("[DEBUG] zeplic checking on %s", time.Now().UTC().Format(time.RFC1123))
 			default:
@@ -131,7 +131,7 @@ func main() {
 			connSlave, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			go order.HandleRequestSlave(connSlave)
+			go director.HandleRequestSlave(connSlave)
 		}
 
 	// VERSION
