@@ -87,6 +87,8 @@ type ZFSDirectorsOrder struct {
 	SkipIfCloned     bool   `json:"SkipIfCloned"`	  // should I delete a snapshot if it was cloned
 }
 
+// Director reads the server config file and all KV pairs
+// Then it creates the orders
 func Director() {
 	jsonFile := ServerFilePath
 	serverFile, err := ioutil.ReadFile(jsonFile)

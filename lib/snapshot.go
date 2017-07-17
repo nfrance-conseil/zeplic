@@ -57,7 +57,7 @@ func SnapBackup(dataset string, ds *zfs.Dataset) string {
 	return backup
 }
 
-// Renamed returns true if a snapshot was renamed
+// WasRenamed returns true if a snapshot was renamed
 func WasRenamed(SnapshotReceived string, SnapshotToCheck string) bool {
 	received := utils.After(SnapshotReceived, "@")
 	toCheck := utils.After(SnapshotToCheck, "@")
@@ -67,7 +67,7 @@ func WasRenamed(SnapshotReceived string, SnapshotToCheck string) bool {
 	return true
 }
 
-// Cloned searchs the name of the dataset where a snapshot was cloned
+// WasCloned searchs the name of the dataset where a snapshot was cloned
 func WasCloned(snap *zfs.Dataset) (bool, string) {
 	var cloned bool
 	clone, err := snap.GetProperty("clones")
