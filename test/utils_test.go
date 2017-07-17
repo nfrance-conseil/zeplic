@@ -21,6 +21,13 @@ func TestBefore(t *testing.T) {
 	}
 }
 
+func TestBetween(t *testing.T) {
+	between := utils.Between("testing", "e", "g")
+	if !strings.Contains(between, "stin") {
+		t.Errorf("Between() test failed!")
+	}
+}
+
 func TestReverse(t *testing.T) {
 	reverse := utils.Reverse("testing", "t")
 	if !strings.Contains(reverse, "esting") {

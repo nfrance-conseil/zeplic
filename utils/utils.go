@@ -30,6 +30,23 @@ func Before(value string, a string) string {
 	return value[0:pos]
 }
 
+// Between gets a substring between two strings
+func Between(value string, a string, b string) string {
+	posFirst := strings.Index(value, a)
+	if posFirst == -1 {
+		return ""
+	}
+	posLast := strings.Index(value, b)
+	if posLast == -1 {
+		return ""
+	}
+	posFirstAdjusted := posFirst + len(a)
+	if posFirstAdjusted >= posLast {
+		return ""
+	}
+	return value[posFirstAdjusted:posLast]
+}
+
 // Reverse gets substring
 func Reverse(value string, a string) string {
 	pos := strings.Index(value, a)

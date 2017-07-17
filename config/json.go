@@ -14,6 +14,12 @@ import (
 // ConfigFilePath returns the path of JSON config file
 var ConfigFilePath string
 
+// Sync contains Consul options
+type Sync struct {
+	Enable	   bool	  `json:"enable"`
+	Datacenter string `json:"datacenter"`
+}
+
 // Copy contains Clone options
 type Copy struct {
 	Enable	bool	`json:"enable"`
@@ -23,13 +29,14 @@ type Copy struct {
 
 // Data contains the information of each dataset
 type Data struct {
-	Enable	bool	`json:"enable"`
-	Docker	bool	`json:"docker"`
-	Name	string	`json:"name"`
-	Snap	string	`json:"snapshot"`
-	Retain	int	`json:"retain"`
-	Backup	bool	`json:"backup"`
-	Clone	Copy
+	Enable	   bool	  `json:"enable"`
+	Docker	   bool	  `json:"docker"`
+	Name	   string `json:"name"`
+	Consul	   Sync
+	Snapshot   string `json:"snapshot"`
+	Retention  int	  `json:"local_policy"`
+	Backup	   bool	  `json:"backup"`
+	Clone	   Copy
 }
 
 // Pool extracts the interface of JSON file
@@ -49,7 +56,7 @@ func JSON() (int, string, error) {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		w.Err("[ERROR > config/json.go:50] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/json.go:57] it was not possible to parse the JSON configuration file.")
 	}
 	return len(values.Dataset), jsonFile, nil
 }
@@ -63,14 +70,16 @@ func Extract(i int) ([]interface{}) {
 
 	enable	    := values.Dataset[i].Enable
 	docker	    := values.Dataset[i].Docker
-	delClone    := values.Dataset[i].Clone.Delete
-	clone	    := values.Dataset[i].Clone.Name
 	dataset	    := values.Dataset[i].Name
-	snapshot    := values.Dataset[i].Snap
-	retain	    := values.Dataset[i].Retain
+	consul	    := values.Dataset[i].Consul.Enable
+	datacenter  := values.Dataset[i].Consul.Datacenter
+	snapshot    := values.Dataset[i].Snapshot
+	retention   := values.Dataset[i].Retention
 	getBackup   := values.Dataset[i].Backup
 	getClone    := values.Dataset[i].Clone.Enable
+	clone	    := values.Dataset[i].Clone.Name
+	delClone    := values.Dataset[i].Clone.Delete
 
-	pieces := []interface{}{enable, docker, delClone, clone, dataset, snapshot, retain, getBackup, getClone}
+	pieces := []interface{}{enable, docker, dataset, consul, datacenter, snapshot, retention, getBackup, getClone, clone, delClone}
 	return pieces
 }

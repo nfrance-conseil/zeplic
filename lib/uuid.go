@@ -1,4 +1,4 @@
-// Package lib contains: clones.go - commands.go - snapshot.go - uuid.go
+// Package lib contains: commands.go - destroy.go - !policy.go - snapshot.go - take.go - uuid.go
 //
 // UUID sets an uuid to the snapshot
 // Search snapshot name from its uuid and vice versa
@@ -17,9 +17,9 @@ import (
 )
 
 // UUID asigns a new uuid
-func UUID(ds *zfs.Dataset) error {
+func UUID(snap *zfs.Dataset) error {
 	id := uuid.New()
-	err := ds.SetProperty(":uuid", id)
+	err := snap.SetProperty(":uuid", id)
 	return err
 }
 
@@ -53,10 +53,10 @@ func SearchName(uuid string) string {
 }
 
 // SearchUUID searchs the uuid of snapshot from its name
-func SearchUUID(ds *zfs.Dataset) string {
-	uuid, err := ds.GetProperty(":uuid")
+func SearchUUID(snap *zfs.Dataset) string {
+	uuid, err := snap.GetProperty(":uuid")
 	if err != nil {
-		w.Err("[ERROR > lib/uuid.go:57] it was not possible to find the uuid of the snapshot '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/uuid.go:57] it was not possible to find the uuid of the snapshot '"+snap.Name+"'.")
 	}
 	return uuid
 }

@@ -1,0 +1,23 @@
+{
+	"snapshots": [
+	{
+		"hostname": "localHostname",
+		"dataset": "tank/FOO",
+		"snapshot": {
+			"creation": "hourly",
+			"type": "sync",
+			"sync_on": "syncHostname",
+			"sync_policy": "asap"
+		},
+		"retention": {
+			"daily": 24,
+			"weekly": false,
+			"monthly": false,
+			"annual": false
+		},
+		"rollback_needed": true,
+		"skip_renamed": true,
+		"skip_not_written": true,
+		"skip_cloned": true
+	}]
+}

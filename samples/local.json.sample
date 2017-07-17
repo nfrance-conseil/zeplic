@@ -4,9 +4,13 @@
 		"enable": true,
 		"docker": false,
 		"name": "tank/foo",
+		"consul": {
+			"enable": true,
+			"datacenter": "ConsulDatacenter"
+		},
 		"snapshot": "FOO",
-		"retain": 5,
-		"backup": true,
+		"retention": 10,
+		"backup" true,
 		"clone": {
 			"enable": true,
 			"name": "tank/foo_clone",
@@ -17,8 +21,12 @@
 		"enable": false,
 		"docker": false,
 		"name": "tank/bar",
+		"consul": {
+			"enable": false,
+			"datacenter": "ConsulDatacenter"
+		},
 		"snapshot": "BAR",
-		"retain": 3,
+		"retention": 10,
 		"backup": false,
 		"clone": {
 			"enable": false,

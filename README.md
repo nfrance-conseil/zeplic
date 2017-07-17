@@ -1,4 +1,4 @@
-# zeplic v0.1.0-rc1
+# zeplic v0.1.0-rc2
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
@@ -18,7 +18,7 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 - Snapshots retention policy
 - Create a backup snapshot (optional)
 - Create a clone of last snapshot (optional)
-5. *In development...* Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
+5. Synchronisation between nodes using [Consul by HashiCorp](https://www.consul.io/)
 - ZFS orders (OrderUUID, Action[take_snapshot, send_snapshot, destroy_snapshot], Destination, SnapshotUUID, SnapshotName, DestDataset, RollbackIfNeeded, SkipIfRenamed, SkipIfNotWritten, SkipIfCloned)
 - Create a new snapshot
 - Destroy a snapshot
@@ -44,8 +44,12 @@ You can modify a sample JSON file that it has been created in your config path:
 		"enable": true,
 		"docker": false,
 		"name": "tank/foo",
+		"consul": {
+			"enable": true,
+			"datacenter": "ConsulDatacenter"
+		},
 		"snapshot": "FOO",
-		"retain": 5,
+		"local_policy": 24,
 		"backup" true,
 		"clone": {
 			"enable": true,
@@ -65,8 +69,9 @@ You can modify a sample JSON file that it has been created in your config path:
 - *enable*: to activate the dataset
 - *docker*: dataset to receive the snapshots
 - *name*: name of dataset
+- *consul*: configuration using Consul (director's mode)
 - *snapshot*: partial name of snapshot (name@snapshot_DATE)
-- *retain*: number of snapshots to save
+- *retain*: number of snapshots to save in local mode
 - *backup*: backup snapshot of dataset (double copy)
 - *clone*: make a clone of last snapshot created
 
@@ -84,20 +89,60 @@ Schedule a task with crontab to backup your files systems
 MM	HH	*	*	*	root	$BINPATH/zeplic --run
 ```
 
-### Director mode
+### Director's mode
 *In development...*
 
-You can send an order to the agent node (zeplic --agent) on port 7711:
-- Create a snapshot
-- Destroy a snapshot
+JSON file to configure the retention and replication policy. Use this one only in the server's node side:
+
+```
+{
+	"snapshots": [
+	{
+		"hostname": "localHostname",
+		"dataset": "tank/FOO",
+		"snapshot": {
+			"creation": "hourly",
+			"type": "sync",
+			"sync_on": "syncHostname",
+			"sync_policy": "asap"
+		},
+		"retain": {
+			"daily": 24,
+			"weekly": false,
+			"monthly": false,
+			"annual": false
+		},
+		"rollback_needed": true,
+		"skip_renamed": true,
+		"skip_not_written": true,
+		"skip_cloned": true
+	}]
+}
+```
+
+- *hostname*: hostname of local node
+- *dataset*: name of dataset to manage
+- *creation*: policy to create a new snapshot
+- *type*: snapshot to syncronize or to save
+- *sync_on*: node to synchronize
+- *sync_policy*: policy to synchronize
+- *retention*: policy of retention
+- other options
+
+Send an order to the agent node (zeplic --agent) on port 7711:
+- Create a snapshot...
 
 ```
 $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snapshot","Destination":"","SnapshotUUID":"","SnapshotName":"","DestDataset":"$DATASET_OF_SNAPSHOT","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
+```
 
+- ...and destroy it
+
+```
 $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
 ```
 
-You can send a snapshot between the agent node (zeplic --agent) to the slave node (zeplic --slave):
+Send a snapshot between the agent's node (zeplic --agent) and the slave's node (zeplic --slave):
 
 ```
 $ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711

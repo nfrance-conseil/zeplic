@@ -1,4 +1,4 @@
-// zeplic main package - July 2017 version 0.1.0-rc1
+// zeplic main package - July 2017 version 0.1.0-rc2
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/order"
@@ -56,20 +57,31 @@ func main() {
 		fmt.Println("[AGENT:7711] Receiving orders from director...")
 
 		// Loop to accept a new connection
-		stop := true
-		for stop {
+		for {
 			// Accept a new connection
 			connAgent, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = order.HandleRequestAgent(connAgent)
+			go order.HandleRequestAgent(connAgent)
 		}
 
 	// DIRECTOR
 	case *optDirector:
-//		config.Pid()
-		fmt.Printf("[INFO] director case inoperative...\n\n")
-		os.Exit(0)
+		config.Pid()
+		fmt.Println("[DIRECTOR] Running zeplic director's mode...")
+
+		// Infinite loop to manage the datasets
+		ticker := time.NewTicker(1 * time.Minute)
+		for {
+			select {
+			case <- ticker.C:
+//				go order.Director()
+				fmt.Println("")
+				fmt.Printf("[DEBUG] zeplic checking on %s", time.Now().UTC().Format(time.RFC1123))
+			default:
+				// No stop signal, continuing loop
+			}
+		}
 
 	// HELP
 	case *optHelp:
@@ -93,7 +105,16 @@ func main() {
 		j, _, _ := config.JSON()
 
 		// Invoke Runner() function
-		os.Exit(lib.Runner(j))
+		var code int
+		for i := 0; i < j; i++ {
+			code = lib.Runner(i, false)
+			if code > 1 {
+				break
+			} else {
+				continue
+			}
+		}
+		os.Exit(code)
 
 	// SLAVE
 	case *optSlave:
@@ -105,13 +126,12 @@ func main() {
 		fmt.Println("[SLAVE:7722] Receiving orders from agent...")
 
 		// Loop to accept a new connection
-		stop := true
-		for stop {
+		for {
 			// Accept a new connection
 			connSlave, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = order.HandleRequestSlave(connSlave)
+			go order.HandleRequestSlave(connSlave)
 		}
 
 	// VERSION

@@ -9,6 +9,42 @@
 			"revisionTime": "2017-06-16T13:12:18Z"
 		},
 		{
+			"checksumSHA1": "f54Y5F/OO9ovlOaekO3h4HyEEwE=",
+			"path": "github.com/hashicorp/consul/api",
+			"revision": "74946ddde9a5e297f5bb0b23756eb1685bba62a9",
+			"revisionTime": "2017-07-17T07:07:34Z"
+		},
+		{
+			"checksumSHA1": "b8F628srIitj5p7Y130xc9k0QWs=",
+			"path": "github.com/hashicorp/go-cleanhttp",
+			"revision": "3573b8b52aa7b37b9358d966a898feb387f62437",
+			"revisionTime": "2017-02-11T01:34:15Z"
+		},
+		{
+			"checksumSHA1": "A1PcINvF3UiwHRKn8UcgARgvGRs=",
+			"path": "github.com/hashicorp/go-rootcerts",
+			"revision": "6bb64b370b90e7ef1fa532be9e591a81c3493e00",
+			"revisionTime": "2016-05-03T14:34:40Z"
+		},
+		{
+			"checksumSHA1": "/oss17GO4hXGM7QnUdI3VzcAHzA=",
+			"path": "github.com/hashicorp/serf/coordinate",
+			"revision": "bbeddf0b3ab3072a60525afbd6b6f47d33839eee",
+			"revisionTime": "2017-07-14T18:26:01Z"
+		},
+		{
+			"checksumSHA1": "gEjGS03N1eysvpQ+FCHTxPcbxXc=",
+			"path": "github.com/kardianos/osext",
+			"revision": "ae77be60afb1dcacde03767a8c37337fad28ac14",
+			"revisionTime": "2017-05-10T13:15:34Z"
+		},
+		{
+			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
+			"path": "github.com/mitchellh/go-homedir",
+			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
+			"revisionTime": "2016-12-03T19:45:07Z"
+		},
+		{
 			"checksumSHA1": "9g3poI1bigwIsRtU+ReaYVrews8=",
 			"path": "github.com/pborman/getopt/v2",
 			"revision": "7148bc3a4c3008adfcab60cbebfd0576018f330b",

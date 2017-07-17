@@ -1,4 +1,4 @@
-// Package order contains: agent.go - !director.go - slave.go
+// Package order contains: agent.go - director.go - slave.go
 //
 // Slave receives a snapshot from agent
 //
@@ -15,6 +15,7 @@ import (
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
+	"github.com/hashicorp/consul/api"
 )
 
 // ZFSOrderFromAgent is the struct for ZFS orders from agent
@@ -40,25 +41,22 @@ type ZFSListUUIDsToAgent struct {
 }
 
 // HandleRequestSlave incoming requests from agent
-func HandleRequestSlave (connSlave net.Conn) bool {
-	// Start syslog system service
-	w := config.LogBook()
-
+func HandleRequestSlave (connSlave net.Conn) {
 	// Resolve hostname
 	hostname, err := os.Hostname()
 	if err != nil {
-		w.Err("[ERROR > order/slave.go:48] it was not possible to resolve the hostname.")
+		w.Err("[ERROR > order/slave.go:46] it was not possible to resolve the hostname.")
 	}
 
 	// Unmarshal orders from agent
 	var a ZFSOrderFromAgent
 	agent, err := bufio.NewReader(connSlave).ReadBytes('\x0A')
 	if err != nil {
-		w.Err("[ERROR > order/slave.go:55] an error has occurred while reading from the socket.")
+		w.Err("[ERROR > order/slave.go:53] an error has occurred while reading from the socket.")
 	}
 	err = json.Unmarshal(agent, &a)
 	if err != nil {
-		w.Err("[ERROR > order/slave.go:59] it was not possible to parse the JSON struct from the socket.")
+		w.Err("[ERROR > order/slave.go:57] it was not possible to parse the JSON struct from the socket.")
 	}
 
 	if a.OrderUUID != "NotWritten" {
@@ -84,7 +82,7 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		index := -1
 		for i := 0; i < j; i++ {
 			pieces	:= config.Extract(i)
-			dataset := pieces[4].(string)
+			dataset := pieces[2].(string)
 
 			if dataset == a.DestDataset {
 				index = i
@@ -95,10 +93,11 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		}
 		if index > -1 {
 			// Extract data of dataset
-			pieces  := config.Extract(index)
-			enable  := pieces[0].(bool)
-			docker  := pieces[1].(bool)
-			dataset := pieces[4].(string)
+			pieces	   := config.Extract(index)
+			enable	   := pieces[0].(bool)
+			docker	   := pieces[1].(bool)
+			dataset	   := pieces[2].(string)
+			datacenter := pieces[4].(string)
 
 			if dataset == a.DestDataset && enable == true && docker == true {
 				// Check if the dataset received exists
@@ -117,19 +116,40 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 					if err != nil {
 						Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-						w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+						w.Err("[ERROR > order/slave.go:113] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 						more = true
 					} else {
 						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 						w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 						more = true
 						runner = true
+
+						// Create a new client
+						client, err := api.NewClient(api.DefaultConfig())
+						if err != nil {
+							w.Err("[ERROR > order/slave.go:128]@[CONSUL] it was not possible to create a new client.")
+						}
+						kv := client.KV()
+
+						// KV write options
+						key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
+						value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
+
+						// Update the key and value of KV pair
+						p := &api.KVPair{Key: key, Value: []byte(value)}
+						q := &api.WriteOptions{Datacenter: datacenter}
+
+						// Edit KV pair
+						_, err = kv.Put(p, q)
+						if err != nil {
+							w.Err("[ERROR > order/slave.go:143]@[CONSUL] it was not possible to edit the KV pair.")
+						}
 					}
 				} else {
 					// Get the last snapshot in DestDataset
 					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > order/slave.go:130] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+						w.Err("[ERROR > order/slave.go:150] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 					}
 					count = len(list)
 
@@ -145,12 +165,12 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 						if backup != amount {
 							list, err := ds.Snapshots()
 							if err != nil {
-								w.Err("[ERROR > order/slave.go:146] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+								w.Err("[ERROR > order/slave.go:166] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 							}
 							backup := list[0].Name
 							snap, err := zfs.GetDataset(backup)
 							if err != nil {
-								w.Err("[ERROR > order/slave.go:151] it was not possible to get the snapshot '"+backup+"'.")
+								w.Err("[ERROR > order/slave.go:171] it was not possible to get the snapshot '"+backup+"'.")
 							}
 							snap.Destroy(zfs.DestroyDefault)
 							w.Info("[INFO] the backup snapshot '"+backup+"' has been destroyed.")
@@ -163,13 +183,34 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 						if err != nil {
 							Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 							ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-							w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+							w.Err("[ERROR > order/slave.go:180] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 							more = true
 						} else {
 							ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 							w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 							more = true
 							runner = true
+
+							// Create a new client
+							client, err := api.NewClient(api.DefaultConfig())
+							if err != nil {
+								w.Err("[ERROR > order/slave.go:XXX]@[CONSUL] it was not possible to create a new client.")
+							}
+							kv := client.KV()
+
+							// KV write options
+							key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
+							value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
+
+							// Update the key and value of KV pair
+							p := &api.KVPair{Key: key, Value: []byte(value)}
+							q := &api.WriteOptions{Datacenter: datacenter}
+
+							// Delete KV pair
+							_, err = kv.Put(p, q)
+							if err != nil {
+								w.Err("[ERROR > order/slave.go:210]@[CONSUL] it was not possible to edit the KV pair.")
+							}
 						}
 					} else {
 						// Status for DestDataset
@@ -213,13 +254,13 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			// Reconnection to send ZFSResponseToAgent
 			connToAgent, err := net.Dial("tcp", a.Source+":7733")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:214] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:255] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			rta, err = json.Marshal(ResponseToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:220] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:261] it was not possible to encode the JSON struct.")
 			} else {
 				connToAgent.Write([]byte(rta))
 				connToAgent.Write([]byte("\n"))
@@ -228,17 +269,20 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		}
 
 		if stream == true {
+			// Configuration of dataset
+			pieces := config.Extract(index)
+
 			// MapUUID to save the list of uuids
 			var MapUUID []string
 
 			// Get the list of snapshots in DestDataset
 			ds, err := zfs.GetDataset(a.DestDataset)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:235] it was not possible to get the dataset '"+a.DestDataset+"'.")
+				w.Err("[ERROR > order/slave.go:279] it was not possible to get the dataset '"+a.DestDataset+"'.")
 			}
 			list, err = ds.Snapshots()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:239] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+				w.Err("[ERROR > order/slave.go:283] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 			}
 			count = len(list)
 
@@ -257,13 +301,13 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 			// Send the list of uuids in DestDataset
 			conn2ToAgent, err := net.Dial("tcp", a.Source+":7744")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:258] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:302] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			lta, err := json.Marshal(ListUUIDsToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:264] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:308] it was not possible to encode the JSON struct.")
 			} else {
 				conn2ToAgent.Write([]byte(lta))
 				conn2ToAgent.Write([]byte("\n"))
@@ -272,27 +316,24 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 
 			l2, err := net.Listen("tcp", ":7755")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:273] it was not possible to listen on port '7755'.")
+				w.Err("[ERROR > order/slave.go:317] it was not possible to listen on port '7755'.")
 			}
 			defer l2.Close()
 			fmt.Println("[SLAVE:7755] Receiving incremental stream from agent...")
 
 			conn2Slave, err := l2.Accept()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:280] it was not possible to accept the connection.")
+				w.Err("[ERROR > order/slave.go:324] it was not possible to accept the connection.")
 			}
 
 			// Read the status
 			buff := bufio.NewReader(conn2Slave)
 			n, err := buff.ReadByte()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:287] it was not possible to read the 'dataset byte'.")
+				w.Err("[ERROR > order/slave.go:330] it was not possible to read the 'dataset byte'.")
 			}
 			m := string(n)
-			snapExist, err := strconv.Atoi(m)
-			if err != nil {
-				w.Err("[ERROR > order/slave.go:292] it was not possible to convert the string '"+m+"' to integer.")
-			}
+			snapExist, _ := strconv.Atoi(m)
 
 			// Last snapshot in slave node
 			LastSnapshotName := list[amount-1].Name
@@ -307,17 +348,39 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 				if err != nil {
 					Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s': incoherent.", hostname, a.SnapshotName, a.Source)
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-					w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
+					w.Err("[ERROR > order/slave.go:345] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
 				} else {
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 					w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 					runner = true
+
+					// Create a new client
+					client, err := api.NewClient(api.DefaultConfig())
+					if err != nil {
+						w.Err("[ERROR > order/slave.go:358]@[CONSUL] it was not possible to create a new client.")
+					}
+					kv := client.KV()
+
+					// KV write options
+					key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
+					value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
+
+					// Update the key and value of KV pair
+					p := &api.KVPair{Key: key, Value: []byte(value)}
+					q := &api.WriteOptions{Datacenter: pieces[4].(string)}
+
+					// Delete KV pair
+					_, err = kv.Put(p, q)
+					if err != nil {
+						w.Err("[ERROR > order/slave.go:373]@[CONSUL] it was not possible to edit the KV pair.")
+					}
 				}
 
 			// Case: the received snapshot already existed
 			case NothingToDo:
 				SnapshotName := lib.SearchName(a.SnapshotUUID)
-				renamed := lib.Renamed(a.SnapshotName, SnapshotName)
+				renamed := lib.WasRenamed(a.SnapshotName, SnapshotName)
+
 				if renamed == true {
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasRenamed,""}
 					w.Info("[INFO] the snapshot '"+a.SnapshotName+"' already exists and it was renamed to '"+SnapshotName+"'.")
@@ -340,23 +403,44 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 				if err != nil {
 					Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-					w.Err("[ERROR] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+					w.Err("[ERROR > order/slave.go:400] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 				} else {
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 					w.Info("[INFO] the snapshot '"+a.SnapshotName+"' has been received.")
 					runner = true
+
+					// Create a new client
+					client, err := api.NewClient(api.DefaultConfig())
+					if err != nil {
+						w.Err("[ERROR > order/slave.go:413]@[CONSUL] it was not possible to create a new client.")
+					}
+					kv := client.KV()
+
+					// KV write options
+					key := fmt.Sprintf("%s/%s/%s", "zeplic", hostname, a.SnapshotUUID)
+					value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
+
+					// Update the key and value of KV pair
+					p := &api.KVPair{Key: key, Value: []byte(value)}
+					q := &api.WriteOptions{Datacenter: pieces[4].(string)}
+
+					// Delete KV pair
+					_, err = kv.Put(p, q)
+					if err != nil {
+						w.Err("[ERROR > order/slave.go:428]@[CONSUL] it was not possible to edit the KV pair.")
+					}
 				}
 			}
 			// Send the last ZFSResponseToAgent
 			conn3ToAgent, err := net.Dial("tcp", a.Source+":7766")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:351] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:435] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			rta, err := json.Marshal(ResponseToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:356] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:441] it was not possible to encode the JSON struct.")
 			} else {
 				conn3ToAgent.Write([]byte(rta))
 				conn3ToAgent.Write([]byte("\n"))
@@ -367,56 +451,45 @@ func HandleRequestSlave (connSlave net.Conn) bool {
 		}
 
 		if runner == true {
-			pieces	  := config.Extract(index)
-			enable	  := pieces[0].(bool)
-			delClone  := pieces[2].(bool)
-			clone	  := pieces[3].(string)
-			dataset	  := pieces[4].(string)
-			retain	  := pieces[6].(int)
-			getBackup := pieces[7].(bool)
-			getClone  := pieces[8].(bool)
+			// Extract dataset information
+			pieces	   := config.Extract(index)
+			enable	   := pieces[0].(bool)
+			dataset	   := pieces[2].(string)
+			getBackup  := pieces[7].(bool)
+			getClone   := pieces[8].(bool)
+			clone	   := pieces[9].(string)
+			delClone   := pieces[10].(bool)
 
 			if enable == true {
-				// Delete an existing clone
-				lib.DeleteClone(delClone, clone)
-
 				// Delete the backup snapshot
 				ds, err := zfs.GetDataset(dataset)
 				if err != nil {
-					w.Err("[ERROR > order/slave.go:384] it was not possible to get the dataset '"+dataset+"'.")
+					w.Err("[ERROR > order/slave.go:465] it was not possible to get the dataset '"+dataset+"'.")
 				} else {
-					list, err := ds.Snapshots()
-					if err != nil {
-						w.Err("[ERROR > order/slave.go:388] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
-					}
-					count = len(list)
-					backup, amount := lib.RealList(count, list, dataset)
-					if backup != amount {
-						take := list[backup-1].Name
-						snap, err := zfs.GetDataset(take)
-						if err != nil {
-							w.Err("[ERROR > order/slave.go:396] it was not possible to get the snapshot '"+take+"'.")
-						}
-						lib.DeleteBackup(dataset, snap)
-					}
+					// Delete an existing clone
+					lib.DeleteClone(delClone, clone)
 
-					// Retain policy
-					lib.Policy(dataset, ds, retain)
+					// Delete backup snapshot
+					lib.DeleteBackup(dataset, ds)
 
 					// Create a backup snapshot
 					lib.Backup(getBackup, dataset, ds)
 
 					// Clone the last snapshot received
-					take := list[amount-1].Name
-					snap, err := zfs.GetDataset(take)
+					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > order/slave.go:411] it was not possible to get the snapshot '"+take+"'.")
+						w.Err("[ERROR > order/slave.go:479] it was not possible to access of snapshots list.")
 					}
-					lib.Clone(getClone, clone, take, snap)
+					count := len(list)
+					_, amount := lib.RealList(count, list, dataset)
+					LastSnapshot := list[amount-1].Name
+					snap, err := zfs.GetDataset(LastSnapshot)
+					if err != nil {
+						w.Err("[ERROR > order/slave.go:486] it was not possible to get the snapshot '"+snap.Name+"'.")
+					}
+					lib.Clone(getClone, clone, snap.Name, snap)
 				}
 			}
 		}
 	}
-	stop := false
-	return stop
 }
