@@ -107,7 +107,7 @@ install:
 
 ##### =====> Internals <===== #####
 
-VERSION		 := $(shell git tag)
+VERSION		 := $(shell git describe --tags $(git rev-list --tags --max-count=1))
 DATE		 := $(shell date -u '+%Y-%m-%d %H:%M UTC')
 OS		 := $(shell uname)
 ifeq ($(OS),FreeBSD)
