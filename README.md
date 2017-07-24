@@ -39,7 +39,7 @@ You can modify a sample JSON file that it has been created in your config path:
 
 ```sh
 {
-	"datasets": [
+	"local_datasets": [
 	{
 		"enable": true,
 		"docker": false,
@@ -48,8 +48,8 @@ You can modify a sample JSON file that it has been created in your config path:
 			"enable": true,
 			"datacenter": "ConsulDatacenter"
 		},
-		"snapshot": "FOO",
-		"local_policy": 24,
+		"snap_prefix": "FOO",
+		"snap_retention": 24,
 		"backup" true,
 		"clone": {
 			"enable": true,
@@ -70,8 +70,8 @@ You can modify a sample JSON file that it has been created in your config path:
 - *docker*: dataset to receive the snapshots
 - *name*: name of dataset
 - *consul*: configuration using Consul (director's mode)
-- *snapshot*: partial name of snapshot (name@snapshot_DATE)
-- *retain*: number of snapshots to save in local mode
+- *snap_prefix*: prefix of snapshot name (dataset@PREFIX_DATE)
+- *snap_retention*: number of snapshots to save in local mode
 - *backup*: backup snapshot of dataset (double copy)
 - *clone*: make a clone of last snapshot created
 
@@ -96,17 +96,27 @@ JSON file to configure the retention and replication policy. Use this one only i
 
 ```
 {
-	"snapshots": [
+	"datasets": [
 	{
 		"hostname": "localHostname",
-		"dataset": "tank/FOO",
-		"snapshot": {
-			"creation": "hourly",
-			"type": "sync",
-			"sync_on": "syncHostname",
-			"sync_policy": "asap"
-		},
-		"retain": {
+		"datacenter": "ConsulDatacenter",
+		"dataset": "tank/foo",
+		"backup": {
+			"creation": "00 * * * 1-5"
+			"prefix": "BACKUP",
+			"sync_on": "SyncHostname",
+			"sync_dataset": "tank/copy_backup",
+			"sync_policy": "00 1 * * *",
+			"daily": 24,
+			"weekly": false,
+			"monthly": false,
+			"annual": false
+		"sync": {
+			"creation": "00 4 * * *"
+			"prefix": "SYNC",
+			"sync_on": "SyncHostname",
+			"sync_dataset": "tank/copy_sync",
+			"sync_policy": "asap",
 			"daily": 24,
 			"weekly": false,
 			"monthly": false,
@@ -121,32 +131,34 @@ JSON file to configure the retention and replication policy. Use this one only i
 ```
 
 - *hostname*: hostname of local node
+- *datacenter*: datacenter of Consul
 - *dataset*: name of dataset to manage
-- *creation*: policy to create a new snapshot
-- *type*: snapshot to syncronize or to save
+- *creation*: policy to create a new snapshot (cron)
+- *prefix*: prefix of snapshot name
 - *sync_on*: node to synchronize
-- *sync_policy*: policy to synchronize
-- *retention*: policy of retention
+- *sync_dataset*: dataset in slave node
+- *sync_policy*: policy to synchronize (asap | cron)
+- *!retention*: policy of retention
 - other options
 
-Send an order to the agent node (zeplic --agent) on port 7711:
-- Create a snapshot...
+Formats for creation, send and destroy a snapshot:
 
 ```
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"take_snapshot","Destination":"","SnapshotUUID":"","SnapshotName":"","DestDataset":"$DATASET_OF_SNAPSHOT","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
+Create: *cron*
+Send: *asap* (as soon as possible) or *cron*
+Destroy: *DdWwMmYy*
+	- D = number of snapshots to retain in last 24h
+	- W = number of snapshots to retain in last week
+	- M = number of snapshots to retain in last month
+	- Y = number of snapshots to retain in last year
+
+Cron format = MM HH Monthday Month Weekday
 ```
 
-- ...and destroy it
-
-```
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"destroy_snapshot","Destination":"","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"$NAME_OF_SNAPSHOT","DestDataset":"","RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
-```
+Send an order to the agent node (zeplic --agent) on port 7711 to:
+- Create a snapshot or destroy it
 
 Send a snapshot between from agent's node (zeplic --agent) to slave's node (zeplic --slave):
-
-```
-$ echo '{"OrderUUID":"4fa34d08-51a6-11e7-a181-b18db42d304e","Action":"send_snapshot","Destination":"$HOSTNAME_SLAVE","SnapshotUUID":"$UUID_OF_SNAPSHOT","SnapshotName":"","DestDataset":"$DATASET_OF_DESTINATION",RollbackIfNeeded":true,"SkipIfRenamed":true,"SkipIfNotWritten":true,"SkipIfCloned":true}' | nc -w 3 $IP_AGENT 7711
-```
 
 ### Syslog system service
 
@@ -180,15 +192,15 @@ Jun 29 10:00:00 hostname zeplic[1176]: [NOTICE] the dataset 'tank/bar' is disabl
 
 ```
 $ zeplic --help
-Usage: zeplic [-adrsv] [--help] [--quit] [parameters ...]
- -a, --agent     Listen ZFS orders from director
- -d, --director  Send ZFS orders to agent
+Usage: zeplic [-acdrsv] [--help] [--quit] [parameters ...]
+ -a, --agent     Execute the orders from director
+ -c, --cleaner   Clean KV pairs with #deleted flag
+ -d, --director  Execute 'zeplic' in synchronization mode
      --help      Show help menu
      --quit      Gracefully shutdown
- -r, --run       Execute ZFS functions
+ -r, --run       Execute 'zeplic' in local mode
  -s, --slave     Receive a new snapshot from agent
  -v, --version   Show version of zeplic
-
 ```
 
 ### Vendoring
