@@ -107,20 +107,14 @@ JSON file to configure the retention and replication policy. Use this one only i
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_backup",
 			"sync_policy": "00 1 * * *",
-			"daily": 24,
-			"weekly": false,
-			"monthly": false,
-			"annual": false
+			"retention": "24d1w1m1y"
 		"sync": {
 			"creation": "00 4 * * *"
 			"prefix": "SYNC",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_sync",
 			"sync_policy": "asap",
-			"daily": 24,
-			"weekly": false,
-			"monthly": false,
-			"annual": false
+			"retention": "24d1w1m1y"
 		},
 		"rollback_needed": true,
 		"skip_renamed": true,
@@ -138,15 +132,15 @@ JSON file to configure the retention and replication policy. Use this one only i
 - *sync_on*: node to synchronize
 - *sync_dataset*: dataset in slave node
 - *sync_policy*: policy to synchronize (asap | cron)
-- *!retention*: policy of retention
+- *retention*: policy of retention
 - other options
 
 Formats for creation, send and destroy a snapshot:
 
 ```
-Create: *cron*
-Send: *asap* (as soon as possible) or *cron*
-Destroy: *DdWwMmYy*
+Create: cron
+Send: asap (as soon as possible) or cron
+Destroy: DdWwMmYy
 	- D = number of snapshots to retain in last 24h
 	- W = number of snapshots to retain in last week
 	- M = number of snapshots to retain in last month
@@ -155,10 +149,8 @@ Destroy: *DdWwMmYy*
 Cron format = MM HH Monthday Month Weekday
 ```
 
-Send an order to the agent node (zeplic --agent) on port 7711 to:
-- Create a snapshot or destroy it
-
-Send a snapshot between from agent's node (zeplic --agent) to slave's node (zeplic --slave):
+- Send an order to the agent node (zeplic --agent) on port 7711 to create a snapshot or destroy it
+- Send a snapshot between from agent's node (zeplic --agent) to slave's node (zeplic --slave)
 
 ### Syslog system service
 
