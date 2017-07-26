@@ -151,7 +151,7 @@ func NameMonthInt(month int) time.Month {
 	return Month
 }
 
-// Nameweek returns the name of the weekday
+// NameWeek returns the name of the weekday
 func NameWeek(weekday string) time.Weekday {
 	var Weekday time.Weekday
 	switch weekday {

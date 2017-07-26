@@ -6,7 +6,7 @@ import (
 	"github.com/nfrance-conseil/zeplic/lib"
 	"testing"
 )
-
+/*
 func TestDelete(t *testing.T) {
 	// Snapshots list
 	dataset := "tank/test"
@@ -25,7 +25,7 @@ func TestDelete(t *testing.T) {
 		}
 	}
 }
-
+*/
 func TestNewSnapshot(t *testing.T) {
 	// Snapshots list, cron format and prefix
 	SnapshotsList := []string{"1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e:tank/test@SNAP_2017-July-01_12:00:00", "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e:tank/test@SNAP_2017-July-01_11:00:00#sent"}
@@ -47,16 +47,16 @@ func TestSend(t *testing.T) {
 	dataset := "tank/test"
 	SnapshotsList := []string{"1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e:tank/test@SNAP_2017-July-01_22:00:00", "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e:tank/test@SNAP_2017-July-01_11:00:00#sent"}
 	prefix := "SNAP"
-	sync_policy := "asap"
-	send, SnapshotUUID := lib.Send(dataset, SnapshotsList, sync_policy, prefix)
+	SyncPolicy := "asap"
+	send, SnapshotUUID := lib.Send(dataset, SnapshotsList, SyncPolicy, prefix)
 	if send == false || SnapshotUUID != "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e" {
 		t.Errorf("Send() test failed!")
 		t.Errorf("%s", SnapshotUUID)
 	}
 
 	// Check with cron format
-	sync_policy = "0 23 * * 2"
-	send, SnapshotUUID = lib.Send(dataset, SnapshotsList, sync_policy, prefix)
+	SyncPolicy = "0 23 * * 2"
+	send, SnapshotUUID = lib.Send(dataset, SnapshotsList, SyncPolicy, prefix)
 	if send == false || SnapshotUUID != "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e" {
 		t.Errorf("Send() test failed!")
 		t.Errorf("%s", SnapshotUUID)

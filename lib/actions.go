@@ -356,7 +356,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 }
 
 // Send returns true if the snapshot should be sent
-func Send(dataset string, SnapshotsList []string, sync_policy string, prefix string) (bool, string) {
+func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix string) (bool, string) {
 	var send bool
 	var SnapshotUUID string
 
@@ -374,7 +374,7 @@ func Send(dataset string, SnapshotsList []string, sync_policy string, prefix str
 	actual := time.Date(year, month, day, hour, min, 00, 0, loc)
 
 	// Struct for cron
-	cMinute, cHour, cMonthday, cMonth, cWeekday := calendar.Crontab(sync_policy)
+	cMinute, cHour, cMonthday, cMonth, cWeekday := calendar.Crontab(SyncPolicy)
 
 	// Sort the list of snapshtos
 	var list []string
@@ -402,7 +402,7 @@ func Send(dataset string, SnapshotsList []string, sync_policy string, prefix str
 		SnapPrefix := Prefix(LastSnapshot)
 		if SnapPrefix == prefix {
 			// Checking the syncrhonization policy
-			if sync_policy == "asap" {
+			if SyncPolicy == "asap" {
 				send= true
 				break
 			} else {

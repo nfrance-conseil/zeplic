@@ -144,21 +144,21 @@ func Director() {
 		}
 
 		// Extract all information of server JSON file
-		backup_creation	    := values.Director[i].Backup.Creation
-		backup_prefix	    := values.Director[i].Backup.Prefix
-		backup_sync_on	    := values.Director[i].Backup.SyncOn
-		backup_sync_dataset := values.Director[i].Backup.SyncDataset
-		backup_sync_policy  := values.Director[i].Backup.SyncPolicy
-		backup_retention    := values.Director[i].Backup.Retention
-		sync_creation	    := values.Director[i].Sync.Creation
-		sync_prefix	    := values.Director[i].Sync.Prefix
-		sync_sync_on	    := values.Director[i].Sync.SyncOn
-		sync_sync_dataset   := values.Director[i].Sync.SyncDataset
-		sync_sync_policy    := values.Director[i].Sync.SyncPolicy
-		sync_retention      := values.Director[i].Sync.Retention
+		BackupCreation	    := values.Director[i].Backup.Creation
+		BackupPrefix	    := values.Director[i].Backup.Prefix
+		BackupSyncOn	    := values.Director[i].Backup.SyncOn
+		BackupSyncDataset   := values.Director[i].Backup.SyncDataset
+		BackupSyncPolicy    := values.Director[i].Backup.SyncPolicy
+		BackupRetention     := values.Director[i].Backup.Retention
+		SyncCreation	    := values.Director[i].Sync.Creation
+		SyncPrefix	    := values.Director[i].Sync.Prefix
+		SyncSyncOn	    := values.Director[i].Sync.SyncOn
+		SyncSyncDataset	    := values.Director[i].Sync.SyncDataset
+		SyncSyncPolicy	    := values.Director[i].Sync.SyncPolicy
+		SyncRetention	    := values.Director[i].Sync.Retention
 		rollback	    := values.Director[i].RollbackIfNeeded
 		renamed		    := values.Director[i].SkipIfRenamed
-		not_written	    := values.Director[i].SkipIfNotWritten
+		NotWritten	    := values.Director[i].SkipIfNotWritten
 		cloned		    := values.Director[i].SkipIfCloned
 
 		// Define variables of order struct
@@ -196,11 +196,11 @@ func Director() {
 		}
 
 		// Should I send a take_snapshot order?
-		take, SnapshotName := lib.NewSnapshot(snapshotsList, backup_creation, backup_prefix)
+		take, SnapshotName := lib.NewSnapshot(snapshotsList, BackupCreation, BackupPrefix)
 		if take == true {
 			Action = "take_snapshot"
 		} else {
-			take, SnapshotName = lib.NewSnapshot(snapshotsList, sync_creation, sync_prefix)
+			take, SnapshotName = lib.NewSnapshot(snapshotsList, SyncCreation, SyncPrefix)
 			if take == true {
 				Action = "take_snapshot"
 			}
@@ -210,31 +210,31 @@ func Director() {
 		var uuidList []string
 		if take == false {
 			// Should I send a send_snapshot order?
-			sent, uuid := lib.Send(dataset, snapshotsList, backup_sync_policy, backup_prefix)
+			sent, uuid := lib.Send(dataset, snapshotsList, BackupSyncPolicy, BackupPrefix)
 			if sent == true {
 				Action = "send_snapshot"
-				Destination = backup_sync_on
+				Destination = BackupSyncOn
 				uuidList = append(uuidList, uuid)
-				DestDataset = backup_sync_dataset
+				DestDataset = BackupSyncDataset
 			} else {
-				sent, uuid = lib.Send(dataset, snapshotsList, sync_sync_policy, sync_prefix)
+				sent, uuid = lib.Send(dataset, snapshotsList, SyncSyncPolicy, SyncPrefix)
 				if sent == true {
 					Action = "send_snapshot"
-					Destination = sync_sync_on
+					Destination = SyncSyncOn
 					uuidList = append(uuidList, uuid)
-					DestDataset = sync_sync_dataset
+					DestDataset = SyncSyncDataset
 				}
 			}
 		}
 
 		if sent == false {
 			// Should I send a destroy_snapshot order?
-			destroy, list := lib.Delete(dataset, snapshotsList, backup_prefix, backup_retention)
+			destroy, list := lib.Delete(dataset, snapshotsList, BackupPrefix, BackupRetention)
 			if destroy == true {
 				Action = "destroy_snapshot"
 				SnapshotUUID = list
 			} else {
-				destroy, list := lib.Delete(dataset, snapshotsList, sync_prefix, sync_retention)
+				destroy, list := lib.Delete(dataset, snapshotsList, SyncPrefix, SyncRetention)
 				if destroy == true {
 					Action = "destroy_snapshot"
 					SnapshotUUID = list
@@ -251,7 +251,7 @@ func Director() {
 			DestDataset	 = dataset
 			RollbackIfNeeded = rollback
 			SkipIfRenamed    = renamed
-			SkipIfNotWritten = not_written
+			SkipIfNotWritten = NotWritten
 			SkipIfCloned     = cloned
 
 		// Send a snapshot
@@ -260,7 +260,7 @@ func Director() {
 			SnapshotName	 = ""
 			RollbackIfNeeded = rollback
 			SkipIfRenamed    = renamed
-			SkipIfNotWritten = not_written
+			SkipIfNotWritten = NotWritten
 			SkipIfCloned     = cloned
 
 		// Destroy a snapshot
@@ -270,7 +270,7 @@ func Director() {
 			DestDataset	 = ""
 			RollbackIfNeeded = rollback
 			SkipIfRenamed    = renamed
-			SkipIfNotWritten = not_written
+			SkipIfNotWritten = NotWritten
 			SkipIfCloned     = cloned
 
 		// No action

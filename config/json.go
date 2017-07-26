@@ -15,7 +15,7 @@ var (
 	w = LogBook()
 )
 
-// ConfigFilePath returns the path of JSON config file
+// LocalFilePath returns the path of JSON config file
 var LocalFilePath string
 
 // Sync contains Consul options
