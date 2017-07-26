@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - destroy.go - !policy.go - snapshot.go - take.go - uuid.go
+// Package lib contains: actions.go - cleaner.go - commands.go - destroy.go - snapshot.go - sync.go - take.go - uuid.go
 //
 // UUID sets an uuid to the snapshot
 // Search snapshot name from its uuid and vice versa

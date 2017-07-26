@@ -1,4 +1,4 @@
-// Package utils contains: utils.go
+// Package utils contains: substrings.go
 //
 // Functions gets substrings
 //

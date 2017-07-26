@@ -14,20 +14,13 @@ import (
 	"syscall"
 )
 
-var (
-	// PidFilePath gets the path of pid file
-	PidFilePath string
-	// Variable to connect with syslog service
-	w = LogBook()
-)
+// PidFilePath gets the path of pid file
+var PidFilePath string
 
 // Leave sends a SIGTERM signal to zeplic process ID
 func Leave() int {
 	pidBytes, _ := ioutil.ReadFile(PidFilePath)
-	pid, err := strconv.Atoi(string(pidBytes))
-	if err != nil {
-		w.Err("[ERROR > config/signal.go:27] it was not possible to convert the string 'pid' to integer.")
-	}
+	pid, _ := strconv.Atoi(string(pidBytes))
 
 	// Search if zeplic process exists
 	search := fmt.Sprintf("ps -o command= -p %d", pid)

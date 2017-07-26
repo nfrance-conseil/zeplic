@@ -1,19 +1,47 @@
-// Package lib contains: commands.go - destroy.go - !policy.go - snapshot.go - take.go - uuid.go
+// Package lib contains: actions.go - cleaner.go - commands.go - destroy.go - snapshot.go - sync.go - take.go - uuid.go
 //
 // Snapshot makes the structure of snapshot's names
 //
 package lib
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/nfrance-conseil/zeplic/calendar"
 	"github.com/nfrance-conseil/zeplic/utils"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
+
+// CreateTime returns the date of snapshot's creation
+func CreateTime(SnapshotName string) (int, time.Month, int, int, int, int) {
+	SnapshotName = calendar.NumberMonth(SnapshotName)
+
+	// Extract year, month and day
+	date  := utils.Reverse(SnapshotName, "_")
+	year  := utils.Before(date, "-")
+	date   = date[5:len(date)]
+	month := utils.Before(date, "-")
+	day   := utils.Between(date, "-", "_")
+
+	// Extract hour, minute and second
+	timer := utils.After(SnapshotName, "_")
+	hour  := utils.Before(timer, ":")
+	timer  = timer[3:len(timer)]
+	min   := utils.Before(timer, ":")
+	sec   := timer[3:len(timer)]
+
+	y, _ := strconv.Atoi(year)
+	d, _ := strconv.Atoi(day)
+	h, _ := strconv.Atoi(hour)
+	m, _ := strconv.Atoi(min)
+	s, _ := strconv.Atoi(sec)
+
+	Month := calendar.NameMonthZero(month)
+	return y, Month, d, h, m, s
+}
 
 // DatasetName returns the dataset name of snapshot
 func DatasetName(SnapshotName string) string {
@@ -21,11 +49,29 @@ func DatasetName(SnapshotName string) string {
 	return dataset
 }
 
-// SnapName defines the name of the snapshot: NAME_yyyy-Month-dd_HH:MM:SS
-func SnapName(name string) string {
+// InfoKV extracts the hostname, uuid, name and flag of snapshot KV pair
+func InfoKV(pair string) (string, string, string) {
+	uuid := utils.Before(pair, ":")
+	name := utils.Reverse(pair, ":")
+	var flag string
+	if strings.Contains(name, "#") {
+		flag = utils.Reverse(name, "#")
+		name = utils.Before(name, "#")
+	}
+	return uuid, name, flag
+}
+
+// Prefix returns the prefix of snapshot name
+func Prefix(SnapshotName string) string {
+	prefix := utils.Between(SnapshotName, "@", "_")
+	return prefix
+}
+
+// SnapName defines the name of the snapshot: PREFIX_yyyy-Month-dd_HH:MM:SS
+func SnapName(prefix string) string {
 	year, month, day := time.Now().Date()
 	hour, min, sec   := time.Now().Clock()
-	snapDate := fmt.Sprintf("%s_%d-%s-%02d_%02d:%02d:%02d", name, year, month, day, hour, min, sec)
+	snapDate := fmt.Sprintf("%s_%d-%s-%02d_%02d:%02d:%02d", prefix, year, month, day, hour, min, sec)
 	return snapDate
 }
 
@@ -34,7 +80,7 @@ func SnapBackup(dataset string, ds *zfs.Dataset) string {
 	// Get the older snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:35] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/snapshot.go:81] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 
@@ -72,7 +118,7 @@ func WasCloned(snap *zfs.Dataset) (bool, string) {
 	var cloned bool
 	clone, err := snap.GetProperty("clones")
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:73] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:119] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
 	}
 	if clone == "" {
 		cloned = false
@@ -80,38 +126,4 @@ func WasCloned(snap *zfs.Dataset) (bool, string) {
 		cloned = true
 	}
 	return cloned, clone
-}
-
-// CreateTime returns the date of snapshot's creation
-func CreateTime(snap *zfs.Dataset) (int64, int, string, int, int, int, int) {
-	// Extract year, month and day
-	date  := utils.Reverse(snap.Name, "_")
-	year  := utils.Before(date, "-")
-	date   = date[5:len(date)]
-	month := utils.Before(date, "-")
-	day   := utils.Between(date, "-", "_")
-
-	// Extract hour, minute and second
-	timer := utils.After(snap.Name, "_")
-	hour  := utils.Before(timer, ":")
-	timer  = timer[3:len(timer)]
-	min   := utils.Before(timer, ":")
-	sec   := timer[3:len(timer)]
-
-	y, _ := strconv.Atoi(year)
-	d, _ := strconv.Atoi(day)
-	h, _ := strconv.Atoi(hour)
-	m, _ := strconv.Atoi(min)
-	s, _ := strconv.Atoi(sec)
-
-	search := fmt.Sprintf("zfs get -rHp -t snapshot -o name,value creation | awk '{if ($1 == \"%s\") print $2}'", snap.Name)
-	cmd, err := exec.Command("sh", "-c", search).Output()
-	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:108] it was not possible to execute the command 'zfs get creation'.")
-	}
-	out := bytes.Trim(cmd, "\x0A")
-	creation := string(out)
-	unixTimeSnap, _ := strconv.ParseInt(creation, 10, 64)
-
-	return unixTimeSnap, y, month, d, h, m, s
 }

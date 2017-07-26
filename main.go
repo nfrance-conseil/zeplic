@@ -1,4 +1,4 @@
-// zeplic main package - July 2017 version 0.1.0-rc2
+// zeplic main package - July 2017 version 0.2.0-rc1
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -23,18 +23,14 @@ import (
 	"github.com/pborman/getopt/v2"
 )
 
-var (
-	// Variable to connect with syslog service
-	w = config.LogBook()
-)
-
 func main() {
 	// Available flags
-	optAgent    := getopt.BoolLong("agent", 'a', "Listen ZFS orders from director")
-	optDirector := getopt.BoolLong("director", 'd', "Send ZFS orders to agent")
+	optAgent    := getopt.BoolLong("agent", 'a', "Execute the orders from director")
+	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with #deleted flag")
+	optDirector := getopt.BoolLong("director", 'd', "Execute 'zeplic' in synchronization mode")
 	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
-	optRun	    := getopt.BoolLong("run", 'r', "Execute ZFS functions")
+	optRun	    := getopt.BoolLong("run", 'r', "Execute 'zeplic' in local mode")
 	optSlave    := getopt.BoolLong("slave", 's', "Receive a new snapshot from agent")
 	optVersion  := getopt.BoolLong("version", 'v', "Show version of zeplic")
 	getopt.Parse()
@@ -65,19 +61,33 @@ func main() {
 			go director.HandleRequestAgent(connAgent)
 		}
 
+	// CLEANER
+	case *optCleaner:
+		var datacenter string
+		fmt.Println("[CLEANER] Running zeplic cleaner's mode...")
+		fmt.Printf("\nPlease, indicate the datacenter: ")
+		fmt.Scanf("%s", &datacenter)
+
+		// Call to Cleaner function
+		code := lib.Cleaner(datacenter)
+		if code == 1 {
+			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...")
+		} else {
+			fmt.Printf("\nDone!\n\n")
+		}
+		os.Exit(code)
+
 	// DIRECTOR
 	case *optDirector:
 		config.Pid()
 		fmt.Println("[DIRECTOR] Running zeplic director's mode...")
 
 		// Infinite loop to manage the datasets
-		ticker := time.NewTicker(1 * time.Minute)
+		ticker := time.NewTicker(2 * time.Minute)
 		for {
 			select {
 			case <- ticker.C:
-//				go director.Director()
-				fmt.Println("")
-				fmt.Printf("[DEBUG] zeplic checking on %s", time.Now().UTC().Format(time.RFC1123))
+				go director.Director()
 			default:
 				// No stop signal, continuing loop
 			}
@@ -107,8 +117,9 @@ func main() {
 		// Invoke Runner() function
 		var code int
 		for i := 0; i < j; i++ {
-			code = lib.Runner(i, false)
+			code = lib.Runner(i, false, "")
 			if code > 1 {
+				fmt.Printf("[RUNNER] An error has occurred while running zeplic, please revise your syslog...\n\n")
 				break
 			} else {
 				continue

@@ -1,4 +1,4 @@
-// Package lib contains: commands.go - destroy.go - !policy.go - snapshot.go - take.go - uuid.go
+// Package lib contains: actions.go - cleaner.go - commands.go - destroy.go - snapshot.go - sync.go - take.go - uuid.go
 //
 // Functions to create a snapshot
 //
@@ -10,7 +10,7 @@ import (
 )
 
 // TakeOrder creates a new snapshot based on the order received from director
-func TakeOrder(DestDataset string, NotWritten bool) int {
+func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 	// Define index of pieces
 	index := -1
 	// Extract JSON information
@@ -49,7 +49,7 @@ func TakeOrder(DestDataset string, NotWritten bool) int {
 		_, amount := RealList(count, list, dataset)
 		if amount == 0 {
 			// Call to Runner function
-			code = Runner(index, true)
+			code = Runner(index, true, SnapshotName)
 			return code
 		} else if amount > 0 {
 			snap, err := zfs.GetDataset(list[amount-1].Name)
@@ -62,7 +62,7 @@ func TakeOrder(DestDataset string, NotWritten bool) int {
 
 			if NotWritten == false || NotWritten == true && written > 0 {
 				// Call to Runner function
-				code = Runner(index, true)
+				code = Runner(index, true, SnapshotName)
 				return code
 			}
 		}

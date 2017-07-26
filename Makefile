@@ -118,7 +118,7 @@ SYSCONFDIR	 := /etc
 BINDIR		 := /usr/bin
 endif
 PIDDIR		 := /var/run/zeplic.pid
-COMPILE_FLAGS	 := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json" -X "github.com/nfrance-conseil/zeplic/config.ConfigFilePath=$(SYSCONFDIR)/zeplic/local.json" -X "github.com/nfrance-conseil/zeplic/order.ServerFilePath=$(SYSCONFDIR)/zeplic/server.json"'
+COMPILE_FLAGS	 := -ldflags='-X "github.com/nfrance-conseil/zeplic/config.Version=$(VERSION)" -X "github.com/nfrance-conseil/zeplic/config.BuildTime=$(DATE)" -X "github.com/nfrance-conseil/zeplic/config.PidFilePath=$(PIDDIR)" -X "github.com/nfrance-conseil/zeplic/config.SyslogFilePath=$(SYSCONFDIR)/zeplic/syslog.json" -X "github.com/nfrance-conseil/zeplic/config.LocalFilePath=$(SYSCONFDIR)/zeplic/local.json" -X "github.com/nfrance-conseil/zeplic/director.ServerFilePath=$(SYSCONFDIR)/zeplic/server.json"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

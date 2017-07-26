@@ -1,5 +1,5 @@
 {
-	"datasets": [
+	"local_datasets": [
 	{
 		"enable": true,
 		"docker": false,
@@ -8,8 +8,8 @@
 			"enable": true,
 			"datacenter": "ConsulDatacenter"
 		},
-		"snapshot": "FOO",
-		"retention": 10,
+		"snap_prefix": "FOO",
+		"snap_retention": 10,
 		"backup" true,
 		"clone": {
 			"enable": true,
@@ -25,8 +25,8 @@
 			"enable": false,
 			"datacenter": "ConsulDatacenter"
 		},
-		"snapshot": "BAR",
-		"retention": 10,
+		"snap_prefix": "BAR",
+		"snap_retention": 10,
 		"backup": false,
 		"clone": {
 			"enable": false,

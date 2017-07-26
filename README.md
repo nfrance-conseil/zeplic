@@ -133,20 +133,21 @@ JSON file to configure the retention and replication policy. Use this one only i
 - *sync_dataset*: dataset in slave node
 - *sync_policy*: policy to synchronize (asap | cron)
 - *retention*: policy of retention
-- other options
+- *rollback_needed*: to do roll back if it is necessary
+- *skip_renamed*: skip if the snapshot was renamed
+- *skip_not_written*: skip if nothing new was written
+- *skip_cloned*: skip if the snapshot was cloned
 
 Formats for creation, send and destroy a snapshot:
 
 ```
-Create: cron
-Send: asap (as soon as possible) or cron
+Create: cron format
+Send: asap (as soon as possible) or cron format
 Destroy: DdWwMmYy
-	- D = number of snapshots to retain in last 24h
-	- W = number of snapshots to retain in last week
-	- M = number of snapshots to retain in last month
-	- Y = number of snapshots to retain in last year
-
-Cron format = MM HH Monthday Month Weekday
+	- D = snapshots to save in last 24h
+	- W = snapshots to save per day in the last week
+	- M = snapshots to save per week in the last month
+	- Y = snapshots to save per month in the last year
 ```
 
 - Send an order to the agent node (zeplic --agent) on port 7711 to create a snapshot or destroy it
@@ -166,8 +167,13 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 	"info": "LOCAL0"
 }
 ```
-- *info(local): facility [LOCAL0-7]*
-- *info(remote): tcp/upd:IP:port*
+
+- Syslog file format:
+
+```
+	- mode: local;    info: *facility [LOCAL0-7]*
+	- mode: remote;   info: *tcp/upd:IP:port*
+```
 
 ```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.
