@@ -86,7 +86,7 @@ $ zeplic --run
 Schedule a task with crontab to backup your files systems
 
 ```
-MM	HH	*	*	*	root	$BINPATH/zeplic --run
+M	H	mday	month	wday	root	$BINPATH/zeplic --run
 ```
 
 ### Director's mode
@@ -105,7 +105,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 			"prefix": "BACKUP",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_backup",
-			"sync_policy": "00 1 * * *",
+			"sync_policy": "0 1 * * *",
 			"retention": "24d1w1m1y"
 		"sync": {
 			"creation": "0 4 * * *"
