@@ -415,6 +415,10 @@ func HandleRequestAgent (connAgent net.Conn) {
 			lib.DestroyOrder(d.SnapshotUUID, d.SkipIfRenamed, d.SkipIfNotWritten, d.SkipIfCloned)
 		}
 
+	// Resync
+	case "kv_resync":
+		go lib.Update(d.Destination, d.DestDataset)
+
 	default:
 		w.Err("[ERROR > order/agent.go:64] the action '"+d.Action+"' is not supported.")
 		break

@@ -114,194 +114,242 @@ func Director() {
 	if err != nil {
 		w.Err("[ERROR > director/director.go:113] it was not possible to parse the JSON configuration file.")
 	}
-	list := len(values.Director)
 
-	for i := 0; i < list; i++ {
-		// Get KV pairs for same datacenter
-		hostname   := values.Director[i].Datacenter
-		datacenter := values.Director[i].Datacenter
-		dataset	   := values.Director[i].Dataset
+	// Resynchronization?
+	hour, min, _ := time.Now().Clock()
+	if hour == 18 && min > 49 && min < 58 {
+		for i := 0; i < len(values.Director); i++ {
+			hostname   := values.Director[i].Hostname
+			datacenter := values.Director[i].Datacenter
+			dataset	   := values.Director[i].Dataset
 
-		// Create a new client
-		client, err := api.NewClient(api.DefaultConfig())
-		if err != nil {
-			w.Err("[ERROR > director/director.go:126]@[CONSUL] it was not possible to create a new client.")
-		}
-		kv := client.KV()
-
-		// KV write options
-		key := fmt.Sprintf("zeplic/%s/", hostname)
-		q := &api.QueryOptions{Datacenter: datacenter}
-
-		// Get KV pairs
-		pairs, _, err := kv.Keys(key, "", q)
-		if err != nil {
-			w.Err("[ERROR > director/director.go:137]@[CONSUL] it was not possible to get the KV pairs.")
-		}
-		if len(pairs) < 1 {
-			go lib.Sync(hostname, datacenter, datacenter)
-			time.Sleep(10 * time.Second)
-		}
-
-		// Extract all information of server JSON file
-		BackupCreation	    := values.Director[i].Backup.Creation
-		BackupPrefix	    := values.Director[i].Backup.Prefix
-		BackupSyncOn	    := values.Director[i].Backup.SyncOn
-		BackupSyncDataset   := values.Director[i].Backup.SyncDataset
-		BackupSyncPolicy    := values.Director[i].Backup.SyncPolicy
-		BackupRetention     := values.Director[i].Backup.Retention
-		SyncCreation	    := values.Director[i].Sync.Creation
-		SyncPrefix	    := values.Director[i].Sync.Prefix
-		SyncSyncOn	    := values.Director[i].Sync.SyncOn
-		SyncSyncDataset	    := values.Director[i].Sync.SyncDataset
-		SyncSyncPolicy	    := values.Director[i].Sync.SyncPolicy
-		SyncRetention	    := values.Director[i].Sync.Retention
-		rollback	    := values.Director[i].RollbackIfNeeded
-		renamed		    := values.Director[i].SkipIfRenamed
-		NotWritten	    := values.Director[i].SkipIfNotWritten
-		cloned		    := values.Director[i].SkipIfCloned
-
-		// Define variables of order struct
-		var OrderUUID	   string
-		var Action	   string
-		var Destination    string
-		var SnapshotUUID []string
-		var SnapshotName   string
-		var DestDataset    string
-		var RollbackIfNeeded bool
-		var SkipIfRenamed    bool
-		var SkipIfNotWritten bool
-		var SkipIfCloned     bool
-
-		// Add only the snapshot name, uuid and the flag to new snapshots list
-		var snapshotsList []string
-		for j := 0; j < len(pairs); j++ {
-			snapString := utils.After(pairs[j], key)
-			snapshotsList = append(snapshotsList, snapString)
-		}
-
-		// Remove a snapshot if it contains the flag #deleted or if the dataset is not correct
-		for k := 0; k < len(snapshotsList); k++ {
-			_, snapName, flag := lib.InfoKV(snapshotsList[k])
-			if strings.Contains(flag, "#deleted") {
-				snapshotsList = append(snapshotsList[:k], snapshotsList[k+1:]...)
-				continue
-			} else {
-				snapDataset := lib.DatasetName(snapName)
-				if snapDataset != dataset {
-					snapshotsList = append(snapshotsList[:k], snapshotsList[k+1:]...)
-				}
-				continue
-			}
-		}
-
-		// Should I send a take_snapshot order?
-		take, SnapshotName := lib.NewSnapshot(snapshotsList, BackupCreation, BackupPrefix)
-		if take == true {
-			Action = "take_snapshot"
-		} else {
-			take, SnapshotName = lib.NewSnapshot(snapshotsList, SyncCreation, SyncPrefix)
-			if take == true {
-				Action = "take_snapshot"
-			}
-		}
-
-		var sent bool
-		var uuidList []string
-		if take == false {
-			// Should I send a send_snapshot order?
-			sent, uuid := lib.Send(dataset, snapshotsList, BackupSyncPolicy, BackupPrefix)
-			if sent == true {
-				Action = "send_snapshot"
-				Destination = BackupSyncOn
-				uuidList = append(uuidList, uuid)
-				DestDataset = BackupSyncDataset
-			} else {
-				sent, uuid = lib.Send(dataset, snapshotsList, SyncSyncPolicy, SyncPrefix)
-				if sent == true {
-					Action = "send_snapshot"
-					Destination = SyncSyncOn
-					uuidList = append(uuidList, uuid)
-					DestDataset = SyncSyncDataset
-				}
-			}
-		}
-
-		if sent == false {
-			// Should I send a destroy_snapshot order?
-			destroy, list := lib.Delete(dataset, snapshotsList, BackupPrefix, BackupRetention)
-			if destroy == true {
-				Action = "destroy_snapshot"
-				SnapshotUUID = list
-			} else {
-				destroy, list := lib.Delete(dataset, snapshotsList, SyncPrefix, SyncRetention)
-				if destroy == true {
-					Action = "destroy_snapshot"
-					SnapshotUUID = list
-				}
-			}
-		}
-
-		switch Action {
-
-		// Take a new snapshot
-		case "take_snapshot":
-			Destination	 = ""
-			SnapshotUUID	 = append(SnapshotUUID, "")
-			DestDataset	 = dataset
-			RollbackIfNeeded = rollback
-			SkipIfRenamed    = renamed
-			SkipIfNotWritten = NotWritten
-			SkipIfCloned     = cloned
-
-		// Send a snapshot
-		case "send_snapshot":
-			SnapshotUUID	 = uuidList
-			SnapshotName	 = ""
-			RollbackIfNeeded = rollback
-			SkipIfRenamed    = renamed
-			SkipIfNotWritten = NotWritten
-			SkipIfCloned     = cloned
-
-		// Destroy a snapshot
-		case "destroy_snapshot":
-			Destination	 = ""
-			SnapshotName	 = ""
-			DestDataset	 = ""
-			RollbackIfNeeded = rollback
-			SkipIfRenamed    = renamed
-			SkipIfNotWritten = NotWritten
-			SkipIfCloned     = cloned
-
-		// No action
-		default:
-			continue
-		}
-
-		if Action != "" {
-			// New OrderUUID
-			OrderUUID = uuid.New()
+			// Resync
+			OrderUUID	 := "zRESYNC"
+			Action		 := "kv_resync"
+			Destination	 := datacenter
+			SnapshotUUID	 := []string{""}
+			SnapshotName	 := ""
+			DestDataset	 := dataset
+			RollbackIfNeeded := false
+			SkipIfRenamed    := false
+			SkipIfNotWritten := false
+			SkipIfCloned     := false
 
 			// Create order to agent
-			OrderToAgent := ZFSDirectorsOrder{OrderUUID,Action,Destination,SnapshotUUID,SnapshotName,DestDataset,RollbackIfNeeded,SkipIfRenamed,SkipIfNotWritten,SkipIfCloned}
+			OrderToResync := ZFSDirectorsOrder{OrderUUID,Action,Destination,SnapshotUUID,SnapshotName,DestDataset,RollbackIfNeeded,SkipIfRenamed,SkipIfNotWritten,SkipIfCloned}
 
 			// Send order to agent
-			connToAgent, err := net.Dial("tcp", hostname+":7711")
+			ConnToResync, err := net.Dial("tcp", hostname+":7711")
 			if err != nil {
-				w.Err("[ERROR > director/director.go:289] it was not possible to connect with '"+hostname+"'.")
+				w.Err("[ERROR > director/director.go:142] it was not possible to connect with '"+hostname+"'.")
 			}
 
 			// Marshal response to agent
-			ota, err := json.Marshal(OrderToAgent)
+			otr, err := json.Marshal(OrderToResync)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:295] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > director/director.go:148] it was not possible to encode the JSON struct.")
 			} else {
-				connToAgent.Write([]byte(ota))
-				connToAgent.Write([]byte("\n"))
-				connToAgent.Close()
+				ConnToResync.Write([]byte(otr))
+				ConnToResync.Write([]byte("\n"))
+				ConnToResync.Close()
 			}
-		} else {
-			continue
+			time.Sleep(10 * time.Second)
+		}
+	} else {
+		for i := 0; i < len(values.Director); i++ {
+			// Get KV pairs for same datacenter
+			hostname   := values.Director[i].Hostname
+			datacenter := values.Director[i].Datacenter
+			dataset	   := values.Director[i].Dataset
+
+			// Create a new client
+			client, err := api.NewClient(api.DefaultConfig())
+			if err != nil {
+				w.Err("[ERROR > director/director.go:166]@[CONSUL] it was not possible to create a new client.")
+			}
+			kv := client.KV()
+
+			// KV write options
+			keyfix := fmt.Sprintf("zeplic/%s/", hostname)
+			q := &api.QueryOptions{Datacenter: datacenter}
+
+			// Get KV pairs
+			pairs, _, err := kv.List(keyfix, q)
+			if err != nil {
+				w.Err("[ERROR > director/director.go:177]@[CONSUL] it was not possible to get the list of KV pairs.")
+			}
+			var PairsList []string
+			for j := 0; j < len(pairs); j++ {
+				pair := fmt.Sprintf("%s:%s", pairs[j].Key, string(pairs[j].Value[:]))
+				PairsList = append(PairsList, pair)
+			}
+			if len(pairs) < 1 {
+				go lib.Sync(hostname, datacenter, dataset)
+				time.Sleep(10 * time.Second)
+			}
+
+			// Extract all information of server JSON file
+			BackupCreation	    := values.Director[i].Backup.Creation
+			BackupPrefix	    := values.Director[i].Backup.Prefix
+			BackupSyncOn	    := values.Director[i].Backup.SyncOn
+			BackupSyncDataset   := values.Director[i].Backup.SyncDataset
+			BackupSyncPolicy    := values.Director[i].Backup.SyncPolicy
+			BackupRetention     := values.Director[i].Backup.Retention
+			SyncCreation	    := values.Director[i].Sync.Creation
+			SyncPrefix	    := values.Director[i].Sync.Prefix
+			SyncSyncOn	    := values.Director[i].Sync.SyncOn
+			SyncSyncDataset	    := values.Director[i].Sync.SyncDataset
+			SyncSyncPolicy	    := values.Director[i].Sync.SyncPolicy
+			SyncRetention	    := values.Director[i].Sync.Retention
+			rollback	    := values.Director[i].RollbackIfNeeded
+			renamed		    := values.Director[i].SkipIfRenamed
+			NotWritten	    := values.Director[i].SkipIfNotWritten
+			cloned		    := values.Director[i].SkipIfCloned
+
+			// Define variables of order struct
+			var OrderUUID	   string
+			var Action	   string
+			var Destination    string
+			var SnapshotUUID []string
+			var SnapshotName   string
+			var DestDataset    string
+			var RollbackIfNeeded bool
+			var SkipIfRenamed    bool
+			var SkipIfNotWritten bool
+			var SkipIfCloned     bool
+
+			// Add only the snapshot name, uuid and the flag to new snapshots list
+			var SnapshotsList []string
+			for k := 0; k < len(PairsList); k++ {
+				snapString := utils.After(PairsList[k], keyfix)
+				SnapshotsList = append(SnapshotsList, snapString)
+			}
+
+			// Remove a snapshot if it contains the flag #deleted or if the dataset is not correct
+			for m := 0; m < len(SnapshotsList); m++ {
+				_, snapName, flag := lib.InfoKV(SnapshotsList[m])
+				if strings.Contains(flag, "#deleted") {
+					SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
+					continue
+				} else {
+					snapDataset := lib.DatasetName(snapName)
+					if snapDataset != dataset {
+						SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
+					}
+					continue
+				}
+			}
+
+			// Should I send a take_snapshot order?
+			take, SnapshotName := lib.NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
+			if take == true {
+				Action = "take_snapshot"
+			} else {
+				take, SnapshotName = lib.NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
+				if take == true {
+					Action = "take_snapshot"
+				}
+			}
+
+			var sent bool
+			var uuidList []string
+			if take == false {
+				// Should I send a send_snapshot order?
+				sent, uuid := lib.Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
+				if sent == true {
+					Action = "send_snapshot"
+					Destination = BackupSyncOn
+					uuidList = append(uuidList, uuid)
+					DestDataset = BackupSyncDataset
+				} else {
+					sent, uuid = lib.Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
+					if sent == true {
+						Action = "send_snapshot"
+						Destination = SyncSyncOn
+						uuidList = append(uuidList, uuid)
+						DestDataset = SyncSyncDataset
+					}
+				}
+			}
+
+			if sent == false {
+				// Should I send a destroy_snapshot order?
+				destroy, list := lib.Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
+				if destroy == true {
+					Action = "destroy_snapshot"
+					SnapshotUUID = list
+				} else {
+					destroy, list := lib.Delete(dataset, SnapshotsList, SyncPrefix, SyncRetention)
+					if destroy == true {
+						Action = "destroy_snapshot"
+						SnapshotUUID = list
+					}
+				}
+			}
+
+			switch Action {
+
+			// Take a new snapshot
+			case "take_snapshot":
+				Destination	 = ""
+				SnapshotUUID	 = append(SnapshotUUID, "")
+				DestDataset	 = dataset
+				RollbackIfNeeded = rollback
+				SkipIfRenamed    = renamed
+				SkipIfNotWritten = NotWritten
+				SkipIfCloned     = cloned
+
+			// Send a snapshot
+			case "send_snapshot":
+				SnapshotUUID	 = uuidList
+				SnapshotName	 = ""
+				RollbackIfNeeded = rollback
+				SkipIfRenamed    = renamed
+				SkipIfNotWritten = NotWritten
+				SkipIfCloned     = cloned
+
+			// Destroy a snapshot
+			case "destroy_snapshot":
+				Destination	 = ""
+				SnapshotName	 = ""
+				DestDataset	 = ""
+				RollbackIfNeeded = rollback
+				SkipIfRenamed    = renamed
+				SkipIfNotWritten = NotWritten
+				SkipIfCloned     = cloned
+
+			// No action
+			default:
+				continue
+			}
+
+			if Action != "" {
+				// New OrderUUID
+				OrderUUID = uuid.New()
+
+				// Create order to agent
+				OrderToAgent := ZFSDirectorsOrder{OrderUUID,Action,Destination,SnapshotUUID,SnapshotName,DestDataset,RollbackIfNeeded,SkipIfRenamed,SkipIfNotWritten,SkipIfCloned}
+
+				// Send order to agent
+				ConnToAgent, err := net.Dial("tcp", hostname+":7711")
+				if err != nil {
+					w.Err("[ERROR > director/director.go:334] it was not possible to connect with '"+hostname+"'.")
+				}
+
+				// Marshal response to agent
+				ota, err := json.Marshal(OrderToAgent)
+				if err != nil {
+					w.Err("[ERROR > director/director.go:340] it was not possible to encode the JSON struct.")
+				} else {
+					ConnToAgent.Write([]byte(ota))
+					ConnToAgent.Write([]byte("\n"))
+					ConnToAgent.Close()
+				}
+				time.Sleep(10 * time.Second)
+			} else {
+				time.Sleep(10 * time.Second)
+				continue
+			}
 		}
 	}
 }

@@ -26,7 +26,7 @@ import (
 func main() {
 	// Available flags
 	optAgent    := getopt.BoolLong("agent", 'a', "Execute the orders from director")
-	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with #deleted flag")
+	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with #deleted flag in a dataset")
 	optDirector := getopt.BoolLong("director", 'd', "Execute 'zeplic' in synchronization mode")
 	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
@@ -64,12 +64,16 @@ func main() {
 	// CLEANER
 	case *optCleaner:
 		var datacenter string
+		var dataset    string
 		fmt.Println("[CLEANER] Running zeplic cleaner's mode...")
-		fmt.Printf("\nPlease, indicate the datacenter: ")
+		fmt.Printf("\nPlease, indicate...")
+		fmt.Printf("\n\t\t\tdatacenter: ")
 		fmt.Scanf("%s", &datacenter)
+		fmt.Printf("\t\t\tdataset: ")
+		fmt.Scanf("%s", &dataset)
 
 		// Call to Cleaner function
-		code := lib.Cleaner(datacenter)
+		code := lib.Cleaner(datacenter, dataset)
 		if code == 1 {
 			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...")
 		} else {
@@ -83,7 +87,7 @@ func main() {
 		fmt.Println("[DIRECTOR] Running zeplic director's mode...")
 
 		// Infinite loop to manage the datasets
-		ticker := time.NewTicker(2 * time.Minute)
+		ticker := time.NewTicker(4 * time.Minute)
 		for {
 			select {
 			case <- ticker.C:

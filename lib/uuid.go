@@ -60,3 +60,15 @@ func SearchUUID(snap *zfs.Dataset) string {
 	}
 	return uuid
 }
+
+// Source returns if a snapshot has the status local or received
+func Source(uuid string) string {
+	search := fmt.Sprintf("zfs get -rHp -t snapshot -o value,source :uuid | awk '{if ($1 == \"%s\") print $2}'", uuid)
+	cmd, err := exec.Command("sh", "-c", search).Output()
+	if err != nil {
+		w.Err("[ERROR > lib/uuid.go:67] it was not possible to execute the command 'zfs get :uuid'.")
+	}
+	out := bytes.Trim(cmd, "\x0A")
+	source := string(out)
+	return source
+}

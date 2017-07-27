@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/nfrance-conseil/zeplic/config"
+	"github.com/nfrance-conseil/zeplic/utils"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
 	"github.com/hashicorp/consul/api"
 )
@@ -16,6 +17,14 @@ import (
 // DestroyOrder destroys a snapshot based on the order received from director
 func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned bool) int {
 	var code int
+
+	// Create a new client
+	client, err := api.NewClient(api.DefaultConfig())
+	if err != nil {
+		w.Err("[ERROR > lib/destroy.go:22]@[CONSUL] it was impossible to get a new client.")
+	}
+	kv := client.KV()
+
 	for i := 0 ; i < len(SnapshotUUID); i++ {
 		uuid, name, _ := InfoKV(SnapshotUUID[i])
 
@@ -48,7 +57,7 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 				// Get the snapshot
 				snap, err := zfs.GetDataset(name)
 				if err != nil {
-					w.Err("[ERROR > lib/destroy.go:49] it was not possible to get the snapshot '"+name+"'.")
+					w.Err("[ERROR > lib/destroy.go:58] it was not possible to get the snapshot '"+name+"'.")
 					code = 1
 					return code
 				}
@@ -84,18 +93,9 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 						} else {
 							err = snap.Destroy(zfs.DestroyRecursiveClones)
 							if err != nil {
-								w.Err("[ERROR > lib/destroy.go:85] it was not possible to destroy the snapshot '"+name+"'.")
+								w.Err("[ERROR > lib/destroy.go:94] it was not possible to destroy the snapshot '"+name+"'.")
 								code = 1
 							} else {
-								// Create a new client
-								client, err := api.NewClient(api.DefaultConfig())
-								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:91]@[CONSUL] it was not possible to create a new client.")
-									code = 1
-									return code
-								}
-								kv := client.KV()
-
 								// Resolve hostname
 								hostname, err := os.Hostname()
 								if err != nil {
@@ -105,29 +105,33 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 								}
 
 								// KV write options
-								key := fmt.Sprintf("%s/%s/%s", "zeplic", hostname, uuid)
+								keyfix := fmt.Sprintf("%s/%s/%s", "zeplic", hostname, uuid)
 								q1 := &api.QueryOptions{Datacenter: pieces[4].(string)}
 
-								// Get KV pair
-								pair, _, err := kv.Keys(key, "", q1)
+								// Get KV pairs
+								pairs, _, err := kv.List(keyfix, q1)
 								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:112]@[CONSUL] it was not possible to get the KV pairs.")
+									w.Err("[ERROR > lib/destroy.go:112]@[CONSUL] it was not possible to get the list of KV pairs.")
 								}
 
-								_, _, flag := InfoKV(pair[0])
+								pair := fmt.Sprintf("%s:%s", pairs[0].Key, string(pairs[0].Value[:]))
+								snapfix := fmt.Sprintf("%s/%s/", "zeplic", hostname)
+								pair = utils.After(pair, snapfix)
+
+								_, _, flag := InfoKV(pair)
 								var value string
 								if flag != "" {
 									value = fmt.Sprintf("%s#%s#%s", name, "sent", "deleted")
 								} else {
 									value = fmt.Sprintf("%s#%s", name, "deleted")
 								}
-								p := &api.KVPair{Key: key, Value: []byte(value)}
+								p := &api.KVPair{Key: keyfix, Value: []byte(value)}
 								q2 := &api.WriteOptions{Datacenter: pieces[4].(string)}
 
 								// Edit KV pair
 								_, err = kv.Put(p, q2)
 								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:128]@[CONSUL] it was not possible to edit the KV pair.")
+									w.Err("[ERROR > lib/destroy.go:132]@[CONSUL] it was not possible to edit the KV pair.")
 									code = 1
 									return code
 								}

@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-// Cleaner deletes all KV pairs with #deleted flag in datacenter
-func Cleaner(datacenter string) int {
+// Cleaner deletes all KV pairs with #deleted flag in dataset
+func Cleaner(datacenter string, dataset string) int {
 	var code int
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())

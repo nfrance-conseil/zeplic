@@ -132,15 +132,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 
+						// Create a new client
+						client, err := api.NewClient(api.DefaultConfig())
+						if err != nil {
+							w.Err("[ERROR > lib/slave.go:136]@[CONSUL] it was impossible to get a new client.")
+						}
+						kv := client.KV()
+
 						for i := 0; i < amount; i++ {
 							w.Info("[INFO] the snapshot '"+list[i].Name+"' has been received.")
-
-							// Create a new client
-							client, err := api.NewClient(api.DefaultConfig())
-							if err != nil {
-								w.Err("[ERROR > order/slave.go:139]@[CONSUL] it was not possible to create a new client.")
-							}
-							kv := client.KV()
 
 							// KV write options
 							key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
@@ -213,15 +213,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 							ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 
+							// Create a new client
+							client, err := api.NewClient(api.DefaultConfig())
+							if err != nil {
+								w.Err("[ERROR > lib/slave.go:217]@[CONSUL] it was impossible to get a new client.")
+							}
+							kv := client.KV()
+
 							for i := 0; i < amount; i++ {
 								w.Info("[INFO] the snapshot '"+list[i].Name+"' has been received.")
-
-								// Create a new client
-								client, err := api.NewClient(api.DefaultConfig())
-								if err != nil {
-									w.Err("[ERROR > order/slave.go:220]@[CONSUL] it was not possible to create a new client.")
-								}
-								kv := client.KV()
 
 								// KV write options
 								key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
@@ -391,15 +391,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 
+					// Create a new client
+					client, err := api.NewClient(api.DefaultConfig())
+					if err != nil {
+						w.Err("[ERROR > lib/slave.go:395]@[CONSUL] it was impossible to get a new client.")
+					}
+					kv := client.KV()
+
 					for i := amount; i < newAmount-1; i++ {
 						w.Info("[INFO] the snapshot '"+list[i].Name+"' has been received.")
-
-						// Create a new client
-						client, err := api.NewClient(api.DefaultConfig())
-						if err != nil {
-							w.Err("[ERROR > order/slave.go:398]@[CONSUL] it was not possible to create a new client.")
-						}
-						kv := client.KV()
 
 						// KV write options
 						key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
@@ -460,15 +460,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 
+					// Create a new client
+					client, err := api.NewClient(api.DefaultConfig())
+					if err != nil {
+						w.Err("[ERROR > lib/slave.go:464]@[CONSUL] it was impossible to get a new client.")
+					}
+					kv := client.KV()
+
 					for i := amount; i < newAmount-1; i++ {
 						w.Info("[INFO] the snapshot '"+list[i].Name+"' has been received.")
-
-						// Create a new client
-						client, err := api.NewClient(api.DefaultConfig())
-						if err != nil {
-							w.Err("[ERROR > order/slave.go:467]@[CONSUL] it was not possible to create a new client.")
-						}
-						kv := client.KV()
 
 						// KV write options
 						key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
