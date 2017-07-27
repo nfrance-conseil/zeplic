@@ -191,7 +191,7 @@ Jun 29 10:00:00 hostname zeplic[1176]: [NOTICE] the dataset 'tank/bar' is disabl
 $ zeplic --help
 Usage: zeplic [-acdrsv] [--help] [--quit] [parameters ...]
  -a, --agent     Execute the orders from director
- -c, --cleaner   Clean KV pairs with #deleted flag
+ -c, --cleaner   Clean KV pairs with #deleted flag in a dataset
  -d, --director  Execute 'zeplic' in synchronization mode
      --help      Show help menu
      --quit      Gracefully shutdown
