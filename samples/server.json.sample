@@ -5,7 +5,7 @@
 		"datacenter": "ConsulDatacenter",
 		"dataset": "tank/FOO",
 		"backup": {
-			"creation": "00 * * * *"
+			"creation": "00 * * * *",
 			"prefix": "snapBK",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/COPY",
