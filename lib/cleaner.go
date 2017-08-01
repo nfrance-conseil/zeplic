@@ -68,7 +68,7 @@ func Cleaner(RealDataset string) int {
 					q2 := &api.WriteOptions{Datacenter: datacenter}
 					_, err = kv.Delete(key, q2)
 					if err != nil {
-						w.Err("[ERROR > lib/cleaner.go:71]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
+						w.Err("[ERROR > lib/cleaner.go:69]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
 						code = 1
 						break
 					} else {

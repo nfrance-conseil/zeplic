@@ -101,14 +101,15 @@ JSON file to configure the retention and replication policy. Use this one only i
 		"hostname": "localHostname",
 		"dataset": "tank/foo",
 		"backup": {
-			"creation": "0 * * * 1-5"
+			"creation": "0 * * * 1-5",
 			"prefix": "BACKUP",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_backup",
 			"sync_policy": "0 1 * * *",
 			"retention": "24d1w1m1y"
+		},
 		"sync": {
-			"creation": "0 4 * * *"
+			"creation": "0 4 * * *",
 			"prefix": "SYNC",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_sync",
