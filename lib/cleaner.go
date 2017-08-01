@@ -81,11 +81,11 @@ func Cleaner(RealDataset string) int {
 				code = 0
 				continue
 			}
-			return code
 		}
+		return code
 	} else {
 		w.Err("[ERROR > lib/cleaner.go:24] the dataset '"+RealDataset+"' has not a datacenter configured.")
 		code = 1
+		return code
 	}
-	return code
 }
