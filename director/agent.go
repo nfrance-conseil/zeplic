@@ -71,7 +71,7 @@ func HandleRequestAgent (connAgent net.Conn) {
 			break
 		} else {
 			// Call to function TakeOrder for create the snapshot
-			lib.TakeOrder(d.DestDataset, d.SnapshotName, d.SkipIfNotWritten)
+			go lib.TakeOrder(d.DestDataset, d.SnapshotName, d.SkipIfNotWritten)
 		}
 
 	// Send snapshot to d.Destination
@@ -412,7 +412,7 @@ func HandleRequestAgent (connAgent net.Conn) {
 			break
 		} else {
 			// Call to function DestroyOrder
-			lib.DestroyOrder(d.SnapshotUUID, d.SkipIfRenamed, d.SkipIfNotWritten, d.SkipIfCloned)
+			go lib.DestroyOrder(d.SnapshotUUID, d.SkipIfRenamed, d.SkipIfNotWritten, d.SkipIfCloned)
 		}
 
 	// Resync

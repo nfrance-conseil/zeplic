@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/nfrance-conseil/zeplic/lib"
 	"testing"
@@ -33,8 +34,12 @@ func TestNewSnapshot(t *testing.T) {
 	creation := "0 * * * *"
 	take, SnapshotName := lib.NewSnapshot(SnapshotsList, creation, prefix)
 
+	// Actual time
+	year, month, day := time.Now().Date()
+	hour, _, _ := time.Now().Clock()
+
 	// Name of snapshot
-	name := fmt.Sprintf("%s_2017-July-01_13:00:00", prefix)
+	name := fmt.Sprintf("%s_%d-%s-%02d_%02d:00:00", prefix, year, month, day, hour)
 
 	// Check
 	if take == false || SnapshotName != name {

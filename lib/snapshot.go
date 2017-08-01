@@ -18,6 +18,7 @@ import (
 // CreateTime returns the date of snapshot's creation
 func CreateTime(SnapshotName string) (int, time.Month, int, int, int, int) {
 	SnapshotName = calendar.NumberMonth(SnapshotName)
+	SnapshotName = utils.After(SnapshotName, "@")
 
 	// Extract year, month and day
 	date  := utils.Reverse(SnapshotName, "_")
@@ -80,7 +81,7 @@ func SnapBackup(dataset string, ds *zfs.Dataset) string {
 	// Get the older snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:81] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/snapshot.go:82] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 
@@ -118,7 +119,7 @@ func WasCloned(snap *zfs.Dataset) (bool, string) {
 	var cloned bool
 	clone, err := snap.GetProperty("clones")
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:119] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:120] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
 	}
 	if clone == "" {
 		cloned = false

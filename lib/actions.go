@@ -16,8 +16,8 @@ import (
 
 // Arrange sorts the list of snapshots
 func Arrange(SnapshotsList []string) []string {
-	for m := 0; m < len(SnapshotsList); m++ {
-		SnapshotsList[m] = calendar.NumberMonth(SnapshotsList[m])
+	for i := 0; i < len(SnapshotsList); i++ {
+		SnapshotsList[i] = calendar.NumberMonth(SnapshotsList[i])
 	}
 	sort.Strings(SnapshotsList)
 	return SnapshotsList
@@ -41,17 +41,17 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	leap, monthDiff := calendar.LengthMonth(year, month)
 
 	var newList []string
-	for g := 0; g < len(SnapshotsList); g++ {
-		_, snapName, _ := InfoKV(SnapshotsList[g])
+	for f := 0; f < len(SnapshotsList); f++ {
+		snapName := utils.Reverse(SnapshotsList[f], ":")
 		newList = append(newList, snapName)
 	}
-	newList = Arrange(newList)
 
 	// Remove all snapshots of others datasets
-	for h := 0; h < len(newList); h++ {
-		RealDataset := DatasetName(newList[h])
+	for g := 0; g < len(newList); g++ {
+		RealDataset := DatasetName(newList[g])
 		if RealDataset != dataset {
-			newList = append(newList[:h],newList[h+1:]...)
+			newList = append(newList[:g], newList[g+1:]...)
+			g--
 			continue
 		} else {
 			continue
@@ -59,13 +59,26 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	}
 
 	// Remove all snapshots with others prefix
-	for i := 0; i < len(newList); i++ {
-		RealPrefix := Prefix(newList[i])
+	for h := 0; h < len(newList); h++ {
+		RealPrefix := Prefix(newList[h])
 		if RealPrefix != prefix {
-			newList = append(newList[:i],newList[i+1:]...)
+			newList = append(newList[:h], newList[h+1:]...)
+			h--
 			continue
 		} else {
 			continue
+		}
+	}
+
+	// Sort the list of snapshots
+	newList = Arrange(newList)
+
+	// Keep the snapshot of reference
+	for i := len(newList)-1; i > -1; i-- {
+		if strings.Contains(newList[i], "#sent") {
+			newList = append(newList[:i], newList[i+1:]...)
+			i++
+			break
 		}
 	}
 
@@ -112,7 +125,6 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	if len(today) > D {
 		for k := len(today)-1; k > D-1; k-- {
 			queue = append(queue, today[k])
-			today = append(today[:k], today[k+1:]...)
 		}
 	}
 
@@ -288,16 +300,17 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 
 	// Comparison with cron format
 	if year == y {
-		for j := 0; j < len(cMonth); j++ {
-			for k := 0; k < len(cMonthday); k++ {
-				for m := 0; m < len(cHour); m++ {
-					for n := 0; n < len(cMinute); n++ {
+		for j := len(cMonth)-1; j > -1; j-- {
+			for k := len(cMonthday)-1; k > -1; k-- {
+				for m := len(cHour)-1; m > -1; m-- {
+					for n := len(cMinute)-1; n > -1; n-- {
 						if take == false {
 							inter := time.Date(year, cMonth[j], cMonthday[k], cHour[m], cMinute[n], 00, 0, loc)
 							wdayInter := inter.Weekday()
 							diff2 := inter.Sub(last).Seconds()
+							diff3 := actual.Sub(inter).Seconds()
 
-							if diff2 > 0 && diff2 < diff1 {
+							if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
 								// Weekday
 								for p := 0; p < len(cWeekday); p++ {
 									if cWeekday[p] == wdayInter {
@@ -310,6 +323,8 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 										continue
 									}
 								}
+							} else if diff1 <= diff3 {
+								break
 							} else {
 								continue
 							}
@@ -319,17 +334,18 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 			}
 		}
 	} else {
-		for r := y; r < year+1; r++{
-			for j := 0; j < len(cMonth); j++ {
-				for k := 0; k < len(cMonthday); k++ {
-					for m := 0; m < len(cHour); m++ {
-						for n := 0; n < len(cMinute); n++ {
+		for r := year; r > year-2; r-- {
+			for j := len(cMonth)-1; j > -1 ; j-- {
+				for k := len(cMonthday)-1; k > -1; k-- {
+					for m := len(cHour)-1; m > -1; m-- {
+						for n := len(cMinute)-1; n > -1; n-- {
 							if take == false {
 								inter := time.Date(r, cMonth[j], cMonthday[k], cHour[m], cMinute[n], 00, 0, loc)
 								wdayInter := inter.Weekday()
 								diff2 := inter.Sub(last).Seconds()
+								diff3 := actual.Sub(inter).Seconds()
 
-								if diff2 > 0 && diff2 < diff1 {
+								if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
 									// Weekday
 									for p := 0; p < len(cWeekday); p++ {
 										if cWeekday[p] == wdayInter {
@@ -342,6 +358,8 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 											continue
 										}
 									}
+								} else if diff1 <= diff3 {
+									break
 								} else {
 									continue
 								}
@@ -364,6 +382,7 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 	for f := 0; f < len(SnapshotsList); f++ {
 		if strings.Contains(SnapshotsList[f], "#sent") {
 			SnapshotsList = append(SnapshotsList[:f], SnapshotsList[f+1:]...)
+			f--
 		}
 	}
 
@@ -378,22 +397,11 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 
 	// Sort the list of snapshtos
 	var list []string
-	for g := 0; g < len(SnapshotsList); g++ {
-		_, name, _ := InfoKV(SnapshotsList[g])
+	for h := 0; h < len(SnapshotsList); h++ {
+		_, name, _ := InfoKV(SnapshotsList[h])
 		list = append(list, name)
 	}
 	list = Arrange(list)
-
-	// Remove all snapshots of others datasets
-	for h := 0; h < len(list); h++ {
-		RealDataset := DatasetName(list[h])
-		if RealDataset != dataset {
-			list = append(list[:h], list[h+1:]...)
-			continue
-		} else {
-			continue
-		}
-	}
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string

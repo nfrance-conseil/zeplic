@@ -6,7 +6,6 @@ package lib
 
 import (
 	"github.com/nfrance-conseil/zeplic/config"
-	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
 
 // TakeOrder creates a new snapshot based on the order received from director
@@ -30,42 +29,11 @@ func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 		}
 	}
 
+	// Call Runner function
 	var code int
 	if index > -1 {
-		// Skip if something new was written
-		ds, err := zfs.GetDataset(dataset)
-		if err != nil {
-			w.Err("[ERROR > lib/take.go:36] it was not possible to get the dataset '"+dataset+"'.")
-			code = 1
-			return code
-		}
-		list, err := ds.Snapshots()
-		if err != nil {
-			w.Err("[ERROR > lib/take.go:42] it was not possible to access of snapshots list.")
-			code = 1
-			return code
-		}
-		count := len(list)
-		_, amount := RealList(count, list, dataset)
-		if amount == 0 {
-			// Call to Runner function
-			code = Runner(index, true, SnapshotName)
-			return code
-		} else if amount > 0 {
-			snap, err := zfs.GetDataset(list[amount-1].Name)
-			if err != nil {
-				w.Err("[ERROR > lib/take.go:55] it was not possible to get the snapshots '"+snap.Name+"'.")
-				code = 1
-				return code
-			}
-			written := snap.Written
-
-			if NotWritten == false || NotWritten == true && written > 0 {
-				// Call to Runner function
-				code = Runner(index, true, SnapshotName)
-				return code
-			}
-		}
+		code = Runner(index, true, SnapshotName, NotWritten)
+		return code
 	} else {
 		w.Notice("[NOTICE] the dataset '"+DestDataset+"' is not configured.")
 		code = 1

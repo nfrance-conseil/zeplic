@@ -63,17 +63,13 @@ func main() {
 
 	// CLEANER
 	case *optCleaner:
-		var datacenter string
 		var dataset    string
 		fmt.Println("[CLEANER] Running zeplic cleaner's mode...")
-		fmt.Printf("\nPlease, indicate...")
-		fmt.Printf("\n\t\t\tdatacenter: ")
-		fmt.Scanf("%s", &datacenter)
-		fmt.Printf("\t\t\tdataset: ")
+		fmt.Printf("\nPlease, indicate dataset: ")
 		fmt.Scanf("%s", &dataset)
 
 		// Call to Cleaner function
-		code := lib.Cleaner(datacenter, dataset)
+		code := lib.Cleaner(dataset)
 		if code == 1 {
 			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...")
 		} else {
@@ -121,7 +117,7 @@ func main() {
 		// Invoke Runner() function
 		var code int
 		for i := 0; i < j; i++ {
-			code = lib.Runner(i, false, "")
+			code = lib.Runner(i, false, "", false)
 			if code > 1 {
 				fmt.Printf("[RUNNER] An error has occurred while running zeplic, please revise your syslog...\n\n")
 				break

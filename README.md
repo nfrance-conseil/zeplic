@@ -95,10 +95,10 @@ JSON file to configure the retention and replication policy. Use this one only i
 
 ```
 {
+	"datacenter": "ConsulDatacenter",
 	"datasets": [
 	{
 		"hostname": "localHostname",
-		"datacenter": "ConsulDatacenter",
 		"dataset": "tank/foo",
 		"backup": {
 			"creation": "0 * * * 1-5"
@@ -123,8 +123,8 @@ JSON file to configure the retention and replication policy. Use this one only i
 }
 ```
 
-- *hostname*: hostname of local node
 - *datacenter*: datacenter of Consul
+- *hostname*: hostname of local node
 - *dataset*: name of dataset to manage
 - *creation*: policy to create a new snapshot (cron)
 - *prefix*: prefix of snapshot name

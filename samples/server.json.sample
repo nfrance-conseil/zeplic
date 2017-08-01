@@ -1,8 +1,8 @@
 {
+	"datacenter": "ConsulDatacenter",
 	"datasets": [
 	{
 		"hostname": "LocalHostname",
-		"datacenter": "ConsulDatacenter",
 		"dataset": "tank/FOO",
 		"backup": {
 			"creation": "00 * * * *",

@@ -17,7 +17,7 @@ import (
 )
 
 // Sync put a new check KV
-func Sync(hostname string, datacenter string, dataset string) {
+func Sync(hostname string, datacenter string, dataset string, index int) {
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
@@ -28,8 +28,9 @@ func Sync(hostname string, datacenter string, dataset string) {
 
 	// PUT a new KV pair
 	year, month, day := time.Now().Date()
-	key := fmt.Sprintf("zeplic/%s/KV-to-sync", hostname)
-	value := fmt.Sprintf("%s@zCHECK_%d_%s_%02d_00:00:00", dataset, year, month, day)
+	hour, _, _ := time.Now().Clock()
+	key := fmt.Sprintf("zeplic/%s/syncKV%d", hostname, index)
+	value := fmt.Sprintf("%s@zCHECK_%d-%s-%02d_%02d:00:00", dataset, year, month, day, hour)
 	p := &api.KVPair{Key: key, Value: []byte(value)}
 	q := &api.WriteOptions{Datacenter: datacenter}
 	_, err = kv.Put(p, q)

@@ -51,7 +51,6 @@ type Hot struct {
 // Actions contains the information of replicate every snapshot
 type Actions struct {
 	Hostname	 string `json:"hostname"`
-	Datacenter	 string `json:"datacenter"`
 	Dataset		 string `json:"dataset"`
 	Backup		 Cold
 	Sync		 Hot
@@ -63,7 +62,8 @@ type Actions struct {
 
 // Config extracts the interface of JSON server file
 type Config struct {
-	Director []Actions `json:"datasets"`
+	Datacenter	string	`json:"datacenter"`
+	Director      []Actions `json:"datasets"`
 }
 
 // Status for DestDataset
@@ -106,7 +106,7 @@ func Director() {
 	jsonFile := ServerFilePath
 	serverFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		fmt.Printf("[INFO] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
+		fmt.Printf("[NOTICE] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
 		os.Exit(1)
 	}
 	var values Config
@@ -115,12 +115,38 @@ func Director() {
 		w.Err("[ERROR > director/director.go:113] it was not possible to parse the JSON configuration file.")
 	}
 
+	// Create a new client
+	client, err := api.NewClient(api.DefaultConfig())
+	if err != nil {
+		w.Err("[ERROR > director/director.go:119]@[CONSUL] it was not possible to create a new client.")
+	}
+	kv := client.KV()
+
+	// KV write options
+	keyfix := fmt.Sprintf("zeplic/")
+	datacenter := values.Datacenter
+	q := &api.QueryOptions{Datacenter: datacenter}
+
+	// Get KV pairs
+	pairs, _, err := kv.List(keyfix, q)
+	if err != nil {
+		w.Err("[ERROR > director/director.go:131]@[CONSUL] it was not possible to get the list of KV pairs.")
+	}
+	if len(pairs) < 1 {
+		for i := 0; i < len(values.Director); i++ {
+			hostname := values.Director[i].Hostname
+			dataset  := values.Director[i].Dataset
+			go lib.Sync(hostname, datacenter, dataset, i)
+			continue
+		}
+		time.Sleep(10 * time.Second)
+	}
+
 	// Resynchronization?
 	hour, min, _ := time.Now().Clock()
 	if hour == 18 && min > 49 && min < 58 {
 		for i := 0; i < len(values.Director); i++ {
 			hostname   := values.Director[i].Hostname
-			datacenter := values.Director[i].Datacenter
 			dataset	   := values.Director[i].Dataset
 
 			// Resync
@@ -141,13 +167,13 @@ func Director() {
 			// Send order to agent
 			ConnToResync, err := net.Dial("tcp", hostname+":7711")
 			if err != nil {
-				w.Err("[ERROR > director/director.go:142] it was not possible to connect with '"+hostname+"'.")
+				w.Err("[ERROR > director/director.go:168] it was not possible to connect with '"+hostname+"'.")
 			}
 
 			// Marshal response to agent
 			otr, err := json.Marshal(OrderToResync)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:148] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > director/director.go:174] it was not possible to encode the JSON struct.")
 			} else {
 				ConnToResync.Write([]byte(otr))
 				ConnToResync.Write([]byte("\n"))
@@ -159,33 +185,21 @@ func Director() {
 		for i := 0; i < len(values.Director); i++ {
 			// Get KV pairs for same datacenter
 			hostname   := values.Director[i].Hostname
-			datacenter := values.Director[i].Datacenter
 			dataset	   := values.Director[i].Dataset
 
-			// Create a new client
-			client, err := api.NewClient(api.DefaultConfig())
-			if err != nil {
-				w.Err("[ERROR > director/director.go:166]@[CONSUL] it was not possible to create a new client.")
-			}
-			kv := client.KV()
-
 			// KV write options
-			keyfix := fmt.Sprintf("zeplic/%s/", hostname)
-			q := &api.QueryOptions{Datacenter: datacenter}
+			keyfix = fmt.Sprintf("zeplic/%s/", hostname)
 
 			// Get KV pairs
 			pairs, _, err := kv.List(keyfix, q)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:177]@[CONSUL] it was not possible to get the list of KV pairs.")
+				w.Err("[ERROR > director/director.go:194]@[CONSUL] it was not possible to get the list of KV pairs.")
 			}
+
 			var PairsList []string
 			for j := 0; j < len(pairs); j++ {
 				pair := fmt.Sprintf("%s:%s", pairs[j].Key, string(pairs[j].Value[:]))
 				PairsList = append(PairsList, pair)
-			}
-			if len(pairs) < 1 {
-				go lib.Sync(hostname, datacenter, dataset)
-				time.Sleep(10 * time.Second)
 			}
 
 			// Extract all information of server JSON file
@@ -230,27 +244,36 @@ func Director() {
 				_, snapName, flag := lib.InfoKV(SnapshotsList[m])
 				if strings.Contains(flag, "#deleted") {
 					SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
+					m--
 					continue
 				} else {
 					snapDataset := lib.DatasetName(snapName)
 					if snapDataset != dataset {
 						SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
+						m--
 					}
 					continue
 				}
 			}
 
-			// Should I send a take_snapshot order?
-			take, SnapshotName := lib.NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
-			if take == true {
-				Action = "take_snapshot"
+			// Take snapshot?
+			var take bool
+			if BackupCreation == "" && SyncCreation == "" {
+				take = false
 			} else {
-				take, SnapshotName = lib.NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
+				// Should I send a take_snapshot order?
+				take, SnapshotName = lib.NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
 				if take == true {
 					Action = "take_snapshot"
+				} else {
+					take, SnapshotName = lib.NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
+					if take == true {
+						Action = "take_snapshot"
+					}
 				}
 			}
 
+			// Send snapshot?
 			var sent bool
 			var uuidList []string
 			if take == false {
@@ -272,6 +295,7 @@ func Director() {
 				}
 			}
 
+			// Destroy snapshot?
 			if sent == false {
 				// Should I send a destroy_snapshot order?
 				destroy, list := lib.Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
@@ -333,13 +357,15 @@ func Director() {
 				// Send order to agent
 				ConnToAgent, err := net.Dial("tcp", hostname+":7711")
 				if err != nil {
-					w.Err("[ERROR > director/director.go:334] it was not possible to connect with '"+hostname+"'.")
+					w.Err("[ERROR > director/director.go:358] it was not possible to connect with '"+hostname+"'.")
+					fmt.Println("ERROR1")
 				}
 
 				// Marshal response to agent
 				ota, err := json.Marshal(OrderToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/director.go:340] it was not possible to encode the JSON struct.")
+					w.Err("[ERROR > director/director.go:365] it was not possible to encode the JSON struct.")
+					fmt.Println("ERROR2")
 				} else {
 					ConnToAgent.Write([]byte(ota))
 					ConnToAgent.Write([]byte("\n"))
