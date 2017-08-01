@@ -72,7 +72,6 @@ func Cleaner(RealDataset string) int {
 				if err != nil {
 					w.Err("[ERROR > lib/cleaner.go:71]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
 					code = 1
-					return code
 				} else {
 					w.Info("[INFO]@[CONSUL] the KV pair '"+pair+"' has been destroyed.")
 					code = 0
@@ -82,6 +81,7 @@ func Cleaner(RealDataset string) int {
 				code = 0
 				continue
 			}
+			return code
 		}
 	} else {
 		w.Err("[ERROR > lib/cleaner.go:24] the dataset '"+RealDataset+"' has not a datacenter configured.")

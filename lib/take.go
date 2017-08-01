@@ -33,11 +33,9 @@ func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 	var code int
 	if index > -1 {
 		code = Runner(index, true, SnapshotName, NotWritten)
-		return code
 	} else {
 		w.Notice("[NOTICE] the dataset '"+DestDataset+"' is not configured.")
 		code = 1
-		return code
 	}
 	return code
 }
