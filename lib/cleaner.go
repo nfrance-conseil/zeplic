@@ -58,31 +58,32 @@ func Cleaner(RealDataset string) int {
 			w.Err("[ERROR > lib/cleaner.go:56]@[CONSUL] it was not possible to get the KV pairs.")
 			code = 1
 			return code
-		}
+		} else {
+			for i := 0; i < len(pairs); i++ {
+				value := string(pairs[i].Value[:])
+				if strings.Contains(value, "#deleted") && strings.Contains(value, RealDataset) {
+					key := pairs[i].Key
+					pair := fmt.Sprintf("%s:%s", key, value)
 
-		for i := 0; i < len(pairs); i++ {
-			value := string(pairs[i].Value[:])
-			if strings.Contains(value, "#deleted") && strings.Contains(value, RealDataset) {
-				key := pairs[i].Key
-				pair := fmt.Sprintf("%s:%s", key, value)
-
-				// Destroy KV pairs with #deleted flag
-				q2 := &api.WriteOptions{Datacenter: datacenter}
-				_, err = kv.Delete(key, q2)
-				if err != nil {
-					w.Err("[ERROR > lib/cleaner.go:71]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
-					code = 1
+					// Destroy KV pairs with #deleted flag
+					q2 := &api.WriteOptions{Datacenter: datacenter}
+					_, err = kv.Delete(key, q2)
+					if err != nil {
+						w.Err("[ERROR > lib/cleaner.go:71]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
+						code = 1
+						break
+					} else {
+						w.Info("[INFO]@[CONSUL] the KV pair '"+pair+"' has been destroyed.")
+						code = 0
+						continue
+					}
 				} else {
-					w.Info("[INFO]@[CONSUL] the KV pair '"+pair+"' has been destroyed.")
 					code = 0
+					continue
 				}
-				continue
-			} else {
-				code = 0
-				continue
 			}
+			return code
 		}
-		return code
 	} else {
 		w.Err("[ERROR > lib/cleaner.go:24] the dataset '"+RealDataset+"' has not a datacenter configured.")
 		code = 1
