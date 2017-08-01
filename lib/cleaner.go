@@ -57,7 +57,6 @@ func Cleaner(RealDataset string) int {
 		if err != nil {
 			w.Err("[ERROR > lib/cleaner.go:56]@[CONSUL] it was not possible to get the KV pairs.")
 			code = 1
-			return code
 		} else {
 			for i := 0; i < len(pairs); i++ {
 				value := string(pairs[i].Value[:])
@@ -82,11 +81,10 @@ func Cleaner(RealDataset string) int {
 					continue
 				}
 			}
-			return code
 		}
 	} else {
 		w.Err("[ERROR > lib/cleaner.go:24] the dataset '"+RealDataset+"' has not a datacenter configured.")
 		code = 1
-		return code
 	}
+	return code
 }
