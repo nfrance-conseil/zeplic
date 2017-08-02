@@ -79,18 +79,24 @@ func main() {
 
 	// DIRECTOR
 	case *optDirector:
-		config.Pid()
-		fmt.Println("[DIRECTOR] Running zeplic director's mode...")
+		alive := director.Alive()
+		if alive == true {
+			go config.Pid()
+			fmt.Println("[DIRECTOR] Running zeplic director's mode...")
 
-		// Infinite loop to manage the datasets
-		ticker := time.NewTicker(4 * time.Minute)
-		for {
-			select {
-			case <- ticker.C:
-				go director.Director()
-			default:
-				// No stop signal, continuing loop
+			// Infinite loop to manage the datasets
+			ticker := time.NewTicker(4 * time.Minute)
+			for {
+				select {
+				case <- ticker.C:
+					go director.Director()
+				default:
+					// No stop signal, continuing loop
+				}
 			}
+		} else {
+			fmt.Printf("[INFO] Consul server is not running...\n\n")
+			os.Exit(0)
 		}
 
 	// HELP
@@ -112,11 +118,11 @@ func main() {
 	// RUN
 	case *optRun:
 		// Read JSON configuration file
-		j, _, _ := config.JSON()
+		values := config.JSON()
 
 		// Invoke Runner() function
 		var code int
-		for i := 0; i < j; i++ {
+		for i := 0; i < len(values.Dataset); i++ {
 			code = lib.Runner(i, false, "", false)
 			if code > 1 {
 				fmt.Printf("[RUNNER] An error has occurred while running zeplic, please revise your syslog...\n\n")

@@ -1,4 +1,4 @@
-// Package director contains: agent.go - director.go - slave.go
+// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
 //
 // Slave receives a snapshot from agent
 //
@@ -76,14 +76,12 @@ func HandleRequestSlave (connSlave net.Conn) {
 		ResponseToAgent := ZFSResponseToAgent{}
 
 		// Read the JSON configuration file
-		j, _, _ := config.JSON()
+		values := config.JSON()
 
 		// Check if dataset is configured
 		index := -1
-		for i := 0; i < j; i++ {
-			pieces	:= config.Extract(i)
-			dataset := pieces[2].(string)
-
+		for i := 0; i < len(values.Dataset); i++ {
+			dataset := values.Dataset[i].Name
 			if dataset == a.DestDataset {
 				index = i
 				break
@@ -93,11 +91,10 @@ func HandleRequestSlave (connSlave net.Conn) {
 		}
 		if index > -1 {
 			// Extract data of dataset
-			pieces	   := config.Extract(index)
-			enable	   := pieces[0].(bool)
-			docker	   := pieces[1].(bool)
-			dataset	   := pieces[2].(string)
-			datacenter := pieces[4].(string)
+			enable	   := values.Dataset[index].Enable
+			docker	   := values.Dataset[index].Docker
+			dataset	   := values.Dataset[index].Name
+			datacenter := values.Dataset[index].Consul.Datacenter
 
 			if dataset == a.DestDataset && enable == true && docker == true {
 				// Check if the dataset received exists
@@ -116,16 +113,16 @@ func HandleRequestSlave (connSlave net.Conn) {
 					if err != nil {
 						Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 						ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-						w.Err("[ERROR > order/slave.go:113] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+						w.Err("[ERROR > order/slave.go:110] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 						more = true
 					} else {
 						ds, err := zfs.GetDataset(a.DestDataset)
 						if err != nil {
-							w.Err("[ERROR > director/slave.go:122] it was not possible to get the dataset '"+a.DestDataset+"'.")
+							w.Err("[ERROR > director/slave.go:119] it was not possible to get the dataset '"+a.DestDataset+"'.")
 						}
 						list, err := ds.Snapshots()
 						if err != nil {
-							w.Err("[ERROR > director/slave.go:126] it was not possible to access of snapshots list.")
+							w.Err("[ERROR > director/slave.go:123] it was not possible to access of snapshots list.")
 						}
 						count = len(list)
 						_, amount := lib.RealList(count, list, a.DestDataset)
@@ -135,7 +132,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 						// Create a new client
 						client, err := api.NewClient(api.DefaultConfig())
 						if err != nil {
-							w.Err("[ERROR > lib/slave.go:136]@[CONSUL] it was impossible to get a new client.")
+							w.Err("[ERROR > lib/slave.go:133]@[CONSUL] it was impossible to create a new client.")
 						}
 						kv := client.KV()
 
@@ -153,7 +150,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 							// Edit KV pair
 							_, err = kv.Put(p, q)
 							if err != nil {
-								w.Err("[ERROR > order/slave.go:154]@[CONSUL] it was not possible to edit the KV pair.")
+								w.Err("[ERROR > order/slave.go:151]@[CONSUL] it was not possible to edit the KV pair.")
 							}
 						}
 						more = true
@@ -163,7 +160,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 					// Get the last snapshot in DestDataset
 					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > order/slave.go:164] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+						w.Err("[ERROR > order/slave.go:161] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 					}
 					count = len(list)
 
@@ -179,12 +176,12 @@ func HandleRequestSlave (connSlave net.Conn) {
 						if backup != amount {
 							list, err := ds.Snapshots()
 							if err != nil {
-								w.Err("[ERROR > order/slave.go:180] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+								w.Err("[ERROR > order/slave.go:177] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 							}
 							backup := list[0].Name
 							snap, err := zfs.GetDataset(backup)
 							if err != nil {
-								w.Err("[ERROR > order/slave.go:185] it was not possible to get the snapshot '"+backup+"'.")
+								w.Err("[ERROR > order/slave.go:182] it was not possible to get the snapshot '"+backup+"'.")
 							}
 							snap.Destroy(zfs.DestroyDefault)
 							w.Info("[INFO] the backup snapshot '"+backup+"' has been destroyed.")
@@ -197,16 +194,16 @@ func HandleRequestSlave (connSlave net.Conn) {
 						if err != nil {
 							Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 							ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-							w.Err("[ERROR > order/slave.go:194] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+							w.Err("[ERROR > order/slave.go:191] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 							more = true
 						} else {
 							ds, err := zfs.GetDataset(a.DestDataset)
 							if err != nil {
-								w.Err("[ERROR > director/slave.go:203] it was not possible to get the dataset '"+a.DestDataset+"'.")
+								w.Err("[ERROR > director/slave.go:200] it was not possible to get the dataset '"+a.DestDataset+"'.")
 							}
 							list, err := ds.Snapshots()
 							if err != nil {
-								w.Err("[ERROR > director/slave.go:207] it was not possible to access of snapshots list.")
+								w.Err("[ERROR > director/slave.go:204] it was not possible to access of snapshots list.")
 							}
 							count = len(list)
 							_, amount := lib.RealList(count, list, a.DestDataset)
@@ -216,7 +213,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 							// Create a new client
 							client, err := api.NewClient(api.DefaultConfig())
 							if err != nil {
-								w.Err("[ERROR > lib/slave.go:217]@[CONSUL] it was impossible to get a new client.")
+								w.Err("[ERROR > lib/slave.go:214]@[CONSUL] it was impossible to create a new client.")
 							}
 							kv := client.KV()
 
@@ -234,7 +231,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 								// Edit KV pair
 								_, err = kv.Put(p, q)
 								if err != nil {
-									w.Err("[ERROR > order/slave.go:235]@[CONSUL] it was not possible to edit the KV pair.")
+									w.Err("[ERROR > order/slave.go:232]@[CONSUL] it was not possible to edit the KV pair.")
 								}
 							}
 							more = true
@@ -282,13 +279,13 @@ func HandleRequestSlave (connSlave net.Conn) {
 			// Reconnection to send ZFSResponseToAgent
 			connToAgent, err := net.Dial("tcp", a.Source+":7733")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:283] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:280] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			rta, err = json.Marshal(ResponseToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:289] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:286] it was not possible to encode the JSON struct.")
 			} else {
 				connToAgent.Write([]byte(rta))
 				connToAgent.Write([]byte("\n"))
@@ -297,20 +294,17 @@ func HandleRequestSlave (connSlave net.Conn) {
 		}
 
 		if stream == true {
-			// Configuration of dataset
-			pieces := config.Extract(index)
-
 			// MapUUID to save the list of uuids
 			var MapUUID []string
 
 			// Get the list of snapshots in DestDataset
 			ds, err := zfs.GetDataset(a.DestDataset)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:307] it was not possible to get the dataset '"+a.DestDataset+"'.")
+				w.Err("[ERROR > order/slave.go:301] it was not possible to get the dataset '"+a.DestDataset+"'.")
 			}
 			list, err = ds.Snapshots()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:311] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+				w.Err("[ERROR > order/slave.go:305] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 			}
 			count = len(list)
 
@@ -329,13 +323,13 @@ func HandleRequestSlave (connSlave net.Conn) {
 			// Send the list of uuids in DestDataset
 			conn2ToAgent, err := net.Dial("tcp", a.Source+":7744")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:330] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:324] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			lta, err := json.Marshal(ListUUIDsToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:336] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:330] it was not possible to encode the JSON struct.")
 			} else {
 				conn2ToAgent.Write([]byte(lta))
 				conn2ToAgent.Write([]byte("\n"))
@@ -344,21 +338,21 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 			l2, err := net.Listen("tcp", ":7755")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:345] it was not possible to listen on port '7755'.")
+				w.Err("[ERROR > order/slave.go:339] it was not possible to listen on port '7755'.")
 			}
 			defer l2.Close()
 			fmt.Println("[SLAVE:7755] Receiving incremental stream from agent...")
 
 			conn2Slave, err := l2.Accept()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:352] it was not possible to accept the connection.")
+				w.Err("[ERROR > order/slave.go:346] it was not possible to accept the connection.")
 			}
 
 			// Read the status
 			buff := bufio.NewReader(conn2Slave)
 			n, err := buff.ReadByte()
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:359] it was not possible to read the 'dataset byte'.")
+				w.Err("[ERROR > order/slave.go:353] it was not possible to read the 'dataset byte'.")
 			}
 			m := string(n)
 			snapExist, _ := strconv.Atoi(m)
@@ -376,15 +370,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 				if err != nil {
 					Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s': incoherent.", hostname, a.SnapshotName, a.Source)
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-					w.Err("[ERROR > order/slave.go:373] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
+					w.Err("[ERROR > order/slave.go:367] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
 				} else {
 					ds, err := zfs.GetDataset(a.DestDataset)
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:381] it was not possible to get the dataset '"+a.DestDataset+"'.")
+						w.Err("[ERROR > director/slave.go:378] it was not possible to get the dataset '"+a.DestDataset+"'.")
 					}
 					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:385] it was not possible to access of snapshots list.")
+						w.Err("[ERROR > director/slave.go:379] it was not possible to access of snapshots list.")
 					}
 					count = len(list)
 					_, newAmount := lib.RealList(count, list, a.DestDataset)
@@ -394,7 +388,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 					// Create a new client
 					client, err := api.NewClient(api.DefaultConfig())
 					if err != nil {
-						w.Err("[ERROR > lib/slave.go:395]@[CONSUL] it was impossible to get a new client.")
+						w.Err("[ERROR > lib/slave.go:389]@[CONSUL] it was impossible to create a new client.")
 					}
 					kv := client.KV()
 
@@ -407,12 +401,12 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 						// Update the key and value of KV pair
 						p := &api.KVPair{Key: key, Value: []byte(value)}
-						q := &api.WriteOptions{Datacenter: pieces[4].(string)}
+						q := &api.WriteOptions{Datacenter: values.Dataset[index].Consul.Datacenter}
 
 						// Edit KV pair
 						_, err = kv.Put(p, q)
 						if err != nil {
-							w.Err("[ERROR > order/slave.go:413]@[CONSUL] it was not possible to edit the KV pair.")
+							w.Err("[ERROR > order/slave.go:407]@[CONSUL] it was not possible to edit the KV pair.")
 						}
 					}
 					runner = true
@@ -445,15 +439,15 @@ func HandleRequestSlave (connSlave net.Conn) {
 				if err != nil {
 					Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", hostname, a.SnapshotName, a.Source)
 					ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-					w.Err("[ERROR > order/slave.go:442] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+					w.Err("[ERROR > order/slave.go:436] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 				} else {
 					ds, err := zfs.GetDataset(a.DestDataset)
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:450] it was not possible to get the dataset '"+a.DestDataset+"'.")
+						w.Err("[ERROR > director/slave.go:444] it was not possible to get the dataset '"+a.DestDataset+"'.")
 					}
 					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:454] it was not possible to access of snapshots list.")
+						w.Err("[ERROR > director/slave.go:448] it was not possible to access of snapshots list.")
 					}
 					count = len(list)
 					_, newAmount := lib.RealList(count, list, a.DestDataset)
@@ -463,7 +457,7 @@ func HandleRequestSlave (connSlave net.Conn) {
 					// Create a new client
 					client, err := api.NewClient(api.DefaultConfig())
 					if err != nil {
-						w.Err("[ERROR > lib/slave.go:464]@[CONSUL] it was impossible to get a new client.")
+						w.Err("[ERROR > lib/slave.go:458]@[CONSUL] it was impossible to create a new client.")
 					}
 					kv := client.KV()
 
@@ -476,12 +470,12 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 						// Update the key and value of KV pair
 						p := &api.KVPair{Key: key, Value: []byte(value)}
-						q := &api.WriteOptions{Datacenter: pieces[4].(string)}
+						q := &api.WriteOptions{Datacenter: values.Dataset[index].Consul.Datacenter}
 
 						// Edit KV pair
 						_, err = kv.Put(p, q)
 						if err != nil {
-							w.Err("[ERROR > order/slave.go:482]@[CONSUL] it was not possible to edit the KV pair.")
+							w.Err("[ERROR > order/slave.go:476]@[CONSUL] it was not possible to edit the KV pair.")
 						}
 					}
 					runner = true
@@ -490,13 +484,13 @@ func HandleRequestSlave (connSlave net.Conn) {
 			// Send the last ZFSResponseToAgent
 			conn3ToAgent, err := net.Dial("tcp", a.Source+":7766")
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:491] it was not possible to connect with '"+a.Source+"'.")
+				w.Err("[ERROR > order/slave.go:485] it was not possible to connect with '"+a.Source+"'.")
 			}
 
 			// Marshal response to agent
 			rta, err := json.Marshal(ResponseToAgent)
 			if err != nil {
-				w.Err("[ERROR > order/slave.go:497] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > order/slave.go:491] it was not possible to encode the JSON struct.")
 			} else {
 				conn3ToAgent.Write([]byte(rta))
 				conn3ToAgent.Write([]byte("\n"))
@@ -508,19 +502,18 @@ func HandleRequestSlave (connSlave net.Conn) {
 
 		if runner == true {
 			// Extract dataset information
-			pieces	   := config.Extract(index)
-			enable	   := pieces[0].(bool)
-			dataset	   := pieces[2].(string)
-			getBackup  := pieces[7].(bool)
-			getClone   := pieces[8].(bool)
-			clone	   := pieces[9].(string)
-			delClone   := pieces[10].(bool)
+			enable	   := values.Dataset[index].Enable
+			dataset	   := values.Dataset[index].Name
+			getBackup  := values.Dataset[index].Backup
+			getClone   := values.Dataset[index].Clone.Enable
+			clone	   := values.Dataset[index].Clone.Name
+			delClone   := values.Dataset[index].Clone.Delete
 
 			if enable == true {
 				// Delete the backup snapshot
 				ds, err := zfs.GetDataset(dataset)
 				if err != nil {
-					w.Err("[ERROR > order/slave.go:521] it was not possible to get the dataset '"+dataset+"'.")
+					w.Err("[ERROR > order/slave.go:514] it was not possible to get the dataset '"+dataset+"'.")
 				} else {
 					// Delete an existing clone
 					lib.DeleteClone(delClone, clone)
@@ -534,14 +527,14 @@ func HandleRequestSlave (connSlave net.Conn) {
 					// Clone the last snapshot received
 					list, err := ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > order/slave.go:535] it was not possible to access of snapshots list.")
+						w.Err("[ERROR > order/slave.go:528] it was not possible to access of snapshots list.")
 					}
 					count := len(list)
 					_, amount := lib.RealList(count, list, dataset)
 					LastSnapshot := list[amount-1].Name
 					snap, err := zfs.GetDataset(LastSnapshot)
 					if err != nil {
-						w.Err("[ERROR > order/slave.go:542] it was not possible to get the snapshot '"+snap.Name+"'.")
+						w.Err("[ERROR > order/slave.go:535] it was not possible to get the snapshot '"+snap.Name+"'.")
 					}
 					lib.Clone(getClone, clone, snap.Name, snap)
 				}

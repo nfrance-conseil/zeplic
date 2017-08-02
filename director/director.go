@@ -1,4 +1,4 @@
-// Package director contains: agent.go - director.go - slave.go
+// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
 //
 // Director sends an order to the agent
 // Make orders from synchronisation between nodes
@@ -8,63 +8,15 @@ package director
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/nfrance-conseil/zeplic/utils"
 	"github.com/hashicorp/consul/api"
 	"github.com/pborman/uuid"
 )
-
-var (
-	w = config.LogBook()
-)
-
-// ServerFilePath returns the path of JSON config file
-var ServerFilePath string
-
-// Cold contains the information of backup snapshot
-type Cold struct {
-	Creation    string `json:"creation"`
-	Prefix	    string `json:"prefix"`
-	SyncOn      string `json:"sync_on"`
-	SyncDataset string `json:"sync_dataset"`
-	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
-}
-
-// Hot contains the information of synchronization snapshot
-type Hot struct {
-	Creation    string `json:"creation"`
-	Prefix	    string `json:"prefix"`
-	SyncOn      string `json:"sync_on"`
-	SyncDataset string `json:"sync_dataset"`
-	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
-}
-
-// Actions contains the information of replicate every snapshot
-type Actions struct {
-	Hostname	 string `json:"hostname"`
-	Dataset		 string `json:"dataset"`
-	Backup		 Cold
-	Sync		 Hot
-	RollbackIfNeeded bool	`json:"rollback_needed"`
-	SkipIfRenamed    bool	`json:"skip_renamed"`
-	SkipIfNotWritten bool	`json:"skip_not_written"`
-	SkipIfCloned     bool	`json:"skip_cloned"`
-}
-
-// Config extracts the interface of JSON server file
-type Config struct {
-	Datacenter	string	`json:"datacenter"`
-	Director      []Actions `json:"datasets"`
-}
 
 // Status for DestDataset
 const (
@@ -103,22 +55,13 @@ type ZFSDirectorsOrder struct {
 // Director reads the server config file and all KV pairs
 // Then it creates the orders
 func Director() {
-	jsonFile := ServerFilePath
-	serverFile, err := ioutil.ReadFile(jsonFile)
-	if err != nil {
-		fmt.Printf("[NOTICE] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
-		os.Exit(1)
-	}
-	var values Config
-	err = json.Unmarshal(serverFile, &values)
-	if err != nil {
-		w.Err("[ERROR > director/director.go:113] it was not possible to parse the JSON configuration file.")
-	}
+	// Get the data of server file
+	values := Extract()
 
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		w.Err("[ERROR > director/director.go:119]@[CONSUL] it was not possible to create a new client.")
+		w.Err("[ERROR > director/director.go:62]@[CONSUL] it was not possible to create a new client.")
 	}
 	kv := client.KV()
 
@@ -130,7 +73,7 @@ func Director() {
 	// Get KV pairs
 	pairs, _, err := kv.List(keyfix, q)
 	if err != nil {
-		w.Err("[ERROR > director/director.go:131]@[CONSUL] it was not possible to get the list of KV pairs.")
+		w.Err("[ERROR > director/director.go:74]@[CONSUL] it was not possible to get the list of KV pairs.")
 	}
 	if len(pairs) < 1 {
 		for i := 0; i < len(values.Director); i++ {
@@ -167,13 +110,13 @@ func Director() {
 			// Send order to agent
 			ConnToResync, err := net.Dial("tcp", hostname+":7711")
 			if err != nil {
-				w.Err("[ERROR > director/director.go:168] it was not possible to connect with '"+hostname+"'.")
+				w.Err("[ERROR > director/director.go:111] it was not possible to connect with '"+hostname+"'.")
 			}
 
 			// Marshal response to agent
 			otr, err := json.Marshal(OrderToResync)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:174] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > director/director.go:117] it was not possible to encode the JSON struct.")
 			} else {
 				ConnToResync.Write([]byte(otr))
 				ConnToResync.Write([]byte("\n"))
@@ -193,7 +136,7 @@ func Director() {
 			// Get KV pairs
 			pairs, _, err := kv.List(keyfix, q)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:194]@[CONSUL] it was not possible to get the list of KV pairs.")
+				w.Err("[ERROR > director/director.go:137]@[CONSUL] it was not possible to get the list of KV pairs.")
 			}
 
 			var PairsList []string
@@ -272,7 +215,7 @@ func Director() {
 					}
 				}
 			}
-
+			take = false
 			// Send snapshot?
 			var sent bool
 			var uuidList []string
@@ -357,14 +300,14 @@ func Director() {
 				// Send order to agent
 				ConnToAgent, err := net.Dial("tcp", hostname+":7711")
 				if err != nil {
-					w.Err("[ERROR > director/director.go:358] it was not possible to connect with '"+hostname+"'.")
+					w.Err("[ERROR > director/director.go:301] it was not possible to connect with '"+hostname+"'.")
 					fmt.Println("ERROR1")
 				}
 
 				// Marshal response to agent
 				ota, err := json.Marshal(OrderToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/director.go:365] it was not possible to encode the JSON struct.")
+					w.Err("[ERROR > director/director.go:308] it was not possible to encode the JSON struct.")
 					fmt.Println("ERROR2")
 				} else {
 					ConnToAgent.Write([]byte(ota))

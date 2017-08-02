@@ -12,15 +12,13 @@ import (
 func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 	// Define index of pieces
 	index := -1
-	// Extract JSON information
-	j,_, _ := config.JSON()
 
 	// Define dataset variable
 	var dataset string
 
-	for i := 0; i < j; i++ {
-		pieces := config.Extract(i)
-		dataset = pieces[2].(string)
+	values := config.JSON()
+	for i := 0; i < len(values.Dataset); i++ {
+		dataset = values.Dataset[i].Name
 		if dataset == DestDataset {
 			index = i
 			break

@@ -21,7 +21,7 @@ func Sync(hostname string, datacenter string, dataset string, index int) {
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:22]@[CONSUL] it was impossible to get a new client.")
+		w.Err("[ERROR > lib/sync.go:22]@[CONSUL] it was impossible to create a new client.")
 	}
 	// Get a handle to the KV API
 	kv := client.KV()
@@ -35,7 +35,7 @@ func Sync(hostname string, datacenter string, dataset string, index int) {
 	q := &api.WriteOptions{Datacenter: datacenter}
 	_, err = kv.Put(p, q)
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:35]@[CONSUL] it was impossible to put a new KV pair.")
+		w.Err("[ERROR > lib/sync.go:36]@[CONSUL] it was impossible to put a new KV pair.")
 	}
 }
 
@@ -44,13 +44,13 @@ func Update(datacenter string, dataset string) {
 	// Resolve hostname
 	hostname, err := os.Hostname()
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:44] it was not possible to resolve the hostname.")
+		w.Err("[ERROR > lib/sync.go:45] it was not possible to resolve the hostname.")
 	}
 
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:50]@[CONSUL] it was impossible to get a new client.")
+		w.Err("[ERROR > lib/sync.go:51]@[CONSUL] it was impossible to create a new client.")
 	}
 	// Get a handle to the KV API
 	kv := client.KV()
@@ -60,7 +60,7 @@ func Update(datacenter string, dataset string) {
 	q := &api.QueryOptions{Datacenter: datacenter}
 	pairs, _, err := kv.List(keyfix, q)
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:60]@[CONSUL] it was impossible to get the list of KV pairs.")
+		w.Err("[ERROR > lib/sync.go:61]@[CONSUL] it was impossible to get the list of KV pairs.")
 	}
 
 	// List of pairs
@@ -89,11 +89,11 @@ func Update(datacenter string, dataset string) {
 	var SnapshotsList []string
 	ds, err := zfs.GetDataset(dataset)
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:89] it was not possible to get the dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/sync.go:90] it was not possible to get the dataset '"+dataset+"'.")
 	}
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:93] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/sync.go:94] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	}
 	count := len(list)
 	_, amount := RealList(count, list, dataset)
@@ -102,7 +102,7 @@ func Update(datacenter string, dataset string) {
 	for i := 0; i < amount; i++ {
 		snap, err := zfs.GetDataset(list[i].Name)
 		if err != nil {
-			w.Err("[ERROR > lib/sync.go:102] it was not possible to get the snapshot '"+snap.Name+"'.")
+			w.Err("[ERROR > lib/sync.go:103] it was not possible to get the snapshot '"+snap.Name+"'.")
 		}
 		snapUUID := SearchUUID(snap)
 		// Create list of snapshots
@@ -158,7 +158,7 @@ func Update(datacenter string, dataset string) {
 		// Create a new KV
 		_, err = kv.Put(p, q)
 		if err != nil {
-			w.Err("[ERROR > lib/sync.go:158]@[CONSUL] it was not possible to create a new KV.")
+			w.Err("[ERROR > lib/sync.go:159]@[CONSUL] it was not possible to create a new KV.")
 		}
 	}
 	for n := 0; n < len(DeleteList); n++ {
@@ -187,7 +187,7 @@ func Update(datacenter string, dataset string) {
 			// Edit KV pair
 			_, err = kv.Put(p, q)
 			if err != nil {
-				w.Err("[ERROR > lib/sync.go:187]@[CONSUL] it was not possible to edit the KV pair.")
+				w.Err("[ERROR > lib/sync.go:188]@[CONSUL] it was not possible to edit the KV pair.")
 			}
 			destroy = false
 		}
@@ -217,7 +217,7 @@ func Update(datacenter string, dataset string) {
 				// Edit KV pair
 				_, err = kv.Put(p, q)
 				if err != nil {
-					w.Err("[ERROR > lib/sync.go:217]@[CONSUL] it was not possible to edit the KV pair.")
+					w.Err("[ERROR > lib/sync.go:218]@[CONSUL] it was not possible to edit the KV pair.")
 				}
 			}
 			continue

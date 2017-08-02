@@ -17,12 +17,12 @@ import (
 func Cleaner(RealDataset string) int {
 	// Search the dataset
 	var datacenter string
-	j, _, _ := config.JSON()
-	for i := 0; i < j; i++ {
-		pieces := config.Extract(i)
-		dataset := pieces[2].(string)
+
+	values := config.JSON()
+	for i := 0; i < len(values.Dataset); i++ {
+		dataset := values.Dataset[i].Name
 		if RealDataset == dataset {
-			datacenter = pieces[4].(string)
+			datacenter = values.Dataset[i].Consul.Datacenter
 			break
 		} else {
 			continue

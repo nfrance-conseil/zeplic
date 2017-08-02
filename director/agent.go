@@ -1,4 +1,4 @@
-// Package director contains: agent.go - director.go - slave.go
+// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
 //
 // Agent executes the orders received from director
 //

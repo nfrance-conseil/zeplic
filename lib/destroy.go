@@ -21,7 +21,7 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 	// Create a new client
 	client, err := api.NewClient(api.DefaultConfig())
 	if err != nil {
-		w.Err("[ERROR > lib/destroy.go:22]@[CONSUL] it was impossible to get a new client.")
+		w.Err("[ERROR > lib/destroy.go:22]@[CONSUL] it was impossible to create a new client.")
 	}
 	kv := client.KV()
 
@@ -32,18 +32,14 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 		RealSnapshotName := SearchName(uuid)
 		RealDataset := DatasetName(RealSnapshotName)
 
-		// Define interface
-		var pieces []interface{}
 		// Define index of pieces
 		index := -1
-		// Extract JSON information
-		j, _, _ := config.JSON()
 
-		for k := 0; k < j; k++ {
-			pieces := config.Extract(i)
-			dataset := pieces[2].(string)
+		values := config.JSON()
+		for k := 0; k < len(values.Dataset); k++ {
+			dataset := values.Dataset[k].Name
 			if dataset == RealDataset {
-				index = i
+				index = k
 				break
 			} else {
 				continue
@@ -53,11 +49,11 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 		// Dataset configured
 		if index > -1 {
 			// Dataset enabled
-			if pieces[0].(bool) == true {
+			if values.Dataset[index].Enable == true {
 				// Get the snapshot
 				snap, err := zfs.GetDataset(name)
 				if err != nil {
-					w.Err("[ERROR > lib/destroy.go:58] it was not possible to get the snapshot '"+name+"'.")
+					w.Err("[ERROR > lib/destroy.go:54] it was not possible to get the snapshot '"+name+"'.")
 					code = 1
 					return code
 				}
@@ -93,25 +89,26 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 						} else {
 							err = snap.Destroy(zfs.DestroyRecursiveClones)
 							if err != nil {
-								w.Err("[ERROR > lib/destroy.go:94] it was not possible to destroy the snapshot '"+name+"'.")
+								w.Err("[ERROR > lib/destroy.go:90] it was not possible to destroy the snapshot '"+name+"'.")
 								code = 1
 							} else {
 								// Resolve hostname
 								hostname, err := os.Hostname()
 								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:100] it was not possible to resolve the hostname.")
+									w.Err("[ERROR > lib/destroy.go:96] it was not possible to resolve the hostname.")
 									code = 1
 									return code
 								}
 
 								// KV write options
 								keyfix := fmt.Sprintf("%s/%s/%s", "zeplic", hostname, uuid)
-								q1 := &api.QueryOptions{Datacenter: pieces[4].(string)}
+								datacenter := values.Dataset[index].Consul.Datacenter
+								q1 := &api.QueryOptions{Datacenter: datacenter}
 
 								// Get KV pairs
 								pairs, _, err := kv.List(keyfix, q1)
 								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:112]@[CONSUL] it was not possible to get the list of KV pairs.")
+									w.Err("[ERROR > lib/destroy.go:109]@[CONSUL] it was not possible to get the list of KV pairs.")
 								}
 
 								pair := fmt.Sprintf("%s:%s", pairs[0].Key, string(pairs[0].Value[:]))
@@ -126,12 +123,12 @@ func DestroyOrder(SnapshotUUID []string, Renamed bool, NotWritten bool, Cloned b
 									value = fmt.Sprintf("%s#%s", name, "deleted")
 								}
 								p := &api.KVPair{Key: keyfix, Value: []byte(value)}
-								q2 := &api.WriteOptions{Datacenter: pieces[4].(string)}
+								q2 := &api.WriteOptions{Datacenter: datacenter}
 
 								// Edit KV pair
 								_, err = kv.Put(p, q2)
 								if err != nil {
-									w.Err("[ERROR > lib/destroy.go:132]@[CONSUL] it was not possible to edit the KV pair.")
+									w.Err("[ERROR > lib/destroy.go:129]@[CONSUL] it was not possible to edit the KV pair.")
 									code = 1
 									return code
 								}
