@@ -1,12 +1,16 @@
 {
-	"datasets": [
+	"local_datasets": [
 	{
 		"enable": true,
 		"docker": false,
 		"name": "tank/foo",
-		"snapshot": "FOO",
-		"retain": 5,
-		"backup": true,
+		"consul": {
+			"enable": true,
+			"datacenter": "ConsulDatacenter"
+		},
+		"snap_prefix": "FOO",
+		"snap_retention": 10,
+		"backup" true,
 		"clone": {
 			"enable": true,
 			"name": "tank/foo_clone",
@@ -17,8 +21,12 @@
 		"enable": false,
 		"docker": false,
 		"name": "tank/bar",
-		"snapshot": "BAR",
-		"retain": 3,
+		"consul": {
+			"enable": false,
+			"datacenter": "ConsulDatacenter"
+		},
+		"snap_prefix": "BAR",
+		"snap_retention": 10,
 		"backup": false,
 		"clone": {
 			"enable": false,

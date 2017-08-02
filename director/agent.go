@@ -1,36 +1,20 @@
-// Package order contains: agent.go - !director.go - slave.go
+// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
 //
 // Agent executes the orders received from director
 //
-package order
+package director
 
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 
-	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
 )
-
-// ZFSOrderFromDirector is the struct for ZFS orders from director
-type ZFSOrderFromDirector struct {
-	OrderUUID	 string	// mandatory
-	Action		 string // take_snapshot, send_snapshot, destroy_snapshot
-	Destination	 string // hostname or IP for send
-	SnapshotUUID	 string // mandatory
-	SnapshotName	 string	// name of snapshot
-	DestDataset	 string // dataset for receive
-	RollbackIfNeeded bool   // should I rollback if written is true on destination
-	SkipIfRenamed	 bool   // should I do the stuff if a snapshot has been renamed
-	SkipIfNotWritten bool   // should I take a snapshot if nothing is written
-	SkipIfCloned	 bool	// should I delete a snapshot if it was cloned
-}
 
 // ZFSOrderToSlave is the struct for ZFS orders to slave
 type ZFSOrderToSlave struct {
@@ -55,28 +39,25 @@ type ZFSListUUIDsFromSlave struct {
 }
 
 // HandleRequestAgent incoming requests from director
-func HandleRequestAgent (connAgent net.Conn) bool {
-	// Start syslog system service
-	w := config.LogBook()
-
+func HandleRequestAgent (connAgent net.Conn) {
 	// Resolve hostname
 	hostname, err := os.Hostname()
 	if err != nil {
-		w.Err("[ERROR > order/agent.go:63] it was not possible to resolve the hostname.")
+		w.Err("[ERROR > order/agent.go:44] it was not possible to resolve the hostname.")
 	}
 
 	// Unmarshal orders from director
-	var d ZFSOrderFromDirector
-	director, err := ioutil.ReadAll(connAgent)
+	var d ZFSDirectorsOrder
+	director, err := bufio.NewReader(connAgent).ReadBytes('\x0A')
 	if err != nil {
-		w.Err("[ERROR > order/agent.go:70] an error has occurred while reading from the socket.")
+		w.Err("[ERROR > order/agent.go:51] an error has occurred while reading from the socket.")
 	}
 	err = json.Unmarshal(director, &d)
 	if err != nil {
-		w.Err("[ERROR > order/agent.go:74] it was not possible to parse the JSON struct from the socket.")
+		w.Err("[ERROR > order/agent.go:55] it was not possible to parse the JSON struct from the socket.")
 	}
 	if d.OrderUUID == "" || d.Action == "" || (d.Action == "send_snapshot" && d.Destination == "") {
-		w.Err("[ERROR > order/agent.go:78] inconsistant data structure in ZFS order.")
+		w.Err("[ERROR > order/agent.go:59] inconsistant data structure in ZFS order.")
 	}
 
 	// Switch for action order
@@ -84,54 +65,50 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 
 	// Create a new snapshot
 	case "take_snapshot":
-		// Check if the DestDataset exists and it is enable
-		if d.DestDataset == "" {
-			w.Err("[ERROR > order/agent.go:88] inconsistant data structure in ZFS order.")
+		// Checking required information
+		if d.DestDataset == "" || d.SnapshotName == "" {
+			w.Err("[ERROR > order/agent.go:69] inconsistant data structure in ZFS order.")
 			break
+		} else {
+			// Call to function TakeOrder for create the snapshot
+			go lib.TakeOrder(d.DestDataset, d.SnapshotName, d.SkipIfNotWritten)
 		}
-
-		// Read JSON configuration file
-		j, _, _ := config.JSON()
-
-		// Call to function CommandOrder for create the snapshot
-		lib.TakeOrder(j, d.DestDataset, d.SkipIfNotWritten)
 
 	// Send snapshot to d.Destination
 	case "send_snapshot":
 		// Checking required information
-		if d.SnapshotUUID == "" || d.Destination == "" || d.DestDataset == "" {
-			w.Err("[ERROR > order/agent.go:102] inconsistant data structure in ZFS order.")
+		if len(d.SnapshotUUID) == 0 || d.Destination == "" || d.DestDataset == "" {
+			w.Err("[ERROR > order/agent.go:80] inconsistant data structure in ZFS order.")
 			break
 		}
 		// Search the snapshot name from its uuid
-		SnapshotName := lib.SearchName(d.SnapshotUUID)
+		SnapshotName := lib.SearchName(d.SnapshotUUID[0])
 
 		// Check if something was written
 		snap, err := zfs.GetDataset(SnapshotName)
 		if err != nil {
-			w.Err("[ERROR > order/agent.go:110] it was not possible to get the snapshot '"+SnapshotName+"'.")
+			w.Err("[ERROR > order/agent.go:88] it was not possible to get the snapshot '"+SnapshotName+"'.")
 		}
 		written := snap.Written
 
-		if d.SkipIfNotWritten == false || (d.SkipIfNotWritten == true && written > 0) {
-
+		if d.SkipIfNotWritten == false || d.SkipIfNotWritten == true && written > 0 {
 			// Take the snapshot
 			ds, err := zfs.GetDataset(SnapshotName)
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:119] it was not possible to get the snapshot '"+SnapshotName+"'.")
+				w.Err("[ERROR > order/agent.go:96] it was not possible to get the snapshot '"+SnapshotName+"'.")
 			}
 
 			// Create a new connection with the destination
 			connToSlave, err := net.Dial("tcp", d.Destination+":7722")
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:125] it was not possible to connect with '"+d.Destination+"'.")
+				w.Err("[ERROR > order/agent.go:102] it was not possible to connect with '"+d.Destination+"'.")
 			}
 
 			// Struct for ZFS orders to slave
-			ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID,SnapshotName,d.DestDataset}
+			ZFSOrderToSlave := ZFSOrderToSlave{hostname,d.OrderUUID,d.SnapshotUUID[0],SnapshotName,d.DestDataset}
 			ots, err := json.Marshal(ZFSOrderToSlave)
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:132] it was impossible to encode the JSON struct.")
+				w.Err("[ERROR > order/agent.go:109] it was impossible to encode the JSON struct.")
 			}
 			connToSlave.Write([]byte(ots))
 			connToSlave.Write([]byte("\n"))
@@ -140,13 +117,10 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 			buff := bufio.NewReader(connToSlave)
 			n, err := buff.ReadByte()
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:141] it was not possible to read the 'dataset byte'.")
+				w.Err("[ERROR > order/agent.go:118] it was not possible to read the 'dataset byte'.")
 			}
 			m := string(n)
-			dsExist, err := strconv.Atoi(m)
-			if err != nil {
-				w.Err("[ERROR > order/agent.go:145] it was not possible to convert the string '"+m+"' to integer.")
-			}
+			dsExist, _ := strconv.Atoi(m)
 
 			switch dsExist {
 
@@ -158,25 +132,25 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 				// Reconnection to get ZFSResponse
 				l2, err := net.Listen("tcp", ":7733")
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:159] it was not possible to listen on port '7733'.")
+					w.Err("[ERROR > order/agent.go:133] it was not possible to listen on port '7733'.")
 				}
 				defer l2.Close()
 				fmt.Println("[AGENT:7733] Receiving response from slave...")
 
 				conn2Agent, err := l2.Accept()
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:166] it was not possible to accept the connection.")
+					w.Err("[ERROR > order/agent.go:140] it was not possible to accept the connection.")
 				}
 
 				var r ZFSResponseFromSlave
 				response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:172] an error has occurred while reading from the socket.")
+					w.Err("[ERROR > order/agent.go:146] an error has occurred while reading from the socket.")
 					break
 				}
 				err = json.Unmarshal(response, &r)
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:177] it was impossible to parse the JSON struct from the socket.")
+					w.Err("[ERROR > order/agent.go:151] it was impossible to parse the JSON struct from the socket.")
 					break
 				}
 				if r.IsSuccess == true {
@@ -186,23 +160,23 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						// Reconnection to get ZFSResponse
 						l3, err := net.Listen("tcp", ":7744")
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:187] it was not possible to listen on port '7744'.")
+							w.Err("[ERROR > order/agent.go:161] it was not possible to listen on port '7744'.")
 						}
 						defer l3.Close()
 						fmt.Println("[Agent:7744] Receiving list of uuids in DestDataset...")
 						conn3Agent, err := l3.Accept()
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:193] it was not possible to accept the connection.")
+							w.Err("[ERROR > order/agent.go:167] it was not possible to accept the connection.")
 						}
 						var r2 ZFSListUUIDsFromSlave
 						response2, err := bufio.NewReader(conn3Agent).ReadBytes('\x0A')
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:198] an error has occurred while reading from the socket.")
+							w.Err("[ERROR > order/agent.go:172] an error has occurred while reading from the socket.")
 							break
 						}
 						err = json.Unmarshal(response2, &r2)
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:203] it was impossible to parse the JSON struct from the socket.")
+							w.Err("[ERROR > order/agent.go:177] it was impossible to parse the JSON struct from the socket.")
 							break
 						}
 
@@ -246,11 +220,11 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 							dataset := lib.DatasetName(SnapshotName)
 							ds, err := zfs.GetDataset(dataset)
 							if err != nil {
-								w.Err("[ERROR > order/agent.go:247] it was not possible to get the dataset '"+dataset+"'.")
+								w.Err("[ERROR > order/agent.go:221] it was not possible to get the dataset '"+dataset+"'.")
 							}
 							list, err := ds.Snapshots()
 							if err != nil {
-								w.Err("[ERROR > order/agent.go:251] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+								w.Err("[ERROR > order/agent.go:225] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 							}
 							count := len(list)
 
@@ -269,11 +243,11 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 							if index < number {
 								ds1, err = zfs.GetDataset(found)
 								if err != nil {
-									w.Err("[ERROR > order/agent.go:270] it was not possible to get the snapshot '"+found+"'.")
+									w.Err("[ERROR > order/agent.go:244] it was not possible to get the snapshot '"+found+"'.")
 								}
 								ds2, err = zfs.GetDataset(SnapshotName)
 								if err != nil {
-									w.Err("[ERROR > order/agent.go:274] it was not possible to get the snapshot '"+SnapshotName+"'.")
+									w.Err("[ERROR > order/agent.go:248] it was not possible to get the snapshot '"+SnapshotName+"'.")
 								}
 								ack = nil
 								ack = strconv.AppendInt(ack, Incremental, 10)
@@ -290,7 +264,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						// New connection with the slave node
 						conn2ToSlave, err := net.Dial("tcp", d.Destination+":7755")
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:291] it was not possible to listen on port '7755'.")
+							w.Err("[ERROR > order/agent.go:265] it was not possible to listen on port '7755'.")
 						}
 						// Send the flag to destination
 						conn2ToSlave.Write(ack)
@@ -299,7 +273,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 							// Send the snapshot
 							ds, err := zfs.GetDataset(SnapshotName)
 							if err != nil {
-								w.Err("[ERROR > order/agent.go:300] it was not possible to get the snapshot '"+SnapshotName+"'.")
+								w.Err("[ERROR > order/agent.go:274] it was not possible to get the snapshot '"+SnapshotName+"'.")
 							}
 							ds.SendSnapshot(conn2ToSlave, zfs.ReplicationStream)
 							conn2ToSlave.Close()
@@ -314,7 +288,7 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						// Reconnection to get ZFSResponse
 						l4, err := net.Listen("tcp", ":7766")
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:315] it was not possible to listen on port '7766'.")
+							w.Err("[ERROR > order/agent.go:289] it was not possible to listen on port '7766'.")
 						}
 						defer l4.Close()
 						fmt.Println("[Agent:7766] Receiving response from slave...")
@@ -323,12 +297,12 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 						var r3 ZFSResponseFromSlave
 						response3, err := bufio.NewReader(conn4Agent).ReadBytes('\x0A')
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:324] an error has occurred while reading from the socket.")
+							w.Err("[ERROR > order/agent.go:298] an error has occurred while reading from the socket.")
 							break
 						}
 						err = json.Unmarshal(response3, &r3)
 						if err != nil {
-							w.Err("[ERROR > order/agent.go:329] it was impossible to parse the JSON struct from the socket.")
+							w.Err("[ERROR > order/agent.go:303] it was impossible to parse the JSON struct from the socket.")
 							break
 						}
 						if r3.IsSuccess == true {
@@ -360,25 +334,25 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 				// Reconnection to get ZFSResponse
 				l2, err := net.Listen("tcp", ":7733")
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:361] it was not possible to listen on port '7733'.")
+					w.Err("[ERROR > order/agent.go:335] it was not possible to listen on port '7733'.")
 				}
 				defer l2.Close()
 				fmt.Println("[AGENT:7733] Receiving response from slave...")
 
 				conn2Agent, err := l2.Accept()
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:368] it was not possible to accept the connection.")
+					w.Err("[ERROR > order/agent.go:342] it was not possible to accept the connection.")
 				}
 
 				var r ZFSResponseFromSlave
 				response, err := bufio.NewReader(conn2Agent).ReadBytes('\x0A')
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:374] an error has occurred while reading from the socket.")
+					w.Err("[ERROR > order/agent.go:348] an error has occurred while reading from the socket.")
 					break
 				}
 				err = json.Unmarshal(response, &r)
 				if err != nil {
-					w.Err("[ERROR > order/agent.go:379] it was impossible to parse the JSON struct from the socket.")
+					w.Err("[ERROR > order/agent.go:353] it was impossible to parse the JSON struct from the socket.")
 					break
 				}
 				if r.IsSuccess == true {
@@ -409,21 +383,21 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 
 			// Network error
 			default:
-				w.Err("[ERROR > order/agent.go:411] it was not possible to receive any response from '"+d.Destination+"'.")
+				w.Err("[ERROR > order/agent.go:125] it was not possible to receive any response from '"+d.Destination+"'.")
 				break
 			}
 		} else {
 			// Create a new connection with the destination
 			connToSlave, err := net.Dial("tcp", d.Destination+":7722")
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:417] it was not possible to connect with '"+d.Destination+"'.")
+				w.Err("[ERROR > order/agent.go:391] it was not possible to connect with '"+d.Destination+"'.")
 			}
 
 			// Struct for ZFS orders to slave
 			ZFSOrderToSlave := ZFSOrderToSlave{hostname,"NotWritten","","",""}
 			ots, err := json.Marshal(ZFSOrderToSlave)
 			if err != nil {
-				w.Err("[ERROR > order/agent.go:424] it was impossible to encode the JSON struct.")
+				w.Err("[ERROR > order/agent.go:398] it was impossible to encode the JSON struct.")
 			}
 			connToSlave.Write([]byte(ots))
 			connToSlave.Write([]byte("\n"))
@@ -433,43 +407,20 @@ func HandleRequestAgent (connAgent net.Conn) bool {
 	// Destroy snapshot
 	case "destroy_snapshot":
 		// Checking required information
-		if d.SnapshotUUID == "" || d.SnapshotName == "" {
-			w.Err("[ERROR > order/agent.go:436] inconsistant data structure in ZFS order.")
+		if len(d.SnapshotUUID) == 0 {
+			w.Err("[ERROR > order/agent.go:410] inconsistant data structure in ZFS order.")
 			break
+		} else {
+			// Call to function DestroyOrder
+			go lib.DestroyOrder(d.SnapshotUUID, d.SkipIfRenamed, d.SkipIfNotWritten, d.SkipIfCloned)
 		}
-		// Search the snapshot name from its uuid
-		SnapshotName := lib.SearchName(d.SnapshotUUID)
 
-		// Check if something was written
-		snap, err := zfs.GetDataset(SnapshotName)
-		if err != nil {
-			w.Err("[ERROR > order/agent.go:444] it was not possible to get the snapshot '"+SnapshotName+"'.")
-		}
-		written := snap.Written
-
-		if d.SkipIfNotWritten == false || d.SkipIfNotWritten == true && written > 0 {
-			// Check if the snapshot was renamed
-			if d.SkipIfRenamed == true && d.SnapshotName != SnapshotName {
-				w.Info("[INFO] the snapshot '"+d.SnapshotName+"' was renamed to '"+SnapshotName+"'.")
-			} else {
-				// Call to function DestroyOrder for destroy the snapshot
-				destroy, clone := lib.DestroyOrder(SnapshotName, d.SkipIfCloned)
-
-				// Print the name of snapshot destroyed (using its uuid)
-				if destroy == true && d.SnapshotName != SnapshotName {
-					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' (renamed as "+SnapshotName+") has been destroyed.")
-				} else if destroy == true && d.SnapshotName == SnapshotName {
-					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has been destroyed.")
-				} else if destroy == false && clone != "" {
-					w.Info("[INFO] the snapshot '"+d.SnapshotName+"' has dependent clones: '"+clone+"'.")
-				}
-			}
-		}
+	// Resync
+	case "kv_resync":
+		go lib.Update(d.Destination, d.DestDataset)
 
 	default:
-		w.Err("[ERROR > order/agent.go:469] the action '"+d.Action+"' is not supported.")
+		w.Err("[ERROR > order/agent.go:64] the action '"+d.Action+"' is not supported.")
 		break
 	}
-	stop := false
-	return stop
 }
