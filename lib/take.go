@@ -1,4 +1,4 @@
-// Package lib contains: actions.go - cleaner.go - commands.go - destroy.go - snapshot.go - sync.go - take.go - uuid.go
+// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Functions to create a snapshot
 //
@@ -16,7 +16,7 @@ func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 	// Define dataset variable
 	var dataset string
 
-	values := config.JSON()
+	values := config.Local()
 	for i := 0; i < len(values.Dataset); i++ {
 		dataset = values.Dataset[i].Name
 		if dataset == DestDataset {

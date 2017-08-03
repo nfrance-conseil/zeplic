@@ -1,4 +1,4 @@
-// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
+// Package director contains: actions.go - agent.go - director.go - slave.go
 //
 // Director sends an order to the agent
 // Make orders from synchronisation between nodes
@@ -12,10 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/nfrance-conseil/zeplic/lib"
-	"github.com/nfrance-conseil/zeplic/utils"
-	"github.com/hashicorp/consul/api"
+	"github.com/nfrance-conseil/zeplic/tools"
 	"github.com/pborman/uuid"
+)
+
+var (
+	w = config.LogBook()
 )
 
 // Status for DestDataset
@@ -56,25 +60,14 @@ type ZFSDirectorsOrder struct {
 // Then it creates the orders
 func Director() {
 	// Get the data of server file
-	values := Extract()
-
-	// Create a new client
-	client, err := api.NewClient(api.DefaultConfig())
-	if err != nil {
-		w.Err("[ERROR > director/director.go:62]@[CONSUL] it was not possible to create a new client.")
-	}
-	kv := client.KV()
+	values := config.Server()
 
 	// KV write options
 	keyfix := fmt.Sprintf("zeplic/")
 	datacenter := values.Datacenter
-	q := &api.QueryOptions{Datacenter: datacenter}
 
 	// Get KV pairs
-	pairs, _, err := kv.List(keyfix, q)
-	if err != nil {
-		w.Err("[ERROR > director/director.go:74]@[CONSUL] it was not possible to get the list of KV pairs.")
-	}
+	pairs := lib.ListKV(keyfix, datacenter)
 	if len(pairs) < 1 {
 		for i := 0; i < len(values.Director); i++ {
 			hostname := values.Director[i].Hostname
@@ -107,22 +100,22 @@ func Director() {
 			// Create order to agent
 			OrderToResync := ZFSDirectorsOrder{OrderUUID,Action,Destination,SnapshotUUID,SnapshotName,DestDataset,RollbackIfNeeded,SkipIfRenamed,SkipIfNotWritten,SkipIfCloned}
 
-			// Send order to agent
-			ConnToResync, err := net.Dial("tcp", hostname+":7711")
-			if err != nil {
-				w.Err("[ERROR > director/director.go:111] it was not possible to connect with '"+hostname+"'.")
-			}
-
 			// Marshal response to agent
 			otr, err := json.Marshal(OrderToResync)
 			if err != nil {
-				w.Err("[ERROR > director/director.go:117] it was not possible to encode the JSON struct.")
+				w.Err("[ERROR > director/director.go:104] it was not possible to encode the JSON struct.")
 			} else {
-				ConnToResync.Write([]byte(otr))
-				ConnToResync.Write([]byte("\n"))
-				ConnToResync.Close()
+				// Send order to agent
+				ConnToResync, err := net.Dial("tcp", hostname+":7711")
+				if err != nil {
+					w.Err("[ERROR > director/director.go:109] it was not possible to connect with '"+hostname+"'.")
+				} else {
+					ConnToResync.Write([]byte(otr))
+					ConnToResync.Write([]byte("\n"))
+					ConnToResync.Close()
+				}
+				time.Sleep(10 * time.Second)
 			}
-			time.Sleep(10 * time.Second)
 		}
 	} else {
 		for i := 0; i < len(values.Director); i++ {
@@ -134,11 +127,7 @@ func Director() {
 			keyfix = fmt.Sprintf("zeplic/%s/", hostname)
 
 			// Get KV pairs
-			pairs, _, err := kv.List(keyfix, q)
-			if err != nil {
-				w.Err("[ERROR > director/director.go:137]@[CONSUL] it was not possible to get the list of KV pairs.")
-			}
-
+			pairs := lib.ListKV(keyfix, datacenter)
 			var PairsList []string
 			for j := 0; j < len(pairs); j++ {
 				pair := fmt.Sprintf("%s:%s", pairs[j].Key, string(pairs[j].Value[:]))
@@ -178,7 +167,7 @@ func Director() {
 			// Add only the snapshot name, uuid and the flag to new snapshots list
 			var SnapshotsList []string
 			for k := 0; k < len(PairsList); k++ {
-				snapString := utils.After(PairsList[k], keyfix)
+				snapString := tools.After(PairsList[k], keyfix)
 				SnapshotsList = append(SnapshotsList, snapString)
 			}
 
@@ -205,30 +194,30 @@ func Director() {
 				take = false
 			} else {
 				// Should I send a take_snapshot order?
-				take, SnapshotName = lib.NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
+				take, SnapshotName = NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
 				if take == true {
 					Action = "take_snapshot"
 				} else {
-					take, SnapshotName = lib.NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
+					take, SnapshotName = NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
 					if take == true {
 						Action = "take_snapshot"
 					}
 				}
 			}
-			take = false
+
 			// Send snapshot?
 			var sent bool
 			var uuidList []string
 			if take == false {
 				// Should I send a send_snapshot order?
-				sent, uuid := lib.Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
+				sent, uuid := Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
 				if sent == true {
 					Action = "send_snapshot"
 					Destination = BackupSyncOn
 					uuidList = append(uuidList, uuid)
 					DestDataset = BackupSyncDataset
 				} else {
-					sent, uuid = lib.Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
+					sent, uuid = Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
 					if sent == true {
 						Action = "send_snapshot"
 						Destination = SyncSyncOn
@@ -241,12 +230,12 @@ func Director() {
 			// Destroy snapshot?
 			if sent == false {
 				// Should I send a destroy_snapshot order?
-				destroy, list := lib.Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
+				destroy, list := Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
 				if destroy == true {
 					Action = "destroy_snapshot"
 					SnapshotUUID = list
 				} else {
-					destroy, list := lib.Delete(dataset, SnapshotsList, SyncPrefix, SyncRetention)
+					destroy, list := Delete(dataset, SnapshotsList, SyncPrefix, SyncRetention)
 					if destroy == true {
 						Action = "destroy_snapshot"
 						SnapshotUUID = list
@@ -254,6 +243,7 @@ func Director() {
 				}
 			}
 
+			// Actions...
 			switch Action {
 
 			// Take a new snapshot
@@ -297,22 +287,20 @@ func Director() {
 				// Create order to agent
 				OrderToAgent := ZFSDirectorsOrder{OrderUUID,Action,Destination,SnapshotUUID,SnapshotName,DestDataset,RollbackIfNeeded,SkipIfRenamed,SkipIfNotWritten,SkipIfCloned}
 
-				// Send order to agent
-				ConnToAgent, err := net.Dial("tcp", hostname+":7711")
-				if err != nil {
-					w.Err("[ERROR > director/director.go:301] it was not possible to connect with '"+hostname+"'.")
-					fmt.Println("ERROR1")
-				}
-
 				// Marshal response to agent
 				ota, err := json.Marshal(OrderToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/director.go:308] it was not possible to encode the JSON struct.")
-					fmt.Println("ERROR2")
+					w.Err("[ERROR > director/director.go:291] it was not possible to encode the JSON struct.")
 				} else {
-					ConnToAgent.Write([]byte(ota))
-					ConnToAgent.Write([]byte("\n"))
-					ConnToAgent.Close()
+					// Send order to agent
+					ConnToAgent, err := net.Dial("tcp", hostname+":7711")
+					if err != nil {
+						w.Err("[ERROR > director/director.go:296] it was not possible to connect with '"+hostname+"'.")
+					} else {
+						ConnToAgent.Write([]byte(ota))
+						ConnToAgent.Write([]byte("\n"))
+						ConnToAgent.Close()
+					}
 				}
 				time.Sleep(10 * time.Second)
 			} else {

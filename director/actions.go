@@ -1,8 +1,8 @@
-// Package lib contains: actions.go - cleaner.go - commands.go - destroy.go - snapshot.go - sync.go - take.go - uuid.go
+// Package lib contains: actions.go - agent.go - director.go - slave.go
 //
 // Actions provides the functions to resolve the action to do
 //
-package lib
+package director
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nfrance-conseil/zeplic/calendar"
-	"github.com/nfrance-conseil/zeplic/utils"
+	"github.com/nfrance-conseil/zeplic/lib"
+	"github.com/nfrance-conseil/zeplic/tools"
 )
 
 // Arrange sorts the list of snapshots
 func Arrange(SnapshotsList []string) []string {
 	for i := 0; i < len(SnapshotsList); i++ {
-		SnapshotsList[i] = calendar.NumberMonth(SnapshotsList[i])
+		SnapshotsList[i] = tools.NumberMonth(SnapshotsList[i])
 	}
 	sort.Strings(SnapshotsList)
 	return SnapshotsList
@@ -28,7 +28,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	var destroy bool
 	var toDestroy []string
 
-	D, W, M, Y := calendar.Retention(retention)
+	D, W, M, Y := tools.Retention(retention)
 	if D == 0 {
 		D = 1
 	}
@@ -38,17 +38,17 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	loc, _ := time.LoadLocation("UTC")
 	actual := time.Date(year, month, day, hour, min, 00, 0, loc)
 
-	leap, monthDiff := calendar.LengthMonth(year, month)
+	leap, monthDiff := tools.LengthMonth(year, month)
 
 	var newList []string
 	for f := 0; f < len(SnapshotsList); f++ {
-		snapName := utils.Reverse(SnapshotsList[f], ":")
+		snapName := tools.Reverse(SnapshotsList[f], ":")
 		newList = append(newList, snapName)
 	}
 
 	// Remove all snapshots of others datasets
 	for g := 0; g < len(newList); g++ {
-		RealDataset := DatasetName(newList[g])
+		RealDataset := lib.DatasetName(newList[g])
 		if RealDataset != dataset {
 			newList = append(newList[:g], newList[g+1:]...)
 			g--
@@ -60,7 +60,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 
 	// Remove all snapshots with others prefix
 	for h := 0; h < len(newList); h++ {
-		RealPrefix := Prefix(newList[h])
+		RealPrefix := lib.Prefix(newList[h])
 		if RealPrefix != prefix {
 			newList = append(newList[:h], newList[h+1:]...)
 			h--
@@ -88,7 +88,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	var toyear  []string
 	var noRange []string
 	for j := len(newList)-1; j > -1; j-- {
-		y, m, d, H, M, _ := CreateTime(newList[j])
+		y, m, d, H, M, _ := lib.CreateTime(newList[j])
 		expire := time.Date(y, m, d, H, M, 00, 0, loc)
 
 		// Difference between last snapshot and the actual time
@@ -133,8 +133,8 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 		var checkDay[]string
 		// Comparison between pairs of snapshots
 		for k := 0; k < len(toweek)-1; k++ {
-			_, _, d1, _, _, _ := CreateTime(toweek[k])
-			_, _, d2, _, _, _ := CreateTime(toweek[k+1])
+			_, _, d1, _, _, _ := lib.CreateTime(toweek[k])
+			_, _, d2, _, _, _ := lib.CreateTime(toweek[k+1])
 			if d1 == d2 {
 				checkDay = append(checkDay, toweek[k])
 				if len(checkDay) > W {
@@ -167,7 +167,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 		var checkWeek4 []string
 		// Comparison between pairs of snapshots
 		for k := 0; k < len(tomonth); k++ {
-			y, m, d, HH, MM, _ := CreateTime(tomonth[k])
+			y, m, d, HH, MM, _ := lib.CreateTime(tomonth[k])
 			snap := time.Date(y, m, d, HH, MM, 00, 0, loc)
 			diff := actual.Sub(snap).Hours()
 			if diff < 336 {
@@ -215,8 +215,8 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 		var checkMonth []string
 		// Comparison between pairs of snapshots
 		for k := 0; k < len(toyear)-1; k++ {
-			_, m1, _, _, _, _ := CreateTime(toyear[k])
-			_, m2, _, _, _, _ := CreateTime(toyear[k+1])
+			_, m1, _, _, _, _ := lib.CreateTime(toyear[k])
+			_, m2, _, _, _, _ := lib.CreateTime(toyear[k+1])
 			if m1 == m2 {
 				checkMonth = append(checkMonth, toyear[k])
 				if len(checkMonth) > Y {
@@ -245,7 +245,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	if len(queue) > 0 {
 		destroy = true
 		for m := 0; m < len(queue); m++ {
-			queue[m] = calendar.NumberMonthReverse(queue[m])
+			queue[m] = tools.NumberMonthReverse(queue[m])
 		}
 		for n := 0; n < len(queue); n++ {
 			for p := 0; p < len(SnapshotsList); p++ {
@@ -255,7 +255,6 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 			}
 		}
 	}
-
 	return destroy, toDestroy
 }
 
@@ -271,12 +270,12 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 	actual := time.Date(year, month, day, hour, min, 00, 0, loc)
 
 	// Struct for cron
-	cMinute, cHour, cMonthday, cMonth, cWeekday := calendar.Crontab(cron)
+	cMinute, cHour, cMonthday, cMonth, cWeekday := tools.Crontab(cron)
 
 	// Sort the list of snapshtos
 	var list []string
 	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := InfoKV(SnapshotsList[h])
+		_, name, _ := lib.InfoKV(SnapshotsList[h])
 		list = append(list, name)
 	}
 	list = Arrange(list)
@@ -285,7 +284,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 	var LastSnapshot string
 	for i := len(list)-1; i > -1; i-- {
 		LastSnapshot = list[i]
-		SnapPrefix := Prefix(LastSnapshot)
+		SnapPrefix := lib.Prefix(LastSnapshot)
 		if SnapPrefix == prefix || SnapPrefix == "zCHECK" {
 			break
 		} else {
@@ -294,7 +293,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 	}
 
 	// Last snapshot time
-	y, m, d, H, M, _ := CreateTime(LastSnapshot)
+	y, m, d, H, M, _ := lib.CreateTime(LastSnapshot)
 	last := time.Date(y, m, d, H, M, 00, 0, loc)
 	diff1 := actual.Sub(last).Seconds()
 
@@ -393,12 +392,12 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 	actual := time.Date(year, month, day, hour, min, 00, 0, loc)
 
 	// Struct for cron
-	cMinute, cHour, cMonthday, cMonth, cWeekday := calendar.Crontab(SyncPolicy)
+	cMinute, cHour, cMonthday, cMonth, cWeekday := tools.Crontab(SyncPolicy)
 
 	// Sort the list of snapshtos
 	var list []string
 	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := InfoKV(SnapshotsList[h])
+		_, name, _ := lib.InfoKV(SnapshotsList[h])
 		list = append(list, name)
 	}
 	list = Arrange(list)
@@ -407,7 +406,7 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 	var LastSnapshot string
 	for i := len(list)-1; i > -1; i-- {
 		LastSnapshot = list[i]
-		SnapPrefix := Prefix(LastSnapshot)
+		SnapPrefix := lib.Prefix(LastSnapshot)
 		if SnapPrefix == prefix {
 			// Checking the syncrhonization policy
 			if SyncPolicy == "asap" {
@@ -415,7 +414,7 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 				break
 			} else {
 				// Last snapshot time
-				y, m, d, H, M, _ := CreateTime(LastSnapshot)
+				y, m, d, H, M, _ := lib.CreateTime(LastSnapshot)
 				last := time.Date(y, m, d, H, M, 00, 0, loc)
 				diff1 := actual.Sub(last).Seconds()
 
@@ -487,9 +486,9 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 
 	// Extract the uuid of snapshot
 	for z := 0; z < len(SnapshotsList); z++ {
-		LastSnapshot := calendar.NumberMonthReverse(LastSnapshot)
+		LastSnapshot := tools.NumberMonthReverse(LastSnapshot)
 		if strings.Contains(SnapshotsList[z], LastSnapshot) {
-			SnapshotUUID = utils.Before(SnapshotsList[z], ":")
+			SnapshotUUID = tools.Before(SnapshotsList[z], ":")
 			break
 		} else {
 			continue

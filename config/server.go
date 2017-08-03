@@ -1,22 +1,15 @@
-// Package director contains: agent.go - consul.go - director.go - extract.go - slave.go
+// Package config contains: local.go - server.go - signal.go - syslog.go - version.go
 //
-// Extract keep the struct of server json file and extracts all data
+// Server keeps the struct of server json file and extracts all data
 //
-package director
+package config
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
-
-	"github.com/nfrance-conseil/zeplic/config"
 )
-
-var (
-	w = config.LogBook()
-)
-
 
 // ServerFilePath returns the path of JSON config file
 var ServerFilePath string
@@ -59,8 +52,8 @@ type Config struct {
 	Director      []Actions `json:"datasets"`
 }
 
-// Extract extracts all data from server json file
-func Extract() Config {
+// Server extracts all data from server json file
+func Server() Config {
 	jsonFile := ServerFilePath
 	serverFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
@@ -70,7 +63,7 @@ func Extract() Config {
 	var values Config
 	err = json.Unmarshal(serverFile, &values)
 	if err != nil {
-		w.Err("[ERROR > director/extract.go:71] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/server.go:64] it was not possible to parse the JSON configuration file.")
 	}
 	return values
 }

@@ -1,24 +1,22 @@
-// Package calendar contains: cron.go - format.go - retention.go
+// Package tools contains: calendar.go - cron.go - retention.go - substrings.go
 //
 // Retention extracts the information of JSON retention
 //
-package calendar
+package tools
 
 import (
 	"strconv"
-
-	"github.com/nfrance-conseil/zeplic/utils"
 )
 
 // Retention returns the policy retention
 func Retention(retention string) (int, int, int, int) {
-	D := utils.Before(retention, "d")
+	D := Before(retention, "d")
 	retention = retention[len(D)+1:]
-	W := utils.Before(retention, "w")
+	W := Before(retention, "w")
 	retention = retention[len(W)+1:]
-	M := utils.Before(retention, "m")
+	M := Before(retention, "m")
 	retention = retention[len(M)+1:]
-	Y := utils.Before(retention, "y")
+	Y := Before(retention, "y")
 
 	Dint, _ := strconv.Atoi(D)
 	Wint, _ := strconv.Atoi(W)

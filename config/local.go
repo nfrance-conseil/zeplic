@@ -1,6 +1,6 @@
-// Package config contains: json.go - signal.go - syslog.go - version.go
+// Package config contains: local.go - server.go - signal.go - syslog.go - version.go
 //
-// Json reads and extracts the information JSON configuration file
+// Local reads and extracts the information JSON configuration file
 //
 package config
 
@@ -9,10 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-)
-
-var (
-	w = LogBook()
 )
 
 // LocalFilePath returns the path of JSON config file
@@ -48,8 +44,8 @@ type Pool struct {
 	Dataset	[]Data	`json:"local_datasets"`
 }
 
-// JSON reads the 'JSON' file and checks how many datasets are there
-func JSON() Pool {
+// Local reads the local json file and checks how many datasets are there and its data
+func Local() Pool {
 	jsonFile := LocalFilePath
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
@@ -59,7 +55,7 @@ func JSON() Pool {
 	var values Pool
 	err = json.Unmarshal(configFile, &values)
 	if err != nil {
-		w.Err("[ERROR > config/json.go:60] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/local.go:56] it was not possible to parse the JSON configuration file.")
 	}
 	return values
 }

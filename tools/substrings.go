@@ -1,8 +1,8 @@
-// Package utils contains: substrings.go
+// Package tools contains: calendar.go - cron.go - retention.go - substrings.go
 //
 // Functions gets substrings
 //
-package utils
+package tools
 
 import (
 	"strings"

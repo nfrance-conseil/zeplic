@@ -1,4 +1,4 @@
-# zeplic v0.2.0-rc1
+# zeplic v0.3.0
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
@@ -174,6 +174,8 @@ Configure **zeplic** to send log messages to local/remote syslog server:
 	- mode: local;    info: *facility [LOCAL0-7]*
 	- mode: remote;   info: *tcp/upd:IP:port*
 ```
+
+- Sample:
 
 ```
 Jun 28 10:30:00 hostname zeplic[1364]: [INFO] the snapshot 'tank/foo@FOO_2017-June-28_10:00:00' has been sent.

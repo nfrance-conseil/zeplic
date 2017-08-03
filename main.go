@@ -1,4 +1,4 @@
-// zeplic main package - July 2017 version 0.2.0-rc1
+// zeplic main package - August 2017 version 0.3.0
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -63,7 +63,7 @@ func main() {
 
 	// CLEANER
 	case *optCleaner:
-		var dataset    string
+		var dataset string
 		fmt.Println("[CLEANER] Running zeplic cleaner's mode...")
 		fmt.Printf("\nPlease, indicate dataset: ")
 		fmt.Scanf("%s", &dataset)
@@ -79,13 +79,13 @@ func main() {
 
 	// DIRECTOR
 	case *optDirector:
-		alive := director.Alive()
+		alive := lib.Alive()
 		if alive == true {
 			go config.Pid()
 			fmt.Println("[DIRECTOR] Running zeplic director's mode...")
 
 			// Infinite loop to manage the datasets
-			ticker := time.NewTicker(4 * time.Minute)
+			ticker := time.NewTicker(1 * time.Minute)
 			for {
 				select {
 				case <- ticker.C:
@@ -118,7 +118,7 @@ func main() {
 	// RUN
 	case *optRun:
 		// Read JSON configuration file
-		values := config.JSON()
+		values := config.Local()
 
 		// Invoke Runner() function
 		var code int

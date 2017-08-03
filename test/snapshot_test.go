@@ -49,9 +49,9 @@ func TestSnapName(t *testing.T) {
 	}
 }
 
-func TestRenamed(t *testing.T) {
-	renamed := lib.WasRenamed("tank/test@SNAP1", "tank/test@SNAP2")
+func TestSnapRenamed(t *testing.T) {
+	renamed := lib.SnapRenamed("tank/test@SNAP1", "tank/test@SNAP2")
 	if renamed == false {
-		t.Errorf("Renamed() test failed!")
+		t.Errorf("SnapRenamed() test failed!")
 	}
 }
