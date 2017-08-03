@@ -1,4 +1,4 @@
-// Package lib contains: actions.go - agent.go - director.go - slave.go
+// Package director contains: actions.go - agent.go - director.go - slave.go
 //
 // Actions provides the functions to resolve the action to do
 //

@@ -1,4 +1,4 @@
-# zeplic v0.3.0
+# zeplic v0.3.1
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
