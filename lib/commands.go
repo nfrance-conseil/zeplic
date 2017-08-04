@@ -19,66 +19,66 @@ var (
 // Runner is a loop that executes 'ZFS' functions for every dataset enabled
 func Runner(index int, director bool, SnapshotName string, NotWritten bool) int {
 	var code int
-	// Check every dataset
-	if index < 0 {
-		code = 1
-	} else {
-		// Extract all data stored in JSON file
-		values := config.Local()
 
-		// This value returns if the dataset is enable
-		enable	    := values.Dataset[index].Enable
-		docker	    := values.Dataset[index].Docker
-		dataset	    := values.Dataset[index].Name
-		consul	    := values.Dataset[index].Consul.Enable
-		datacenter  := values.Dataset[index].Consul.Datacenter
-		prefix	    := values.Dataset[index].Prefix
-		retention   := values.Dataset[index].Retention
-		getBackup   := values.Dataset[index].Backup
-		getClone    := values.Dataset[index].Clone.Enable
-		clone	    := values.Dataset[index].Clone.Name
-		delClone    := values.Dataset[index].Clone.Delete
+	// Extract all data stored in JSON file
+	values := config.Local()
 
-		// Execute functions
-		if enable == true && docker == false {
-			ds, err := Dataset(dataset)
-			if err != nil {
-				code = 1
-			} else {
-				// Run functions
-				// Delete an existing clone?
-				if delClone == true {
-					go DeleteClone(clone)
-				}
-				var snap *zfs.Dataset
-				if SnapshotName != "" {
-					prefix = SnapshotName
-					snap = TakeSnapshot(prefix, NotWritten, ds, consul, datacenter)
-				} else {
-					snap = Snapshot(prefix, ds, consul, datacenter)
-				}
-				go DeleteBackup(dataset, ds)
-				// Local retention policy?
-				if director == false {
-					go Policy(dataset, ds, retention, consul, datacenter)
-				}
-				// Create a backup snaphot?
-				if getBackup == true {
-					go Backup(dataset, ds)
-				}
-				// Clone the last snapshot?
-				if getClone == true {
-					go Clone(clone, snap)
-				}
-				code = 0
+	// This value returns if the dataset is enable
+	enable	    := values.Dataset[index].Enable
+	docker	    := values.Dataset[index].Docker
+	dataset	    := values.Dataset[index].Name
+	consul	    := values.Dataset[index].Consul.Enable
+	datacenter  := values.Dataset[index].Consul.Datacenter
+	prefix	    := values.Dataset[index].Prefix
+	retention   := values.Dataset[index].Retention
+	getBackup   := values.Dataset[index].Backup
+	getClone    := values.Dataset[index].Clone.Enable
+	clone	    := values.Dataset[index].Clone.Name
+	delClone    := values.Dataset[index].Clone.Delete
+
+	// Execute functions
+	if enable == true && docker == false {
+		ds, err := Dataset(dataset)
+		if err != nil {
+			code = 1
+		} else {
+			// Run functions...
+			// Delete an existing clone?
+			if delClone == true {
+				go DeleteClone(clone)
 			}
-		} else if enable == false && dataset != "" {
-			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
-			code = 0
-		} else if docker == true {
-			w.Notice("[NOTICE] the dataset '"+dataset+"' is a docker dataset.")
+			var snap *zfs.Dataset
+			var backup bool
+			if SnapshotName != "" {
+				prefix = SnapshotName
+				snap, backup = TakeSnapshot(prefix, NotWritten, ds, consul, datacenter)
+			} else {
+				snap, backup = Snapshot(prefix, ds, consul, datacenter)
+			}
+			// Backup snapshot exists?
+			if backup == true {
+				go DeleteBackup(dataset, ds)
+			}
+			// Local retention policy?
+			if director == false {
+				go Policy(dataset, ds, retention, consul, datacenter)
+			}
+			// Create a backup snaphot?
+			if getBackup == true {
+				go Backup(dataset, ds)
+			}
+			// Clone the last snapshot?
+			if getClone == true {
+				go Clone(clone, snap)
+			}
 			code = 0
 		}
+	} else if enable == false && dataset != "" {
+		w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
+	code = 0
+	} else if docker == true {
+		w.Notice("[NOTICE] the dataset '"+dataset+"' is a docker dataset.")
+		code = 0
 	}
 	return code
 }
@@ -124,18 +124,23 @@ func DeleteClone(clone string) {
 }
 
 // Snapshot creates a new snapshot
-func Snapshot(prefix string, ds *zfs.Dataset, consul bool, datacenter string) *zfs.Dataset {
+func Snapshot(prefix string, ds *zfs.Dataset, consul bool, datacenter string) (*zfs.Dataset, bool) {
 	// Create a new snapshot
+	var backup bool
 	snap, err := ds.Snapshot(SnapName(prefix), false)
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:129] it was not possible to create a new snapshot.")
+		w.Err("[ERROR > lib/commands.go:130] it was not possible to create a new snapshot.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been created.")
 		// Assign an uuid to the snapshot
 		err = UUID(snap)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:135] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
+			w.Err("[ERROR > lib/commands.go:136] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
 		}
+		// Backup snapshot?
+		backup = SearchBackup(ds)
+
+		// Consul KV put
 		if consul == true {
 			// KV write options
 			snapUUID := SearchUUID(snap)
@@ -145,22 +150,23 @@ func Snapshot(prefix string, ds *zfs.Dataset, consul bool, datacenter string) *z
 			// Create a new KV
 			code := PutKV(key, value, datacenter)
 			if code == 1 {
-				return nil
+				return nil, backup
 			}
 		}
 	}
-	return snap
+	return snap, backup
 }
 
 // TakeSnapshot creates a new snapshot
-func TakeSnapshot(SnapshotName string, NotWritten bool, ds *zfs.Dataset, consul bool, datacenter string) *zfs.Dataset {
+func TakeSnapshot(SnapshotName string, NotWritten bool, ds *zfs.Dataset, consul bool, datacenter string) (*zfs.Dataset, bool) {
 	var snap *zfs.Dataset
 	var create bool
+	var backup bool
 
 	// Something new was written?
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:161] it was not possible to access of snapshots list.")
+		w.Err("[ERROR > lib/commands.go:167] it was not possible to access of snapshots list.")
 	} else {
 		count := len(list)
 		_, amount := RealList(count, list, ds.Name)
@@ -169,21 +175,21 @@ func TakeSnapshot(SnapshotName string, NotWritten bool, ds *zfs.Dataset, consul 
 			// Create a new snapshot
 			snap, err = ds.Snapshot(SnapshotName, false)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:170] it was not possible to create a new snapshot.")
+				w.Err("[ERROR > lib/commands.go:176] it was not possible to create a new snapshot.")
 			} else {
 				create = true
 			}
 		} else {
 			snap, err = zfs.GetDataset(list[amount-1].Name)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:177] it was not possible to get the snapshot '"+snap.Name+"'.")
+				w.Err("[ERROR > lib/commands.go:183] it was not possible to get the snapshot '"+snap.Name+"'.")
 			} else {
 				written := snap.Written
 				if NotWritten == false || NotWritten == true && written > 0 {
 					// Create a new snapshot
 					snap, err = ds.Snapshot(SnapshotName, false)
 					if err != nil {
-						w.Err("[ERROR > lib/commands.go:184] it was not possible to create a new snapshot.")
+						w.Err("[ERROR > lib/commands.go:190] it was not possible to create a new snapshot.")
 					} else {
 						create = true
 					}
@@ -198,8 +204,12 @@ func TakeSnapshot(SnapshotName string, NotWritten bool, ds *zfs.Dataset, consul 
 		// Assign an uuid to the snapshot
 		err = UUID(snap)
 		if err != nil {
-			w.Err("[ERROR > lib/commands.go:199] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
+			w.Err("[ERROR > lib/commands.go:205] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
 		}
+		// Backup snapshot?
+		backup = SearchBackup(ds)
+
+		// Consul KV put
 		if consul == true {
 			// KV write options
 			snapUUID := SearchUUID(snap)
@@ -209,11 +219,11 @@ func TakeSnapshot(SnapshotName string, NotWritten bool, ds *zfs.Dataset, consul 
 			// Create a new KV
 			code := PutKV(key, value, datacenter)
 			if code == 1 {
-				return nil
+				return nil, backup
 			}
 		}
 	}
-	return snap
+	return snap, backup
 }
 
 // DeleteBackup deletes the backup snapshot
@@ -221,7 +231,7 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 	// Search if the backup snapshot exists
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:222] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:232] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	} else {
 		count := len(list)
 		backup, amount := RealList(count, list, dataset)
@@ -234,11 +244,11 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 				if strings.Contains(take, "BACKUP") {
 					backup, err := zfs.GetDataset(take)
 					if err != nil {
-						w.Err("[ERROR > lib/commands.go:235] it was not possible to get the backup snapshot '"+backup.Name+"'.")
+						w.Err("[ERROR > lib/commands.go:245] it was not possible to get the backup snapshot '"+backup.Name+"'.")
 					} else {
 						err = backup.Destroy(zfs.DestroyDefault)
 						if err != nil {
-							w.Err("[ERROR > lib/commands.go:239] it was not possible to destroy the snapshot '"+backup.Name+"'.")
+							w.Err("[ERROR > lib/commands.go:249] it was not possible to destroy the snapshot '"+backup.Name+"'.")
 						} else {
 							w.Info("[INFO] the snapshot '"+backup.Name+"' has been destroyed.")
 						}
@@ -256,7 +266,7 @@ func DeleteBackup(dataset string, ds *zfs.Dataset) {
 func Policy(dataset string, ds *zfs.Dataset, retention int, consul bool, datacenter string) {
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:257] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:267] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	} else {
 		count := len(list)
 
@@ -273,7 +283,7 @@ func Policy(dataset string, ds *zfs.Dataset, retention int, consul bool, datacen
 				snap, err := zfs.GetDataset(take)
 				uuid := SearchUUID(snap)
 				if err != nil {
-					w.Err("[ERROR > lib/commands.go:274] it was not possible to get the snapshot '"+take+"'.")
+					w.Err("[ERROR > lib/commands.go:284] it was not possible to get the snapshot '"+take+"'.")
 				}
 				err = snap.Destroy(zfs.DestroyDefault)
 				if err != nil {
@@ -281,7 +291,7 @@ func Policy(dataset string, ds *zfs.Dataset, retention int, consul bool, datacen
 					if cloned == true {
 						w.Warning("[WARNING] the snapshot '"+take+"' has dependent clones: '"+clone+"'.")
 					} else {
-						w.Err("[ERROR > lib/commands.go:280] it was not possible to destroy the snapshot '"+take+"'.")
+						w.Err("[ERROR > lib/commands.go:290] it was not possible to destroy the snapshot '"+take+"'.")
 					}
 				} else {
 					w.Info("[INFO] the snapshot '"+take+"' has been destroyed.")
@@ -309,19 +319,19 @@ func Backup(dataset string, ds *zfs.Dataset) {
 	// Create the backup snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:310] it was not possible to access of snapshots list.")
+		w.Err("[ERROR > lib/commands.go:320] it was not possible to access of snapshots list.")
 	} else {
 		count := len(list)
 		_, amount := RealList(count, list, dataset)
 			if amount > 0 {
 			backup, err := ds.Snapshot(SnapBackup(dataset, ds), false)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:317] it was not possible to create the backup snapshot.")
+				w.Err("[ERROR > lib/commands.go:327] it was not possible to create the backup snapshot.")
 			} else {
 				w.Info("[INFO] the backup snapshot '"+backup.Name+"' has been created.")
 				err = UUID(backup)
 				if err != nil {
-					w.Err("[ERROR > lib/commands.go:322] it was not possible to assign an uuid to the backup snapshot '"+backup.Name+"'.")
+					w.Err("[ERROR > lib/commands.go:332] it was not possible to assign an uuid to the backup snapshot '"+backup.Name+"'.")
 				}
 			}
 		}
@@ -332,7 +342,7 @@ func Backup(dataset string, ds *zfs.Dataset) {
 func Clone(clone string, snap *zfs.Dataset) {
 	_, err := snap.Clone(clone, nil)
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:333] it was not possible to clone the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/commands.go:343] it was not possible to clone the snapshot '"+snap.Name+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been clone.")
 	}
@@ -342,7 +352,7 @@ func Clone(clone string, snap *zfs.Dataset) {
 func Rollback(SnapshotName string, snap *zfs.Dataset) {
 	err := snap.Rollback(true)
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:343] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
+		w.Err("[ERROR > lib/commands.go:353] it was not possible to rolling back the snapshot '"+SnapshotName+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+SnapshotName+"' has been restored.")
 	}
@@ -384,7 +394,7 @@ func LastSnapshot(ds *zfs.Dataset, dataset string) string {
 	var LastSnapshot string
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/commands.go:385] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/commands.go:395] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 	} else {
 		count := len(list)
 
@@ -397,4 +407,20 @@ func LastSnapshot(ds *zfs.Dataset, dataset string) string {
 		}
 	}
 	return LastSnapshot
+}
+
+// SearchBachup returns true if a backup snapshot exists
+func SearchBackup(ds *zfs.Dataset) bool {
+	var found bool
+	list, err := ds.Snapshots()
+	if err != nil {
+		w.Err("[ERROR > lib/commands.go:415] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+	} else {
+		count := len(list)
+		backup, amount := RealList(count, list, ds.Name)
+		if backup > amount {
+			found = true
+		}
+	}
+	return found
 }
