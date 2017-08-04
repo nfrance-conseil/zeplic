@@ -465,28 +465,34 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 						if err != nil {
 							w.Err("[ERROR > director/slave.go:464] it was not possible to get the dataset '"+dataset+"'.")
 						} else {
-							// Delete an existing clone
-							go lib.DeleteClone(delClone, clone)
+							// Delete an existing clone?
+							if delClone == true {
+								go lib.DeleteClone(clone)
+							}
 
 							// Delete backup snapshot
 							go lib.DeleteBackup(dataset, ds)
 
-							// Create a backup snapshot
-							go lib.Backup(getBackup, dataset, ds)
+							// Create a backup snapshot?
+							if getBackup == true {
+								go lib.Backup(dataset, ds)
+							}
 
-							// Clone the last snapshot received
-							list, err := ds.Snapshots()
-							if err != nil {
-								w.Err("[ERROR > director/slave.go:478] it was not possible to access of snapshots list.")
-							} else {
-								count := len(list)
-								_, amount := lib.RealList(count, list, dataset)
-								LastSnapshot := list[amount-1].Name
-								snap, err := zfs.GetDataset(LastSnapshot)
+							// Clone the last snapshot received?
+							if getClone == true {
+								list, err := ds.Snapshots()
 								if err != nil {
-									w.Err("[ERROR > director/slave.go:485] it was not possible to get the snapshot '"+snap.Name+"'.")
+									w.Err("[ERROR > director/slave.go:483] it was not possible to access of snapshots list.")
 								} else {
-									go lib.Clone(getClone, clone, snap)
+									count := len(list)
+									_, amount := lib.RealList(count, list, dataset)
+									LastSnapshot := list[amount-1].Name
+									snap, err := zfs.GetDataset(LastSnapshot)
+									if err != nil {
+										w.Err("[ERROR > director/slave.go:490] it was not possible to get the snapshot '"+snap.Name+"'.")
+									} else {
+										go lib.Clone(clone, snap)
+									}
 								}
 							}
 						}
