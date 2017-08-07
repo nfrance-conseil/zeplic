@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Functions to create a snapshot
 //
@@ -9,7 +9,7 @@ import (
 )
 
 // TakeOrder creates a new snapshot based on the order received from director
-func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
+func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) {
 	// Define index of pieces
 	index := -1
 
@@ -28,12 +28,9 @@ func TakeOrder(DestDataset string, SnapshotName string, NotWritten bool) int {
 	}
 
 	// Call Runner function
-	var code int
 	if index > -1 {
-		code = Runner(index, true, SnapshotName, NotWritten)
+		go Runner(index, true, SnapshotName, NotWritten)
 	} else {
 		w.Notice("[NOTICE] the dataset '"+DestDataset+"' is not configured.")
-		code = 1
 	}
-	return code
 }

@@ -1,12 +1,23 @@
 // Package tools contains: calendar.go - cron.go - retention.go - substrings.go
 //
-// Functions gets substrings
+// Functions to get substrings
+// Sort a list of snapshots
 //
 package tools
 
 import (
+	"sort"
 	"strings"
 )
+
+// Arrange sorts the list of snapshots
+func Arrange(SnapshotsList []string) []string {
+	for i := 0; i < len(SnapshotsList); i++ {
+		SnapshotsList[i] = NumberMonth(SnapshotsList[i])
+	}
+	sort.Strings(SnapshotsList)
+	return SnapshotsList
+}
 
 // After gets substring after a string
 func After(value string, a string) string {

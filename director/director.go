@@ -228,7 +228,7 @@ func Director() {
 			}
 
 			// Destroy snapshot?
-			if sent == false {
+			if take == false && sent == false {
 				// Should I send a destroy_snapshot order?
 				destroy, list := Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
 				if destroy == true {

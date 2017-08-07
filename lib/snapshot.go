@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Snapshot makes the structure of snapshot's names
 //
@@ -61,10 +61,64 @@ func InfoKV(pair string) (string, string, string) {
 	return uuid, name, flag
 }
 
+// LastSnapshot returns the name of last snapshot in 'dataset'
+func LastSnapshot(ds *zfs.Dataset, prefix string) string {
+	var LastSnapshot string
+
+	// List of snapshots
+	list, err := ds.Snapshots()
+	if err != nil {
+		w.Err("[ERROR > lib/snapshot.go:69] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+	} else {
+		// Find the correct snapshot
+		for i := len(list)-1; i > -1; i-- {
+			RealDataset := DatasetName(list[i].Name)
+			RealPrefix := Prefix(list[i].Name)
+			if RealDataset == ds.Name && RealPrefix == prefix {
+				LastSnapshot = list[i].Name
+				break
+			} else {
+				continue
+			}
+		}
+	}
+	return LastSnapshot
+}
+
 // Prefix returns the prefix of snapshot name
 func Prefix(SnapshotName string) string {
 	prefix := tools.Between(SnapshotName, "@", "_")
 	return prefix
+}
+
+// RealList returns the correct amount of snapshots and the index of backup snapshot
+func RealList(ds *zfs.Dataset) (int, []int) {
+	var backup int = -1
+	var amount []int
+
+	// List of snapshots
+	list, err := ds.Snapshots()
+	if err != nil {
+		w.Err("[ERROR > lib/snapshot.go:100] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+	} else {
+		// Check the number of snapshot in the correct dataset
+		for i := 0; i < len(list); i++ {
+			// Check the dataset
+			dsName := DatasetName(list[i].Name)
+			if dsName == ds.Name {
+				// Is it the backup snapshot?
+				if Prefix(list[i].Name) == "BACKUP" {
+					backup = i
+				} else {
+					amount = append(amount, i)
+				}
+				continue
+			} else {
+				continue
+			}
+		}
+	}
+	return backup, amount
 }
 
 // SnapName defines the name of the snapshot: PREFIX_yyyy-Month-dd_HH:MM:SS
@@ -76,30 +130,19 @@ func SnapName(prefix string) string {
 }
 
 // SnapBackup defines the name of a backup snapshot: BACKUP_from_yyyy-Month-dd
-func SnapBackup(dataset string, ds *zfs.Dataset) string {
+func SnapBackup(ds *zfs.Dataset) string {
 	var backup string
 	// Get the older snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:82] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/snapshot.go:136] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
 	} else {
-		count := len(list)
+		_, amount := RealList(ds)
+		OlderSnapshot := list[amount[0]].Name
 
-		var oldSnapshot string
-		for i := 0; i < count; i++ {
-			take := list[i].Name
-			dsName := DatasetName(take)
-			if dsName == dataset {
-				oldSnapshot = take
-				break
-			} else {
-				continue
-			}
-		}
-
-		// Get date
-		rev := tools.Reverse(oldSnapshot, "_")
-		date := tools.Before(rev, "_")
+		// Get date of last snapshot
+		date := tools.Reverse(OlderSnapshot, "_")
+		date = tools.Before(date, "_")
 		backup = fmt.Sprintf("%s_%s", "BACKUP_from", date)
 	}
 	return backup
@@ -120,7 +163,7 @@ func SnapCloned(snap *zfs.Dataset) (bool, string) {
 	var cloned bool
 	clone, err := snap.GetProperty("clones")
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:121] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:164] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
 	} else {
 		if clone == "" {
 			cloned = false
@@ -129,4 +172,18 @@ func SnapCloned(snap *zfs.Dataset) (bool, string) {
 		}
 	}
 	return cloned, clone
+}
+
+// Written search changes in dataset
+func Written(ds *zfs.Dataset, SnapshotName string) bool {
+	var written bool
+	changes, err := ds.Diff(SnapshotName)
+	if err != nil {
+		w.Err("[ERROR > lib/snapshot.go:180] it was not possible to search changes in dataset '"+ds.Name+"'.")
+	} else {
+		if changes[0].Change == zfs.Modified {
+			written = true
+		}
+	}
+	return written
 }

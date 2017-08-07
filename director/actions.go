@@ -6,22 +6,12 @@ package director
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/nfrance-conseil/zeplic/tools"
 )
-
-// Arrange sorts the list of snapshots
-func Arrange(SnapshotsList []string) []string {
-	for i := 0; i < len(SnapshotsList); i++ {
-		SnapshotsList[i] = tools.NumberMonth(SnapshotsList[i])
-	}
-	sort.Strings(SnapshotsList)
-	return SnapshotsList
-}
 
 // Delete returns true if the snapshot should be deleted
 func Delete(dataset string, SnapshotsList []string, prefix string, retention string) (bool, []string) {
@@ -71,7 +61,7 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 	}
 
 	// Sort the list of snapshots
-	newList = Arrange(newList)
+	newList = tools.Arrange(newList)
 
 	// Keep the snapshot of reference
 	for i := len(newList)-1; i > -1; i-- {
@@ -278,7 +268,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 		_, name, _ := lib.InfoKV(SnapshotsList[h])
 		list = append(list, name)
 	}
-	list = Arrange(list)
+	list = tools.Arrange(list)
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string
@@ -400,7 +390,7 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 		_, name, _ := lib.InfoKV(SnapshotsList[h])
 		list = append(list, name)
 	}
-	list = Arrange(list)
+	list = tools.Arrange(list)
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string

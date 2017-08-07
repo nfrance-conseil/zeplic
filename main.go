@@ -124,7 +124,7 @@ func main() {
 		var code int
 		for i := 0; i < len(values.Dataset); i++ {
 			code = lib.Runner(i, false, "", false)
-			if code > 1 {
+			if code == 1 {
 				fmt.Printf("[RUNNER] An error has occurred while running zeplic, please revise your syslog...\n\n")
 				break
 			} else {

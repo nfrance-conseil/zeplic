@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Consul get the status of consul member
 //
@@ -46,6 +46,16 @@ func Client() (*api.Client, *api.KV) {
 	return client, kv
 }
 
+// Host returns the hostname of the node
+func Host() string {
+	// Resolve hostname
+	hostname, err := os.Hostname()
+	if err != nil {
+		w.Err("[ERROR > lib/consul.go:52] it was not possible to resolve the hostname.")
+	}
+	return hostname
+}
+
 // DeleteKV removes a KV pair
 func DeleteKV(key string, value string, datacenter string) int {
 	// Options to Delete() function
@@ -58,7 +68,7 @@ func DeleteKV(key string, value string, datacenter string) int {
 	var code int
 	_, err := kv.Delete(key, q)
 	if err != nil {
-		w.Err("[ERROR > lib/consul.go:59]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
+		w.Err("[ERROR > lib/consul.go:69]@[CONSUL] it was not possible to destroy the KV pair '"+pair+"'.")
 		code = 1
 	} else {
 		w.Info("[INFO]@[CONSUL] the KV pair '"+pair+"' has been destroyed.")
@@ -66,17 +76,6 @@ func DeleteKV(key string, value string, datacenter string) int {
 	}
 	return code
 }
-
-// Host returns the hostname of the node
-func Host() string {
-	// Resolve hostname
-	hostname, err := os.Hostname()
-	if err != nil {
-		w.Err("[ERROR > lib/consul.go:73] it was not possible to resolve the hostname.")
-	}
-	return hostname
-}
-
 
 // ListKV gets KV pair of Consul
 func ListKV(keyfix string, datacenter string) api.KVPairs {
@@ -87,7 +86,7 @@ func ListKV(keyfix string, datacenter string) api.KVPairs {
 	// Gets the list of KV pairs
 	pairs, _, err := kv.List(keyfix, q)
 	if err != nil {
-		w.Err("[ERROR > lib/consul.go:88]@[CONSUL] it was not possible to get the KV pairs.")
+		w.Err("[ERROR > lib/consul.go:87]@[CONSUL] it was not possible to get the KV pairs.")
 	}
 	return pairs
 }
@@ -102,7 +101,7 @@ func PutKV(key string, value string, datacenter string) int {
 	var code int
 	_, err := kv.Put(p, q)
 	if err != nil {
-		w.Err("[ERROR > lib/consul.go:103]@[CONSUL] it was not possible to edit the KV pair.")
+		w.Err("[ERROR > lib/consul.go:102]@[CONSUL] it was not possible to edit the KV pair.")
 		code = 1
 	} else {
 		code = 0

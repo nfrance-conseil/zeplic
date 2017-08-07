@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Cleaner removes all keys with the flag #deleted at the datacenter indicated
 //

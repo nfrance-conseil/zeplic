@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - commands.go - consul.go - destroy.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
 //
 // Tracker searchs in local datasets
 //
@@ -67,14 +67,11 @@ func Delivery(MapUUID []string, SnapshotName string) ([]byte, bool, bool, *zfs.D
 			if err != nil {
 				w.Err("[ERROR > lib/tracker.go:66] it was not possible to access of snapshots list in dataset '"+dataset+"'.")
 			} else {
-				count := len(list)
-
 				// Search the index of snapshot to send
 				var number int
-				_, amount := RealList(count, list, dataset)
-				for i := 0; i < amount; i++ {
-					take := list[i].Name
-					if take == SnapshotName {
+				_, amount := RealList(ds)
+				for i := 0; i < len(amount); i++ {
+					if list[amount[i]].Name == SnapshotName {
 						number = i
 						break
 					} else {
@@ -85,11 +82,11 @@ func Delivery(MapUUID []string, SnapshotName string) ([]byte, bool, bool, *zfs.D
 				if index < number {
 					ds1, err = zfs.GetDataset(found)
 					if err != nil {
-						w.Err("[ERROR > lib/tracker.go:86] it was not possible to get the snapshot '"+found+"'.")
+						w.Err("[ERROR > lib/tracker.go:83] it was not possible to get the snapshot '"+found+"'.")
 					}
 					ds2, err = zfs.GetDataset(SnapshotName)
 					if err != nil {
-						w.Err("[ERROR > lib/tracker.go:90] it was not possible to get the snapshot '"+SnapshotName+"'.")
+						w.Err("[ERROR > lib/tracker.go:87] it was not possible to get the snapshot '"+SnapshotName+"'.")
 					}
 					ack = nil
 					ack = strconv.AppendInt(ack, Incremental, 10)
