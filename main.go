@@ -1,4 +1,4 @@
-// zeplic main package - July 2017 version 0.1.0-rc1
+// zeplic main package - August 2017 version 0.3.0
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -15,25 +15,22 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/nfrance-conseil/zeplic/config"
-	"github.com/nfrance-conseil/zeplic/order"
+	"github.com/nfrance-conseil/zeplic/director"
 	"github.com/nfrance-conseil/zeplic/lib"
 	"github.com/pborman/getopt/v2"
 )
 
-var (
-	// Variable to connect with syslog service
-	w = config.LogBook()
-)
-
 func main() {
 	// Available flags
-	optAgent    := getopt.BoolLong("agent", 'a', "Listen ZFS orders from director")
-	optDirector := getopt.BoolLong("director", 'd', "Send ZFS orders to agent")
+	optAgent    := getopt.BoolLong("agent", 'a', "Execute the orders from director")
+	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with #deleted flag in a dataset")
+	optDirector := getopt.BoolLong("director", 'd', "Execute 'zeplic' in synchronization mode")
 	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")
-	optRun	    := getopt.BoolLong("run", 'r', "Execute ZFS functions")
+	optRun	    := getopt.BoolLong("run", 'r', "Execute 'zeplic' in local mode")
 	optSlave    := getopt.BoolLong("slave", 's', "Receive a new snapshot from agent")
 	optVersion  := getopt.BoolLong("version", 'v', "Show version of zeplic")
 	getopt.Parse()
@@ -56,20 +53,51 @@ func main() {
 		fmt.Println("[AGENT:7711] Receiving orders from director...")
 
 		// Loop to accept a new connection
-		stop := true
-		for stop {
+		for {
 			// Accept a new connection
 			connAgent, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = order.HandleRequestAgent(connAgent)
+			go director.HandleRequestAgent(connAgent)
 		}
+
+	// CLEANER
+	case *optCleaner:
+		var dataset string
+		fmt.Println("[CLEANER] Running zeplic cleaner's mode...")
+		fmt.Printf("\nPlease, indicate dataset: ")
+		fmt.Scanf("%s", &dataset)
+
+		// Call to Cleaner function
+		code := lib.Cleaner(dataset)
+		if code == 1 {
+			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...")
+		} else {
+			fmt.Printf("\nDone!\n\n")
+		}
+		os.Exit(code)
 
 	// DIRECTOR
 	case *optDirector:
-//		config.Pid()
-		fmt.Printf("[INFO] director case inoperative...\n\n")
-		os.Exit(0)
+		alive := lib.Alive()
+		if alive == true {
+			go config.Pid()
+			fmt.Println("[DIRECTOR] Running zeplic director's mode...")
+
+			// Infinite loop to manage the datasets
+			ticker := time.NewTicker(1 * time.Minute)
+			for {
+				select {
+				case <- ticker.C:
+					go director.Director()
+				default:
+					// No stop signal, continuing loop
+				}
+			}
+		} else {
+			fmt.Printf("[INFO] Consul server is not running...\n\n")
+			os.Exit(0)
+		}
 
 	// HELP
 	case *optHelp:
@@ -90,10 +118,20 @@ func main() {
 	// RUN
 	case *optRun:
 		// Read JSON configuration file
-		j, _, _ := config.JSON()
+		values := config.Local()
 
 		// Invoke Runner() function
-		os.Exit(lib.Runner(j))
+		var code int
+		for i := 0; i < len(values.Dataset); i++ {
+			code = lib.Runner(i, false, "", false)
+			if code == 1 {
+				fmt.Printf("[RUNNER] An error has occurred while running zeplic, please revise your syslog...\n\n")
+				break
+			} else {
+				continue
+			}
+		}
+		os.Exit(code)
 
 	// SLAVE
 	case *optSlave:
@@ -105,13 +143,12 @@ func main() {
 		fmt.Println("[SLAVE:7722] Receiving orders from agent...")
 
 		// Loop to accept a new connection
-		stop := true
-		for stop {
+		for {
 			// Accept a new connection
 			connSlave, _ := l.Accept()
 
 			// Handle connection in a new goroutine
-			stop = order.HandleRequestSlave(connSlave)
+			go director.HandleRequestSlave(connSlave)
 		}
 
 	// VERSION

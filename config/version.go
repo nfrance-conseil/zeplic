@@ -1,4 +1,4 @@
-// Package config contains: json.go - signal.go - syslog.go - version.go
+// Package config contains: local.go - server.go - signal.go - syslog.go - version.go
 //
 // Version gets the commit version and date of last zeplic build
 //
