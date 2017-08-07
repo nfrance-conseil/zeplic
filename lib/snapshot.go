@@ -93,8 +93,8 @@ func Prefix(SnapshotName string) string {
 
 // RealList returns the correct amount of snapshots and the index of backup snapshot
 func RealList(ds *zfs.Dataset) (int, []int) {
-	var backup int = -1
 	var amount []int
+	backup := -1
 
 	// List of snapshots
 	list, err := ds.Snapshots()
