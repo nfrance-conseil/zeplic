@@ -18,6 +18,7 @@ var (
 
 // Runner is a loop that executes 'ZFS' functions for every dataset enabled
 func Runner(index int, director bool, SnapshotName string, NotWritten bool) int {
+	// Variable to Runner() function
 	var code int
 	var snap *zfs.Dataset
 
@@ -37,58 +38,57 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 	clone	    := values.Dataset[index].Clone.Name
 	delClone    := values.Dataset[index].Clone.Delete
 
-	// Execute functions
-	if enable == true && docker == false {
+	// Case: receive snapshot	
+	if strings.Contains(SnapshotName, "@") {
+		// Get dataset
 		ds, err := Dataset(dataset)
 		if err != nil {
 			code = 1
 		} else {
-			// Create a snapshot
-			if strings.Contains(SnapshotName, "@") {
-				snap, err = zfs.GetDataset(SnapshotName)
-				if err != nil {
-					w.Err("[ERROR > lib/runner.go:48] it was not possible to get the snapshot '"+SnapshotName+"'.")
-				}
-			} else if SnapshotName != "" && !strings.Contains(SnapshotName, "@") {
-				prefix = SnapshotName
-				snap = TakeSnapshot(prefix, NotWritten, ds, consul, datacenter)
+			// Get the snapshot
+			snap, err = zfs.GetDataset(SnapshotName)
+			if err != nil {
+				w.Err("[ERROR > lib/runner.go:49] it was not possible to get the snapshot '"+SnapshotName+"'.")
 			} else {
-				snap = Snapshot(prefix, ds, consul, datacenter)
+				// Run ZFS functions...
+				if snap != nil {
+					go RealRunner(ds, snap, delClone, clone, director, retention, consul, datacenter, getBackup, getClone)
+				}
+				code = 0
 			}
-
-			// Run ZFS functions...
-			if snap != nil {
-				// Delete an existing clone?
-				cl, err := zfs.GetDataset(clone)
-				if delClone == true && err == nil {
-					go DeleteClone(cl)
+		}
+	} else {
+		// Case: take snapshot || zeplic --run
+		if enable == true && docker == false {
+			// Get dataset
+			ds, err := Dataset(dataset)
+			if err != nil {
+				code = 1
+			} else {
+				// Create a snapshot
+				if SnapshotName != "" && !strings.Contains(SnapshotName, "@") {
+					// Case: take snapshot
+					snap = TakeSnapshot(SnapshotName, NotWritten, ds, consul, datacenter)
+				} else {
+					// zeplic --run
+					snap = Snapshot(prefix, ds, consul, datacenter)
 				}
-				// Delete an existing backup snapshot?
-				backup, _ := RealList(ds)
-				if backup != -1 {
-					go DeleteBackup(ds, backup)
+				// Run ZFS functions...
+				if snap != nil {
+					go RealRunner(ds, snap, delClone, clone, director, retention, consul, datacenter, getBackup, getClone)
 				}
-				// Local retention policy?
-				if director == false {
-					go Policy(ds, retention, consul, datacenter)
-				}
-				// Create a backup snaphot?
-				if getBackup == true {
-					go Backup(ds)
-				}
-				// Clone the last snapshot?
-				if getClone == true {
-					go Clone(clone, snap)
-				}
+				code = 0
 			}
+		} else if enable == true && docker == true {
+			w.Notice("[NOTICE] the dataset '"+dataset+"' is a docker dataset.")
+			code = 0
+		} else if enable == false && dataset != "" {
+			w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
+			code = 0
+		} else if enable == false && dataset == "" {
+			w.Notice("[NOTICE] the dataset '"+dataset+"' is not configured.")
 			code = 0
 		}
-	} else if enable == false && dataset != "" {
-		w.Notice("[NOTICE] the dataset '"+dataset+"' is disabled.")
-		code = 0
-	} else if docker == true {
-		w.Notice("[NOTICE] the dataset '"+dataset+"' is a docker dataset.")
-		code = 0
 	}
 	return code
 }
@@ -304,5 +304,31 @@ func Rollback(snap *zfs.Dataset) {
 		w.Err("[ERROR > lib/runner.go:302] it was not possible to rolling back the snapshot '"+snap.Name+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been restored.")
+	}
+}
+
+// RealRunner executes extra ZFS functions if a new snapshot has been created/received
+func RealRunner(ds *zfs.Dataset, snap *zfs.Dataset, delClone bool, clone string, director bool, retention int, consul bool, datacenter string, getBackup bool, getClone bool) {
+	// Delete an existing clone?
+	cl, err := zfs.GetDataset(clone)
+	if delClone == true && err == nil {
+		go DeleteClone(cl)
+	}
+	// Delete an existing backup snapshot?
+	backup, _ := RealList(ds)
+	if backup != -1 {
+		go DeleteBackup(ds, backup)
+	}
+	// Local retention policy?
+	if director == false {
+		go Policy(ds, retention, consul, datacenter)
+	}
+	// Create a backup snaphot?
+	if getBackup == true {
+		go Backup(ds)
+	}
+	// Clone the last snapshot?
+	if getClone == true {
+		go Clone(clone, snap)
 	}
 }

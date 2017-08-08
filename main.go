@@ -1,4 +1,4 @@
-// zeplic main package - August 2017 version 0.3.0
+// zeplic main package - August 2017 version 0.3.2
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
@@ -50,7 +50,7 @@ func main() {
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7711")
 		defer l.Close()
-		fmt.Println("[AGENT:7711] Receiving orders from director...")
+//		fmt.Println("[AGENT:7711] Receiving orders from director...")
 
 		// Loop to accept a new connection
 		for {
