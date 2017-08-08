@@ -21,7 +21,7 @@ func Sync(hostname string, datacenter string, dataset string, index int) {
 	hour, _, _ := time.Now().Clock()
 
 	// PUT a new KV pair
-	key := fmt.Sprintf("zeplic/%s/syncKV%d", hostname, index)
+	key := fmt.Sprintf("zeplic/%s/SyncKV%d", hostname, index)
 	value := fmt.Sprintf("%s@zCHECK_%d-%s-%02d_%02d:00:00", dataset, year, month, day, hour)
 	go PutKV(key, value, datacenter)
 }

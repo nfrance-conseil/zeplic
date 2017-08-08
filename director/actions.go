@@ -30,22 +30,21 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 
 	leap, monthDiff := tools.LengthMonth(year, month)
 
-	var newList []string
+	// Remove snapshot with #NotWritten flag
 	for f := 0; f < len(SnapshotsList); f++ {
-		snapName := tools.Reverse(SnapshotsList[f], ":")
-		newList = append(newList, snapName)
-	}
-
-	// Remove all snapshots of others datasets
-	for g := 0; g < len(newList); g++ {
-		RealDataset := lib.DatasetName(newList[g])
-		if RealDataset != dataset {
-			newList = append(newList[:g], newList[g+1:]...)
-			g--
+		if strings.Contains(SnapshotsList[f], "#NotWritten") {
+			SnapshotsList = append(SnapshotsList[:f], SnapshotsList[f+1:]...)
+			f--
 			continue
 		} else {
 			continue
 		}
+	}
+
+	var newList []string
+	for g := 0; g < len(SnapshotsList); g++ {
+		snapName := tools.Reverse(SnapshotsList[g], ":")
+		newList = append(newList, snapName)
 	}
 
 	// Remove all snapshots with others prefix
@@ -367,9 +366,9 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 	var send bool
 	var SnapshotUUID string
 
-	// Remove all snapshots that contains the flag #sent
+	// Remove all snapshots that contains the flag #sent or the flag #NotWritten
 	for f := 0; f < len(SnapshotsList); f++ {
-		if strings.Contains(SnapshotsList[f], "#sent") {
+		if strings.Contains(SnapshotsList[f], "#sent") || strings.Contains(SnapshotsList[f], "#NotWritten") {
 			SnapshotsList = append(SnapshotsList[:f], SnapshotsList[f+1:]...)
 			f--
 		}

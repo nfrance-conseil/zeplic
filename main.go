@@ -1,4 +1,4 @@
-// zeplic main package - August 2017 version 0.3.2
+// zeplic main package - August 2017 version 0.3.3
 //
 // ZEPLIC is an application to manage ZFS datasets.
 // It establishes a connection with the syslog system service,
