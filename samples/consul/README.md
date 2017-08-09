@@ -1,6 +1,6 @@
 ## Consul datacenter configuration
 
-If you want to use `zeplic --director`, the first step is to config your Consul datacenter:
+If you want to use **zeplic director's mode**, the first step is to config your Consul datacenter:
 
 ### JSON config files
 
