@@ -87,32 +87,48 @@ func LastSnapshot(ds *zfs.Dataset, prefix string) string {
 
 // Prefix returns the prefix of snapshot name
 func Prefix(SnapshotName string) string {
-	prefix := tools.Between(SnapshotName, "@", "_")
+	var prefix string
+	if strings.Contains(SnapshotName, "@") {
+		prefix = tools.After(SnapshotName, "@")
+		prefix = tools.Before(prefix, "_")
+	} else {
+		prefix = tools.Before(SnapshotName, "_")
+	}
 	return prefix
 }
 
 // RealList returns the correct amount of snapshots and the index of backup snapshot
-func RealList(ds *zfs.Dataset) (int, []int) {
+func RealList(ds *zfs.Dataset, prefix string) (int, []int) {
 	var amount []int
 	backup := -1
 
 	// List of snapshots
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:100] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:105] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
 	} else {
 		// Check the number of snapshot in the correct dataset
 		for i := 0; i < len(list); i++ {
 			// Check the dataset
-			dsName := DatasetName(list[i].Name)
-			if dsName == ds.Name {
+			RealDataset := DatasetName(list[i].Name)
+			RealPrefix := Prefix(list[i].Name)
+			if RealDataset == ds.Name {
 				// Is it the backup snapshot?
-				if Prefix(list[i].Name) == "BACKUP" {
-					backup = i
+				if prefix != "" {
+					if RealPrefix == "BACKUP" {
+						backup = i
+					} else if RealPrefix == prefix {
+						amount = append(amount, i)
+					}
+					continue
 				} else {
-					amount = append(amount, i)
+					if RealPrefix == "BACKUP" {
+						backup = i
+					} else {
+						amount = append(amount, i)
+					}
+					continue
 				}
-				continue
 			} else {
 				continue
 			}
@@ -135,12 +151,13 @@ func SnapBackup(ds *zfs.Dataset) string {
 	// Get the older snapshot
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:136] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:151] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
 	} else {
-		_, amount := RealList(ds)
+		_, amount := RealList(ds, "")
 		OlderSnapshot := list[amount[0]].Name
 
 		// Get date of last snapshot
+		OlderSnapshot = tools.After(OlderSnapshot, "@")
 		date := tools.Reverse(OlderSnapshot, "_")
 		date = tools.Before(date, "_")
 		backup = fmt.Sprintf("%s_%s", "BACKUP_from", date)
@@ -163,7 +180,7 @@ func SnapCloned(snap *zfs.Dataset) (bool, string) {
 	var cloned bool
 	clone, err := snap.GetProperty("clones")
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:164] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:180] it was not possible to find the clone of the snapshot '"+snap.Name+"'.")
 	} else {
 		if clone == "" {
 			cloned = false
@@ -179,10 +196,12 @@ func Written(ds *zfs.Dataset, SnapshotName string) bool {
 	var written bool
 	changes, err := ds.Diff(SnapshotName)
 	if err != nil {
-		w.Err("[ERROR > lib/snapshot.go:180] it was not possible to search changes in dataset '"+ds.Name+"'.")
+		w.Err("[ERROR > lib/snapshot.go:196] it was not possible to search changes in dataset '"+ds.Name+"'.")
 	} else {
-		if changes[0].Change == zfs.Modified {
-			written = true
+		if len(changes) > 0 {
+			if changes[0].Change == zfs.Modified {
+				written = true
+			}
 		}
 	}
 	return written

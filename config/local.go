@@ -49,7 +49,7 @@ func Local() Pool {
 	jsonFile := LocalFilePath
 	configFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		fmt.Printf("[NOTICE] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
+		fmt.Printf("[ERROR] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
 		os.Exit(1)
 	}
 	var values Pool

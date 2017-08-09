@@ -23,6 +23,10 @@ import (
 	"github.com/pborman/getopt/v2"
 )
 
+var (
+	w = config.LogBook()
+)
+
 func main() {
 	// Available flags
 	optAgent    := getopt.BoolLong("agent", 'a', "Execute the orders from director")
@@ -50,7 +54,7 @@ func main() {
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7711")
 		defer l.Close()
-//		fmt.Println("[AGENT:7711] Receiving orders from director...")
+		w.Notice("[NOTICE] 'zeplic --agent' is running... listen on port 7711!")
 
 		// Loop to accept a new connection
 		for {
@@ -71,9 +75,9 @@ func main() {
 		// Call to Cleaner function
 		code := lib.Cleaner(dataset)
 		if code == 1 {
-			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...")
+			fmt.Printf("[CLEANER] An error has occurred while zeplic cleaned the KV pairs, please revise your syslog...\n\n")
 		} else {
-			fmt.Printf("\nDone!\n\n")
+			fmt.Printf("Done!\n\n")
 		}
 		os.Exit(code)
 
@@ -82,7 +86,7 @@ func main() {
 		alive := lib.Alive()
 		if alive == true {
 			go config.Pid()
-			fmt.Println("[DIRECTOR] Running zeplic director's mode...")
+			w.Notice("[NOTICE] 'zeplic --director' is running...")
 
 			// Infinite loop to manage the datasets
 			ticker := time.NewTicker(1 * time.Minute)
@@ -140,7 +144,7 @@ func main() {
 		// Listen for incoming connections
 		l, _ := net.Listen("tcp", ":7722")
 		defer l.Close()
-		fmt.Println("[SLAVE:7722] Receiving orders from agent...")
+		w.Notice("[NOTICE] 'zeplic --slave' is running... listen on port 7722!")
 
 		// Loop to accept a new connection
 		for {

@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
+	"github.com/nfrance-conseil/zeplic/tools"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
+	"github.com/pborman/uuid"
 )
 
 var (
@@ -48,7 +50,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 			// Get the snapshot
 			snap, err = zfs.GetDataset(SnapshotName)
 			if err != nil {
-				w.Err("[ERROR > lib/runner.go:49] it was not possible to get the snapshot '"+SnapshotName+"'.")
+				w.Err("[ERROR > lib/runner.go:51] it was not possible to get the snapshot '"+SnapshotName+"'.")
 			} else {
 				// Run ZFS functions...
 				if snap != nil {
@@ -103,12 +105,12 @@ func Dataset(dataset string) (*zfs.Dataset, error) {
 		// Create dataset if it does not exist
 		_, err := zfs.CreateFilesystem(dataset, nil)
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:104] it was not possible to create the dataset '"+dataset+"'.")
+			w.Err("[ERROR > lib/runner.go:106] it was not possible to create the dataset '"+dataset+"'.")
 		} else {
 			w.Info("[INFO] the dataset '"+dataset+"' has been created.")
 			ds, err = zfs.GetDataset(dataset)
 			if err != nil {
-				w.Err("[ERROR > lib/runner.go:109] it was not possible to get the dataset '"+dataset+"'.")
+				w.Err("[ERROR > lib/runner.go:111] it was not possible to get the dataset '"+dataset+"'.")
 			}
 		}
 	}
@@ -120,13 +122,13 @@ func Snapshot(prefix string, ds *zfs.Dataset, consul bool, datacenter string) *z
 	// Create a new snapshot
 	snap, err := ds.Snapshot(SnapName(prefix), false)
 	if err != nil {
-		w.Err("[ERROR > lib/runner.go:121] it was not possible to create a new snapshot.")
+		w.Err("[ERROR > lib/runner.go:123] it was not possible to create a new snapshot.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been created.")
 		// Assign an uuid to the snapshot
 		err = UUID(snap)
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:127] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
+			w.Err("[ERROR > lib/runner.go:129] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
 		}
 
 		// Consul KV put
@@ -146,19 +148,20 @@ func Snapshot(prefix string, ds *zfs.Dataset, consul bool, datacenter string) *z
 // TakeSnapshot creates a new snapshot
 func TakeSnapshot(SnapshotName string, SkipIfNotWritten bool, ds *zfs.Dataset, consul bool, datacenter string) *zfs.Dataset {
 	var snap *zfs.Dataset
-	_, amount := RealList(ds)
+	prefix := tools.Before(SnapshotName, "_")
+	_, amount := RealList(ds, prefix)
 
 	if len(amount) == 0 {
 		// Create a new snapshot
 		snap, err := ds.Snapshot(SnapshotName, false)
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:153] it was not possible to create a new snapshot.")
+			w.Err("[ERROR > lib/runner.go:155] it was not possible to create a new snapshot.")
 		} else {
 			w.Info("[INFO] the snapshot '"+snap.Name+"' has been created.")
 			// Assign an uuid to the snapshot
 			err = UUID(snap)
 			if err != nil {
-				w.Err("[ERROR > lib/runner.go:159] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
+				w.Err("[ERROR > lib/runner.go:161] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
 			} else {
 				// Consul KV put
 				if consul == true {
@@ -173,7 +176,6 @@ func TakeSnapshot(SnapshotName string, SkipIfNotWritten bool, ds *zfs.Dataset, c
 			}
 		}
 	} else {
-		prefix := Prefix(SnapshotName)
 		LastSnapshotName := LastSnapshot(ds, prefix)
 
 		// Search changes in dataset
@@ -182,13 +184,13 @@ func TakeSnapshot(SnapshotName string, SkipIfNotWritten bool, ds *zfs.Dataset, c
 			// Create a new snapshot
 			snap, err := ds.Snapshot(SnapshotName, false)
 			if err != nil {
-				w.Err("[ERROR > lib/commands.go:183] it was not possible to create a new snapshot.")
+				w.Err("[ERROR > lib/commands.go:185] it was not possible to create a new snapshot.")
 			} else {
 				w.Info("[INFO] the snapshot '"+snap.Name+"' has been created.")
 				// Assign an uuid to the snapshot
 				err = UUID(snap)
 				if err != nil {
-					w.Err("[ERROR > lib/runner.go:189] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
+					w.Err("[ERROR > lib/runner.go:191] it was not possible to assign an uuid to the snapshot '"+snap.Name+"'.")
 				} else {
 					// Consul KV put
 					if consul == true {
@@ -206,7 +208,8 @@ func TakeSnapshot(SnapshotName string, SkipIfNotWritten bool, ds *zfs.Dataset, c
 			// Consul KV put
 			if consul == true {
 				// KV write options
-				key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), "00000000-aaaa-1111-9999-a0123456789z")
+				UUID := uuid.New()
+				key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), UUID)
 				value := fmt.Sprintf("%s@%s#%s", ds.Name, SnapshotName, "NotWritten")
 
 				// Create a new KV
@@ -221,16 +224,16 @@ func TakeSnapshot(SnapshotName string, SkipIfNotWritten bool, ds *zfs.Dataset, c
 func DeleteBackup(ds *zfs.Dataset, backup int) {
 	list, err := ds.Snapshots()
 	if err != nil {
-		w.Err("[ERROR > lib/runner.go:222] it was not possible to access of snapshots list.")
+		w.Err("[ERROR > lib/runner.go:225] it was not possible to access of snapshots list.")
 	} else {
 		// Get the backup snapshot
 		bk, err := zfs.GetDataset(list[backup].Name)
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:227] it was not possible to get the backup snapshot '"+bk.Name+"'.")
+			w.Err("[ERROR > lib/runner.go:230] it was not possible to get the backup snapshot '"+bk.Name+"'.")
 		} else {
 			bk.Destroy(zfs.DestroyDefault)
 			if err != nil {
-				w.Err("[ERROR > lib/runner.go:231] it was not possible to destroy the snapshot '"+bk.Name+"'.")
+				w.Err("[ERROR > lib/runner.go:234] it was not possible to destroy the snapshot '"+bk.Name+"'.")
 			} else {
 				w.Info("[INFO] the snapshot '"+bk.Name+"' has been destroyed.")
 			}
@@ -243,7 +246,7 @@ func DeleteClone(cl *zfs.Dataset) {
 	// Destroy clones dataset
 	err := cl.Destroy(zfs.DestroyRecursiveClones)
 	if err != nil {
-		w.Err("[ERROR > lib/runner.go:244] it was not possible to destroy the clone '"+cl.Name+"'.")
+		w.Err("[ERROR > lib/runner.go:247] it was not possible to destroy the clone '"+cl.Name+"'.")
 	} else {
 		w.Info("[INFO] the clone '"+cl.Name+"' has been destroyed.")
 	}
@@ -253,18 +256,18 @@ func DeleteClone(cl *zfs.Dataset) {
 func Policy(ds *zfs.Dataset, retention int, consul bool, datacenter string) {
 	var SnapshotUUID []string
 	// Check the number of snapshot in the correct dataset
-	_, amount := RealList(ds)
+	_, amount := RealList(ds, "")
 
 	// Retention policy
 	if len(amount) > retention {
 		list, err := ds.Snapshots()
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:260] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
+			w.Err("[ERROR > lib/runner.go:263] it was not possible to access of snapshots list in dataset '"+ds.Name+"'.")
 		} else {
 			for i := len(amount)-1; i > retention-1; i-- {
 				snap, err := zfs.GetDataset(list[i].Name)
 				if err != nil {
-					w.Err("[ERROR > lib/runner.go:265] it was not possible to get the snapshot '"+snap.Name+"'.")
+					w.Err("[ERROR > lib/runner.go:268] it was not possible to get the snapshot '"+snap.Name+"'.")
 				} else {
 					uuid := SearchUUID(snap)
 					pair := fmt.Sprintf("%s:%s", uuid, snap.Name)
@@ -280,18 +283,18 @@ func Policy(ds *zfs.Dataset, retention int, consul bool, datacenter string) {
 
 // Backup creates a backup snapshot
 func Backup(ds *zfs.Dataset) {
-	_, amount := RealList(ds)
+	_, amount := RealList(ds, "")
 	if len(amount) > 0 {
 		// Create the backup snapshot
 		backup, err := ds.Snapshot(SnapBackup(ds), false)
 		if err != nil {
-			w.Err("[ERROR > lib/runner.go:286] it was not possible to create the backup snapshot.")
+			w.Err("[ERROR > lib/runner.go:289] it was not possible to create the backup snapshot.")
 		} else {
 			w.Info("[INFO] the backup snapshot '"+backup.Name+"' has been created.")
 			// Assign an uuid to the backup snapshot
 			err = UUID(backup)
 			if err != nil {
-				w.Err("[ERROR > lib/runner.go:292] it was not possible to assign an uuid to the backup snapshot '"+backup.Name+"'.")
+				w.Err("[ERROR > lib/runner.go:295] it was not possible to assign an uuid to the backup snapshot '"+backup.Name+"'.")
 			}
 		}
 	}
@@ -301,7 +304,7 @@ func Backup(ds *zfs.Dataset) {
 func Clone(clone string, snap *zfs.Dataset) {
 	_, err := snap.Clone(clone, nil)
 	if err != nil {
-		w.Err("[ERROR > lib/runner.go:302] it was not possible to clone the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/runner.go:305] it was not possible to clone the snapshot '"+snap.Name+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been clone.")
 	}
@@ -311,7 +314,7 @@ func Clone(clone string, snap *zfs.Dataset) {
 func Rollback(snap *zfs.Dataset) {
 	err := snap.Rollback(true)
 	if err != nil {
-		w.Err("[ERROR > lib/runner.go:312] it was not possible to rolling back the snapshot '"+snap.Name+"'.")
+		w.Err("[ERROR > lib/runner.go:315] it was not possible to rolling back the snapshot '"+snap.Name+"'.")
 	} else {
 		w.Info("[INFO] the snapshot '"+snap.Name+"' has been restored.")
 	}
@@ -325,7 +328,7 @@ func RealRunner(ds *zfs.Dataset, snap *zfs.Dataset, delClone bool, clone string,
 		go DeleteClone(cl)
 	}
 	// Delete an existing backup snapshot?
-	backup, _ := RealList(ds)
+	backup, _ := RealList(ds, "")
 	if backup != -1 {
 		go DeleteBackup(ds, backup)
 	}

@@ -66,7 +66,7 @@ func Update(datacenter string, dataset string) {
 			w.Err("[ERROR > lib/sync.go:64] it was not possible to access of snapshots list.")
 		} else {
 			// Extract information of each snapshot
-			_, amount := RealList(ds)
+			_, amount := RealList(ds, "")
 			for i := 0; i < len(amount); i++ {
 				snap, err := zfs.GetDataset(list[amount[i]].Name)
 				if err != nil {

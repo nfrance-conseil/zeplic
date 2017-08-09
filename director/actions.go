@@ -263,11 +263,21 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 
 	// Sort the list of snapshtos
 	var list []string
-	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := lib.InfoKV(SnapshotsList[h])
+	for g := 0; g < len(SnapshotsList); g++ {
+		_, name, _ := lib.InfoKV(SnapshotsList[g])
 		list = append(list, name)
 	}
 	list = tools.Arrange(list)
+
+	// Remove KV pair for sync
+	if len(list) > 1 {
+		for h := 0; h < len(list); h++ {
+			if strings.Contains(list[h], "zCHECK") {
+				list = append(list[:h], list[h+1:]...)
+				h--
+			}
+		}
+	}
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string
@@ -298,7 +308,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 							diff2 := inter.Sub(last).Seconds()
 							diff3 := actual.Sub(inter).Seconds()
 
-							if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
+							if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 && diff3 < 21600 {
 								// Weekday
 								for p := 0; p < len(cWeekday); p++ {
 									if cWeekday[p] == wdayInter {
@@ -333,7 +343,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 								diff2 := inter.Sub(last).Seconds()
 								diff3 := actual.Sub(inter).Seconds()
 
-								if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
+								if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 && diff3 < 21600 {
 									// Weekday
 									for p := 0; p < len(cWeekday); p++ {
 										if cWeekday[p] == wdayInter {
@@ -385,11 +395,21 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 
 	// Sort the list of snapshtos
 	var list []string
-	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := lib.InfoKV(SnapshotsList[h])
+	for g := 0; g < len(SnapshotsList); g++ {
+		_, name, _ := lib.InfoKV(SnapshotsList[g])
 		list = append(list, name)
 	}
 	list = tools.Arrange(list)
+
+	// Remove KV pair for sync
+	if len(list) > 1 {
+		for h := 0; h < len(list); h++ {
+			if strings.Contains(list[h], "zCHECK") {
+				list = append(list[:h], list[h+1:]...)
+				h--
+			}
+		}
+	}
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string

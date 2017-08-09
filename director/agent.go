@@ -76,10 +76,10 @@ func HandleRequestAgent (ConnAgent net.Conn) {
 					// Search the snapshot name from its uuid
 					SnapshotName := lib.SearchName(d.SnapshotUUID[0])
 
-					// Check if something was written
-					ds, err := zfs.GetDataset(lib.DatasetName(SnapshotName))
+					// Get the snapshot
+					snap, err := zfs.GetDataset(SnapshotName)
 					if err != nil {
-						w.Err("[ERROR > director/agent.go:80] it was not possible to get the dataset '"+ds.Name+"'.")
+						w.Err("[ERROR > director/agent.go:80] it was not possible to get the snapshot '"+SnapshotName+"'.")
 						break
 					}
 
@@ -188,12 +188,12 @@ func HandleRequestAgent (ConnAgent net.Conn) {
 
 								if send == true && incremental == false {
 									// Send the snapshot
-									ds, err := zfs.GetDataset(SnapshotName)
+									snap, err := zfs.GetDataset(SnapshotName)
 									if err != nil {
 										w.Err("[ERROR > director/agent.go:191] it was not possible to get the snapshot '"+SnapshotName+"'.")
 										break
 									}
-									ds.SendSnapshot(Conn2ToSlave, zfs.ReplicationStream)
+									snap.SendSnapshot(Conn2ToSlave, zfs.ReplicationStream)
 									Conn2ToSlave.Close()
 								} else if send == true && incremental == true {
 									// Send the incremental stream
@@ -244,11 +244,11 @@ func HandleRequestAgent (ConnAgent net.Conn) {
 							}
 						}
 
-						// Case: dataset does not exit on destination or it's empty
-						case DatasetFalse:
+					// Case: dataset does not exit on destination or it's empty
+					case DatasetFalse:
 
 						// Send snapshot to slave
-						ds.SendSnapshot(ConnToSlave, zfs.ReplicationStream)
+						snap.SendSnapshot(ConnToSlave, zfs.ReplicationStream)
 						ConnToSlave.Close()
 
 						// Reconnection to get ZFSResponse
