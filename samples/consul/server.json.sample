@@ -1,0 +1,16 @@
+{
+	"bind_addr": "$IP_SERVER",
+	"bootstrap_expect": 1,
+	"server": true,
+	"node_id": "00000000-aaaa-1111-9999-a0123456789z",
+	"datacenter": "ConsulDatacenter",
+	"node_name": "$NAME_SERVER",
+	"data_dir": "/tmp/consul",
+	"log_level": "DEBUG",
+	"enable_syslog": true,
+	"enable_debug": true,
+	"disable_update_check": true,
+	"leave_on_terminate": false,
+	"skip_leave_on_interrupt": true,
+	"rejoin_after_leave": true
+}

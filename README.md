@@ -34,8 +34,8 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 ### Configuration
 
 You can modify a sample JSON file that it has been created in your config path:
-- `/etc/zeplic/` for Linux
-- `/usr/local/etc/zeplic/` for FreeBSD
+- `/etc/zeplic/local.json` for Linux
+- `/usr/local/etc/zeplic/local.json` for FreeBSD
 
 ```sh
 {
@@ -92,6 +92,8 @@ M	H	mday	month	wday	root	$BINPATH/zeplic --run
 ### Director's mode
 
 JSON file to configure the retention and replication policy. Use this one only in the server's node side:
+- `/etc/zeplic/server.json` for Linux
+- `/usr/local/etc/zeplic/server.json` for FreeBSD
 
 ```
 {
@@ -153,9 +155,15 @@ Destroy: DdWwMmYy
 - Send an order to the agent node (zeplic --agent) on port 7711 to create a snapshot or destroy it
 - Send a snapshot between from agent's node (zeplic --agent) to slave's node (zeplic --slave)
 
+### Consul configuration
+
+How can you config your [Consul datacenter](https://github.com/nfrance-conseil/zeplic/tree/master/samples/consul)?
+
 ### Syslog system service
 
 Configure **zeplic** to send log messages to local/remote syslog server:
+- `/etc/zeplic/server.json` for Linux
+- `/usr/local/etc/zeplic/server.json` for FreeBSD
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes
