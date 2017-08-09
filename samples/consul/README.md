@@ -2,7 +2,7 @@
 
 If you want to use `zeplic --director`, the first step is to config your Consul datacenter:
 
-# JSON config files
+### JSON config files
 
 Sample file to config Consul with a server to execute `zeplic --director`:
 - `/etc/consul.d/server/config.json` for Linux
