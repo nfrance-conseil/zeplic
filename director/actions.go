@@ -14,11 +14,11 @@ import (
 )
 
 // Delete returns true if the snapshot should be deleted
-func Delete(dataset string, SnapshotsList []string, prefix string, retention string) (bool, []string) {
+func Delete(dataset string, SnapshotsList []string, prefix string, retention []string) (bool, []string) {
 	var destroy bool
 	var toDestroy []string
 
-	D, W, M, Y := tools.Retention(retention)
+	D, W, M, Y := lib.Retention(retention)
 	if D == 0 {
 		D = 1
 	}

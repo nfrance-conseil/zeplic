@@ -1,4 +1,4 @@
-// Package tools contains: calendar.go - cron.go - retention.go - substrings.go
+// Package tools contains: calendar.go - cron.go - substrings.go
 //
 // Cron provides the functions to extract the information of JSON crontab
 // Returns human readable format

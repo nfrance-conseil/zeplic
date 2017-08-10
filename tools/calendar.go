@@ -1,4 +1,4 @@
-// Package tools contains: calendar.go - cron.go - retention.go - substrings.go
+// Package tools contains: calendar.go - cron.go - substrings.go
 //
 // Format provides the functions to analyze the name, the number and the lenght of months
 //

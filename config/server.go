@@ -21,7 +21,7 @@ type Cold struct {
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
+	Retention []string `json:"retention"`
 }
 
 // Hot contains the information of synchronization snapshot
@@ -31,7 +31,7 @@ type Hot struct {
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
+	Retention []string `json:"retention"`
 }
 
 // Actions contains the information of replicate every snapshot
