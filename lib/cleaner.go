@@ -1,6 +1,6 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
-// Cleaner removes all keys with the flag #deleted at the datacenter indicated
+// Cleaner removes all keys with the flag #NotWritten and #deleted at the datacenter indicated
 //
 package lib
 
@@ -11,7 +11,7 @@ import (
 	"github.com/nfrance-conseil/zeplic/config"
 )
 
-// Cleaner deletes all KV pairs with #deleted flag in dataset
+// Cleaner deletes all KV pairs with #NotWritten and #deleted flag in dataset
 func Cleaner(RealDataset string) int {
 	// Search the dataset
 	var datacenter string
@@ -38,7 +38,7 @@ func Cleaner(RealDataset string) int {
 			for i := 0; i < len(pairs); i++ {
 				value := string(pairs[i].Value[:])
 				if strings.Contains(value, RealDataset) && (strings.Contains(value, "#deleted") || strings.Contains(value, "#NotWritten")) {
-					// Destroy KV pairs with #deleted flag
+					// Destroy KV pairs with #NotWritten and #deleted flag
 					code = DeleteKV(pairs[i].Key, value, datacenter)
 					if code == 1 {
 						break

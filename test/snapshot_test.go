@@ -27,7 +27,7 @@ func TestDatasetName(t *testing.T) {
 func TestInfoKV(t *testing.T) {
 	snapPair := "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e:tank/test@SNAP_2017-July-01_10:30:00#sent"
 	uuid, name, flag := lib.InfoKV(snapPair)
-	if uuid != "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e" || name != "tank/test@SNAP_2017-July-01_10:30:00" || flag != "sent" {
+	if uuid != "1a2b3c4d-5678-efgh-6789-0z1a2b3c4d5e" || name != "tank/test@SNAP_2017-July-01_10:30:00" || flag != "#sent" {
 		t.Errorf("InfoKV() test failed!")
 	}
 }

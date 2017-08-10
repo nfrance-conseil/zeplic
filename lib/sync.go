@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
 // Sync writes a check KV to synchronize zeplic and resynchronize all pairs
 //
@@ -26,7 +26,7 @@ func Sync(hostname string, datacenter string, dataset string, index int) {
 	go PutKV(key, value, datacenter)
 }
 
-// Update updates the KV data in Consul
+// Update updates the KV pairs data in Consul
 func Update(datacenter string, dataset string) {
 	// Get all KV
 	keyfix := fmt.Sprintf("zeplic/%s/", Host())
@@ -36,8 +36,10 @@ func Update(datacenter string, dataset string) {
 	var PairsList []string
 	if len(pairs) > 0 {
 		for f := 0; f < len(pairs); f++ {
-			pair := fmt.Sprintf("%s:%s", pairs[f].Key, string(pairs[f].Value[:]))
-			PairsList = append(PairsList, pair)
+			if !strings.Contains(pairs[f].Key, "SyncKV") {
+				pair := fmt.Sprintf("%s:%s", pairs[f].Key, string(pairs[f].Value[:]))
+				PairsList = append(PairsList, pair)
+			}
 		}
 	}
 	var KVList []string
@@ -46,7 +48,13 @@ func Update(datacenter string, dataset string) {
 		KVList = append(KVList, snapString)
 	}
 	for h := 0; h < len(KVList); h++ {
-		if !strings.Contains(KVList[h], dataset) {
+		_, snap, flag := InfoKV(KVList[h])
+		RealDataset := DatasetName(snap)
+		if RealDataset != dataset {
+			KVList = append(KVList[:h], KVList[h+1:]...)
+			h--
+			continue
+		} else if strings.Contains(flag, "#NotWritten") {
 			KVList = append(KVList[:h], KVList[h+1:]...)
 			h--
 			continue
@@ -59,22 +67,26 @@ func Update(datacenter string, dataset string) {
 	var SnapshotsList []string
 	ds, err := zfs.GetDataset(dataset)
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:60] it was not possible to get the dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/sync.go:68] it was not possible to get the dataset '"+dataset+"'.")
 	} else {
 		list, err := ds.Snapshots()
 		if err != nil {
-			w.Err("[ERROR > lib/sync.go:64] it was not possible to access of snapshots list.")
+			w.Err("[ERROR > lib/sync.go:72] it was not possible to access of snapshots list.")
 		} else {
 			// Extract information of each snapshot
 			_, amount := RealList(ds, "")
 			for i := 0; i < len(amount); i++ {
 				snap, err := zfs.GetDataset(list[amount[i]].Name)
 				if err != nil {
-					w.Err("[ERROR > lib/sync.go:71] it was not possible to get the snapshot '"+snap.Name+"'.")
+					w.Err("[ERROR > lib/sync.go:79] it was not possible to get the snapshot '"+list[amount[i]].Name+"'.")
 				} else {
-					snapUUID := SearchUUID(snap)
-					// Create list of snapshots
-					SnapshotsList = append(SnapshotsList, snapUUID)
+					// Remove backup snapshots
+					prefix := Prefix(snap.Name)
+					if prefix != "BACKUP" {
+						snapUUID := SearchUUID(snap)
+						// Create list of snapshots
+						SnapshotsList = append(SnapshotsList, snapUUID)
+					}
 				}
 			}
 		}
@@ -87,26 +99,30 @@ func Update(datacenter string, dataset string) {
 	var SourceList   []string
 
 	// Snapshots removed
-	for j := 0; j < len(PairsList); j++ {
-		uuid, _, _ := InfoKV(PairsList[j])
+	for j := 0; j < len(KVList); j++ {
+		uuid, _, _ := InfoKV(KVList[j])
 		for m := 0; m < len(SnapshotsList); m++ {
+			found = false
 			if strings.Contains(SnapshotsList[m], uuid) {
 				index := fmt.Sprintf("%d:%d", j, m)
 				SourceList = append(SourceList, index)
+				found = true
 				break
 			} else {
-				if m == len(SnapshotsList)-1 {
-					DeleteList = append(DeleteList, j)
-				}
-			continue
+				continue
 			}
+		}
+		if found == false {
+			DeleteList = append(DeleteList, j)
 		}
 	}
 
 	// Snaphots created
 	for k := 0; k < len(SnapshotsList); k++ {
-		for m := 0; m < len(PairsList); m++ {
-			if strings.Contains(PairsList[m], SnapshotsList[k]) {
+		for m := 0; m < len(KVList); m++ {
+			found = false
+			uuid, _, _ := InfoKV(KVList[m])
+			if strings.Contains(uuid, SnapshotsList[k]) {
 				found = true
 				break
 			} else {
@@ -128,60 +144,64 @@ func Update(datacenter string, dataset string) {
 
 		// Create a new KV
 		go PutKV(key, value, datacenter)
+	}
 
-		for n := 0; n < len(DeleteList); n++ {
-			pair := PairsList[DeleteList[n]]
-			uuid, name, flag := InfoKV(pair)
+	for n := 0; n < len(DeleteList); n++ {
+		pair := KVList[DeleteList[n]]
+		uuid, name, flag := InfoKV(pair)
 
-			var destroy bool
-			var value   string
-			if flag != "" {
-				if strings.Contains(flag, "#deleted") {
-					continue
-				} else {
+		var destroy bool
+		var value   string
+		if flag != "" {
+			if strings.Contains(flag, "#deleted") {
+				continue
+			} else {
+				if strings.Contains(flag, "#sent") {
 					value = fmt.Sprintf("%s#%s#%s", name, "sent", "deleted")
 					destroy = true
+				} else if strings.Contains(flag, "#sync") {
+					value = fmt.Sprintf("%s#%s#%s", name, "sync", "deleted")
+					destroy = true
 				}
-			} else {
-				value = fmt.Sprintf("%s#%s", name, "deleted")
-				destroy = true
 			}
+		} else {
+			value = fmt.Sprintf("%s#%s", name, "deleted")
+			destroy = true
+		}
 
-			if destroy == true {
+		if destroy == true {
+			key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), uuid)
+
+			// Edit KV pair
+			go PutKV(key, value, datacenter)
+			destroy = false
+		}
+	}
+
+	for p := 0; p < len(SourceList); p++ {
+		jString := tools.Before(SourceList[p], ":")
+		mString := tools.After(SourceList[p], ":")
+		j, _ := strconv.Atoi(jString)
+		m, _ := strconv.Atoi(mString)
+
+		source := Source(SnapshotsList[m])
+		if source == "received" {
+			uuid, name, flag := InfoKV(KVList[j])
+			if !strings.Contains(flag, "#sync") {
 				key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), uuid)
+				var value string
+				if flag != "" {
+					value = fmt.Sprintf("%s#%s#%s", name, "sync", "deleted")
+				} else {
+					value = fmt.Sprintf("%s#%s", name, "sync")
+				}
 
 				// Edit KV pair
 				go PutKV(key, value, datacenter)
-				destroy = false
 			}
-		}
-
-		for p := 0; p < len(SourceList); p++ {
-			partner := SourceList[p]
-			jString := tools.Before(partner, ":")
-			mString := tools.After(partner, ":")
-			j, _ := strconv.Atoi(jString)
-			m, _ := strconv.Atoi(mString)
-
-			source := Source(SnapshotsList[m])
-			if source == "received" {
-				uuid, name, flag := InfoKV(PairsList[j])
-				if !strings.Contains(flag, "#sent") {
-					key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), uuid)
-					var value string
-					if flag != "" {
-						value = fmt.Sprintf("%s#%s#%s", name, "sent", "deleted")
-					} else {
-						value = fmt.Sprintf("%s#%s", name, "sent")
-					}
-
-					// Edit KV pair
-					go PutKV(key, value, datacenter)
-				}
-				continue
-			} else {
-				continue
-			}
+			continue
+		} else {
+			continue
 		}
 	}
 }

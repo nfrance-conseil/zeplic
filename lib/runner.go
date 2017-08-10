@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
 // Runner provides all ZFS functions to manage the datasets and backups
 //

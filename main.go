@@ -30,7 +30,7 @@ var (
 func main() {
 	// Available flags
 	optAgent    := getopt.BoolLong("agent", 'a', "Execute the orders from director")
-	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with #deleted flag in a dataset")
+	optCleaner  := getopt.BoolLong("cleaner", 'c', "Clean KV pairs with the flags #NotWritten #deleted")
 	optDirector := getopt.BoolLong("director", 'd', "Execute 'zeplic' in synchronization mode")
 	optHelp     := getopt.BoolLong("help", 0, "Show help menu")
 	optQuit	    := getopt.BoolLong("quit", 0, "Gracefully shutdown")

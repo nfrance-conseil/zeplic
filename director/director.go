@@ -209,20 +209,24 @@ func Director() {
 			var sent bool
 			var uuidList []string
 			if take == false {
-				// Should I send a send_snapshot order?
-				sent, uuid := Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
-				if sent == true {
-					Action = "send_snapshot"
-					Destination = BackupSyncOn
-					uuidList = append(uuidList, uuid)
-					DestDataset = BackupSyncDataset
+				if BackupSyncPolicy == "" && SyncSyncPolicy == "" {
+					sent = false
 				} else {
-					sent, uuid = Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
+					// Should I send a send_snapshot order?
+					sent, uuid := Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
 					if sent == true {
 						Action = "send_snapshot"
-						Destination = SyncSyncOn
+						Destination = BackupSyncOn
 						uuidList = append(uuidList, uuid)
-						DestDataset = SyncSyncDataset
+						DestDataset = BackupSyncDataset
+					} else {
+						sent, uuid = Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
+						if sent == true {
+							Action = "send_snapshot"
+							Destination = SyncSyncOn
+							uuidList = append(uuidList, uuid)
+							DestDataset = SyncSyncDataset
+						}
 					}
 				}
 			}
@@ -290,12 +294,12 @@ func Director() {
 				// Marshal response to agent
 				ota, err := json.Marshal(OrderToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/director.go:291] it was not possible to encode the JSON struct.")
+					w.Err("[ERROR > director/director.go:295] it was not possible to encode the JSON struct.")
 				} else {
 					// Send order to agent
 					ConnToAgent, err := net.Dial("tcp", hostname+":7711")
 					if err != nil {
-						w.Err("[ERROR > director/director.go:296] it was not possible to connect with '"+hostname+"'.")
+						w.Err("[ERROR > director/director.go:300] it was not possible to connect with '"+hostname+"'.")
 					} else {
 						ConnToAgent.Write([]byte(ota))
 						ConnToAgent.Write([]byte("\n"))
