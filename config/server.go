@@ -48,6 +48,7 @@ type Actions struct {
 
 // Config extracts the interface of JSON server file
 type Config struct {
+	Resync        []string  `json:"resync"`
 	Datacenter	string	`json:"datacenter"`
 	Director      []Actions `json:"datasets"`
 }
@@ -63,7 +64,7 @@ func Server() Config {
 	var values Config
 	err = json.Unmarshal(serverFile, &values)
 	if err != nil {
-		w.Err("[ERROR > config/server.go:64] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/server.go:65] it was not possible to parse the JSON configuration file.")
 	}
 	return values
 }

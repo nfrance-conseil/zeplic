@@ -75,7 +75,7 @@ You can modify a sample JSON file that it has been created in your config path:
 - *backup*: backup snapshot of dataset (double copy)
 - *clone*: make a clone of last snapshot created
 
-### Running
+### Local running
 
 **Let'zeplic!**
 
@@ -196,7 +196,7 @@ Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-Ju
 Jun 29 10:00:00 hostname zeplic[1176]: [NOTICE] the dataset 'tank/bar' is disabled.
 ```
 
-### Help menu
+## Help menu
 
 ```
 $ zeplic --help
@@ -211,8 +211,8 @@ Usage: zeplic [-acdrsv] [--help] [--quit] [parameters ...]
  -v, --version   Show version of zeplic
 ```
 
-### Vendoring
+## Vendoring
 **zeplic** currently uses [govendor](https://github.com/kardianos/govendor) for vendoring
 
-### Version
+## Version
 **zeplic** uses [Semantic Versioning](http://semver.org/)
