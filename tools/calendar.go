@@ -228,7 +228,7 @@ func NumberMonth(SnapshotName string) string {
 // NumberMonthReverse replaces the number of the month by the name
 func NumberMonthReverse(SnapshotName string) string {
 	if strings.Contains(SnapshotName, "-01-") {
-		SnapshotName = strings.Replace(SnapshotName, "-01-", "-Janvier-", -1)
+		SnapshotName = strings.Replace(SnapshotName, "-01-", "-January-", -1)
 	} else if strings.Contains(SnapshotName, "-02-") {
 		SnapshotName = strings.Replace(SnapshotName, "-02-", "-February-", -1)
 	} else if strings.Contains(SnapshotName, "-03-") {

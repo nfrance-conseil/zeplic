@@ -17,7 +17,7 @@ import (
 func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) {
 	// Should I destroy the snapshot?
 	for i := 0 ; i < len(SnapshotUUID); i++ {
-		uuid, name, _ := InfoKV(SnapshotUUID[i])
+		uuid, name, flag := InfoKV(SnapshotUUID[i])
 
 		// Define return variables
 		RealSnapshotName := SearchName(uuid)
@@ -70,10 +70,7 @@ func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) 
 							key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), uuid)
 							datacenter := values.Dataset[index].Consul.Datacenter
 
-							// Get KV pairs
-							pairs := ListKV(key, datacenter)
-							pair := fmt.Sprintf("%s:%s", uuid, string(pairs[0].Value[:]))
-							_, _, flag := InfoKV(pair)
+							// Update flags
 							var value string
 							if flag != "" {
 								value = fmt.Sprintf("%s#%s#%s", name, "sent", "deleted")
@@ -113,7 +110,7 @@ func Retention(retention []string) (int, int, int, int) {
 
 	// Extract information
 	if len(retention) == 0 || len(retention) > 4 {
-		w.Err("[ERROR > lib/destroy.go:115] the length of retention struct is not valid.")
+		w.Err("[ERROR > lib/destroy.go:112] the length of retention struct is not valid.")
 	} else {
 		for i := 0; i < len(retention); i++ {
 			if strings.Contains(retention[i], "in last day") {
@@ -129,7 +126,7 @@ func Retention(retention []string) (int, int, int, int) {
 				retention[i] = strings.Replace(retention[i], "/month in last year", "", -1)
 				Y, _ = strconv.Atoi(retention[i])
 			} else {
-				w.Err("[ERROR > lib/destroy.go:131] the struct of retention field is not valid.")
+				w.Err("[ERROR > lib/destroy.go:128] the struct of retention field is not valid.")
 				D = 0
 				W = 0
 				M = 0

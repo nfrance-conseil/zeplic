@@ -6,7 +6,7 @@ package lib
 
 import (
 	"fmt"
-	"strconv"
+//	"strconv"
 	"strings"
 	"time"
 
@@ -133,9 +133,9 @@ func Update(datacenter string, dataset string) {
 			CreateList = append(CreateList, k)
 		}
 	}
-
+go Up(KVList, SnapshotsList, SourceList, DeleteList, CreateList)
 	// Update KV pairs
-	for m := 0; m < len(CreateList); m++ {
+/*	for m := 0; m < len(CreateList); m++ {
 		snapUUID := SnapshotsList[CreateList[m]]
 		snapName := SearchName(snapUUID)
 
@@ -203,5 +203,17 @@ func Update(datacenter string, dataset string) {
 		} else {
 			continue
 		}
-	}
+	}*/
+}
+
+// Up *** test for Update() function ***
+func Up(KVList []string, SnapshotsList []string, SourceList []string, DeleteList []int, CreateList []int) {
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("********************")
+	fmt.Printf("KVList: %s\n", KVList)
+	fmt.Printf("SnapshotsList: %s\n", SnapshotsList)
+	fmt.Printf("SourceList: %s\n", SourceList)
+	fmt.Printf("DeleteList: %d\n", DeleteList)
+	fmt.Printf("CreateList: %d\n", CreateList)
 }

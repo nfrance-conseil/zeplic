@@ -80,7 +80,7 @@ func Director() {
 
 	// Resynchronization?
 	hour, min, _ := time.Now().Clock()
-	if hour == 18 && min > 49 && min < 58 {
+	if hour == 15 && min > 5 && min < 59 {
 		for i := 0; i < len(values.Director); i++ {
 			hostname   := values.Director[i].Hostname
 			dataset	   := values.Director[i].Dataset
