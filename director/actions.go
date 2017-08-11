@@ -14,11 +14,11 @@ import (
 )
 
 // Delete returns true if the snapshot should be deleted
-func Delete(dataset string, SnapshotsList []string, prefix string, retention string) (bool, []string) {
+func Delete(dataset string, SnapshotsList []string, prefix string, retention []string) (bool, []string) {
 	var destroy bool
 	var toDestroy []string
 
-	D, W, M, Y := tools.Retention(retention)
+	D, W, M, Y := lib.Retention(retention)
 	if D == 0 {
 		D = 1
 	}
@@ -30,22 +30,21 @@ func Delete(dataset string, SnapshotsList []string, prefix string, retention str
 
 	leap, monthDiff := tools.LengthMonth(year, month)
 
-	var newList []string
+	// Remove snapshot with #NotWritten flag
 	for f := 0; f < len(SnapshotsList); f++ {
-		snapName := tools.Reverse(SnapshotsList[f], ":")
-		newList = append(newList, snapName)
-	}
-
-	// Remove all snapshots of others datasets
-	for g := 0; g < len(newList); g++ {
-		RealDataset := lib.DatasetName(newList[g])
-		if RealDataset != dataset {
-			newList = append(newList[:g], newList[g+1:]...)
-			g--
+		if strings.Contains(SnapshotsList[f], "#NotWritten") {
+			SnapshotsList = append(SnapshotsList[:f], SnapshotsList[f+1:]...)
+			f--
 			continue
 		} else {
 			continue
 		}
+	}
+
+	var newList []string
+	for g := 0; g < len(SnapshotsList); g++ {
+		snapName := tools.Reverse(SnapshotsList[g], ":")
+		newList = append(newList, snapName)
 	}
 
 	// Remove all snapshots with others prefix
@@ -264,11 +263,21 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 
 	// Sort the list of snapshtos
 	var list []string
-	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := lib.InfoKV(SnapshotsList[h])
+	for g := 0; g < len(SnapshotsList); g++ {
+		_, name, _ := lib.InfoKV(SnapshotsList[g])
 		list = append(list, name)
 	}
 	list = tools.Arrange(list)
+
+	// Remove KV pair for sync
+	if len(list) > 1 {
+		for h := 0; h < len(list); h++ {
+			if strings.Contains(list[h], "zCHECK") {
+				list = append(list[:h], list[h+1:]...)
+				h--
+			}
+		}
+	}
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string
@@ -299,7 +308,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 							diff2 := inter.Sub(last).Seconds()
 							diff3 := actual.Sub(inter).Seconds()
 
-							if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
+							if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 && diff3 < 21600 {
 								// Weekday
 								for p := 0; p < len(cWeekday); p++ {
 									if cWeekday[p] == wdayInter {
@@ -334,7 +343,7 @@ func NewSnapshot(SnapshotsList []string, cron string, prefix string) (bool, stri
 								diff2 := inter.Sub(last).Seconds()
 								diff3 := actual.Sub(inter).Seconds()
 
-								if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 {
+								if diff2 <= diff1 && diff2 > 0 && diff1 > diff3 && diff3 < 21600 {
 									// Weekday
 									for p := 0; p < len(cWeekday); p++ {
 										if cWeekday[p] == wdayInter {
@@ -367,9 +376,9 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 	var send bool
 	var SnapshotUUID string
 
-	// Remove all snapshots that contains the flag #sent
+	// Remove all snapshots that contains the flag #sent or the flag #NotWritten
 	for f := 0; f < len(SnapshotsList); f++ {
-		if strings.Contains(SnapshotsList[f], "#sent") {
+		if strings.Contains(SnapshotsList[f], "#sent") || strings.Contains(SnapshotsList[f], "#NotWritten") {
 			SnapshotsList = append(SnapshotsList[:f], SnapshotsList[f+1:]...)
 			f--
 		}
@@ -386,11 +395,21 @@ func Send(dataset string, SnapshotsList []string, SyncPolicy string, prefix stri
 
 	// Sort the list of snapshtos
 	var list []string
-	for h := 0; h < len(SnapshotsList); h++ {
-		_, name, _ := lib.InfoKV(SnapshotsList[h])
+	for g := 0; g < len(SnapshotsList); g++ {
+		_, name, _ := lib.InfoKV(SnapshotsList[g])
 		list = append(list, name)
 	}
 	list = tools.Arrange(list)
+
+	// Remove KV pair for sync
+	if len(list) > 1 {
+		for h := 0; h < len(list); h++ {
+			if strings.Contains(list[h], "zCHECK") {
+				list = append(list[:h], list[h+1:]...)
+				h--
+			}
+		}
+	}
 
 	// Take the snapshots with the same prefix
 	var LastSnapshot string

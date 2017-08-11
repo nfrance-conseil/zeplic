@@ -1,4 +1,4 @@
-// Package tools contains: calendar.go - cron.go - retention.go - substrings.go
+// Package tools contains: calendar.go - cron.go - substrings.go
 //
 // Functions to get substrings
 // Sort a list of snapshots

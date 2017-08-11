@@ -21,7 +21,7 @@ type Cold struct {
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
+	Retention []string `json:"retention"`
 }
 
 // Hot contains the information of synchronization snapshot
@@ -31,7 +31,7 @@ type Hot struct {
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
-	Retention   string `json:"retention"`
+	Retention []string `json:"retention"`
 }
 
 // Actions contains the information of replicate every snapshot
@@ -57,7 +57,7 @@ func Server() Config {
 	jsonFile := ServerFilePath
 	serverFile, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
-		fmt.Printf("[NOTICE] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
+		fmt.Printf("[ERROR] The file '%s' does not exist! Please, check your configuration...\n\n", jsonFile)
 		os.Exit(1)
 	}
 	var values Config

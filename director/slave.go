@@ -103,7 +103,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 						if err != nil {
 							Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", lib.Host(), a.SnapshotName, a.Source)
 							ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-							w.Err("[ERROR > director/slave.go:106] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+							w.Err("[ERROR > director/slave.go:100] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 							more = true
 						} else {
 							ds, err := zfs.GetDataset(a.DestDataset)
@@ -114,7 +114,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 								if err != nil {
 									w.Err("[ERROR > director/slave.go:113] it was not possible to access of snapshots list.")
 								} else {
-									_, amount := lib.RealList(ds)
+									_, amount := lib.RealList(ds, "")
 									ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 									SnapshotName = list[amount[len(amount)-1]].Name
 									for i := 0; i < len(amount); i++ {
@@ -134,7 +134,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 						}
 					} else {
 						// Get the correct number of snapshots in dataset
-						backup, amount := lib.RealList(ds)
+						backup, amount := lib.RealList(ds, "")
 
 						if len(amount) == 0 {
 							// Status for DestDataset
@@ -165,7 +165,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 									if err != nil {
 										w.Err("[ERROR > director/slave.go:164] it was not possible to access of snapshots list.")
 									} else {
-										_, amount := lib.RealList(ds)
+										_, amount := lib.RealList(ds, "")
 										ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 										SnapshotName = list[amount[len(amount)-1]].Name
 										for i := 0; i < len(amount); i++ {
@@ -253,7 +253,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 						w.Err("[ERROR > director/slave.go:251] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 					} else {
 						// Get the correct number of snapshots in dataset
-						_, amount := lib.RealList(ds)
+						_, amount := lib.RealList(ds, "")
 
 						// Get the list of all uuids in DestDataset
 						for i := 0; i < len(amount); i++ {
@@ -323,7 +323,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 												w.Err("[ERROR > director/slave.go:321] it was not possible to access of snapshots list.")
 												break
 											}
-											_, newAmount := lib.RealList(ds)
+											_, newAmount := lib.RealList(ds, "")
 											ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 											SnapshotName = list[newAmount[len(newAmount)-1]].Name
 											for i := len(amount); i < len(newAmount); i++ {
@@ -378,7 +378,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 												w.Err("[ERROR > director/slave.go:376] it was not possible to access of snapshots list.")
 												break
 											}
-											_, newAmount := lib.RealList(ds)
+											_, newAmount := lib.RealList(ds, "")
 											ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
 											SnapshotName = list[newAmount[len(newAmount)-1]].Name
 											for i := len(amount); i < len(newAmount); i++ {

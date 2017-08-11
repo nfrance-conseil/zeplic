@@ -10,7 +10,7 @@
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/COPY",
 			"sync_policy": "00 4 * * *",
-			"retention": "24d1w1m1y"
+			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
 		},
 		"sync": {
 			"creation": "00 4 * * *",
@@ -18,7 +18,7 @@
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copySYNC",
 			"sync_policy": "asap",
-			"retention": "24d1w1m1y"
+			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
 		},
 		"rollback_needed": true,
 		"skip_renamed": true,

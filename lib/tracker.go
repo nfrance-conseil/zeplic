@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
 // Tracker searchs in local datasets
 //
@@ -69,7 +69,7 @@ func Delivery(MapUUID []string, SnapshotName string) ([]byte, bool, bool, *zfs.D
 			} else {
 				// Search the index of snapshot to send
 				var number int
-				_, amount := RealList(ds)
+				_, amount := RealList(ds, "")
 				for i := 0; i < len(amount); i++ {
 					if list[amount[i]].Name == SnapshotName {
 						number = i

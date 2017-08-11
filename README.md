@@ -1,4 +1,4 @@
-# zeplic v0.3.2
+# zeplic v0.3.7
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
@@ -34,8 +34,8 @@ ZFS Datasets distribution over datacenter - Let'zeplic
 ### Configuration
 
 You can modify a sample JSON file that it has been created in your config path:
-- `/etc/zeplic/` for Linux
-- `/usr/local/etc/zeplic/` for FreeBSD
+- `/etc/zeplic/local.json` for Linux
+- `/usr/local/etc/zeplic/local.json` for FreeBSD
 
 ```sh
 {
@@ -92,6 +92,8 @@ M	H	mday	month	wday	root	$BINPATH/zeplic --run
 ### Director's mode
 
 JSON file to configure the retention and replication policy. Use this one only in the server's node side:
+- `/etc/zeplic/server.json` for Linux
+- `/usr/local/etc/zeplic/server.json` for FreeBSD
 
 ```
 {
@@ -106,7 +108,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_backup",
 			"sync_policy": "0 1 * * *",
-			"retention": "24d1w1m1y"
+			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
 		},
 		"sync": {
 			"creation": "0 4 * * *",
@@ -114,7 +116,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/copy_sync",
 			"sync_policy": "asap",
-			"retention": "24d1w1m1y"
+			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
 		},
 		"rollback_needed": true,
 		"skip_renamed": true,
@@ -143,7 +145,7 @@ Formats for creation, send and destroy a snapshot:
 ```
 Create: cron format
 Send: asap (as soon as possible) or cron format
-Destroy: DdWwMmYy
+Destroy: ["D in last day", "W/day in last week", "M/week in last month", "Y/month in last year"]
 	- D = snapshots to save in last 24h
 	- W = snapshots to save per day in the last week
 	- M = snapshots to save per week in the last month
@@ -153,9 +155,15 @@ Destroy: DdWwMmYy
 - Send an order to the agent node (zeplic --agent) on port 7711 to create a snapshot or destroy it
 - Send a snapshot between from agent's node (zeplic --agent) to slave's node (zeplic --slave)
 
+### Consul configuration
+
+How can you config your [Consul datacenter](https://github.com/nfrance-conseil/zeplic/tree/master/samples/consul)?
+
 ### Syslog system service
 
 Configure **zeplic** to send log messages to local/remote syslog server:
+- `/etc/zeplic/server.json` for Linux
+- `/usr/local/etc/zeplic/server.json` for FreeBSD
 - Information of snapshots created, deleted, cloned...
 - Errors occurred while running **zeplic**
 - Information of the synchronisation between nodes

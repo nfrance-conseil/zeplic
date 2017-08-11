@@ -1,6 +1,6 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
-// Consul get the status of consul member
+// Consul get the status of a Consul member and provides the functions to put or delete a KV pair
 //
 package lib
 

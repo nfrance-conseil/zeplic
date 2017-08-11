@@ -1,4 +1,4 @@
-// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go - uuid.go
+// Package lib contains: cleaner.go - consul.go - destroy.go - runner.go - snapshot.go - sync.go - take.go - tracker.go
 //
 // Functions to destroy a snapshot
 //
@@ -6,6 +6,8 @@ package lib
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/nfrance-conseil/zeplic/config"
 	"github.com/IgnacioCarbajoVallejo/go-zfs"
@@ -15,7 +17,7 @@ import (
 func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) {
 	// Should I destroy the snapshot?
 	for i := 0 ; i < len(SnapshotUUID); i++ {
-		uuid, name, _ := InfoKV(SnapshotUUID[i])
+		uuid, name, flag := InfoKV(SnapshotUUID[i])
 
 		// Define return variables
 		RealSnapshotName := SearchName(uuid)
@@ -42,7 +44,7 @@ func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) 
 				// Get the snapshot
 				snap, err := zfs.GetDataset(name)
 				if err != nil {
-					w.Err("[ERROR > lib/destroy.go:43] it was not possible to get the snapshot '"+name+"'.")
+					w.Err("[ERROR > lib/destroy.go:45] it was not possible to get the snapshot '"+name+"'.")
 				} else {
 					// Check if the snapshot was renamed
 					Renamed := SnapRenamed(name, RealSnapshotName)
@@ -62,16 +64,13 @@ func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) 
 					} else {
 						err = snap.Destroy(zfs.DestroyRecursiveClones)
 						if err != nil {
-							w.Err("[ERROR > lib/destroy.go:63] it was not possible to destroy the snapshot '"+name+"'.")
+							w.Err("[ERROR > lib/destroy.go:65] it was not possible to destroy the snapshot '"+name+"'.")
 						} else {
 							// KV write options
 							key := fmt.Sprintf("%s/%s/%s", "zeplic", Host(), uuid)
 							datacenter := values.Dataset[index].Consul.Datacenter
 
-							// Get KV pairs
-							pairs := ListKV(key, datacenter)
-							pair := fmt.Sprintf("%s:%s", uuid, string(pairs[0].Value[:]))
-							_, _, flag := InfoKV(pair)
+							// Update flags
 							var value string
 							if flag != "" {
 								value = fmt.Sprintf("%s#%s#%s", name, "sent", "deleted")
@@ -100,4 +99,41 @@ func DestroyOrder(SnapshotUUID []string, SkipIfRenamed bool, SkipIfCloned bool) 
 			w.Notice("[NOTICE] the dataset '"+RealDataset+"' is not configured.")
 		}
 	}
+}
+
+// Retention extracts the struct of retention
+func Retention(retention []string) (int, int, int, int) {
+	var D int
+	var W int
+	var M int
+	var Y int
+
+	// Extract information
+	if len(retention) == 0 || len(retention) > 4 {
+		w.Err("[ERROR > lib/destroy.go:112] the length of retention struct is not valid.")
+	} else {
+		for i := 0; i < len(retention); i++ {
+			if strings.Contains(retention[i], "in last day") {
+				retention[i] = strings.Replace(retention[i], " in last day", "", -1)
+				D, _ = strconv.Atoi(retention[i])
+			} else if strings.Contains(retention[i], "/day in last week") {
+				retention[i] = strings.Replace(retention[i], "/day in last week", "", -1)
+				W, _ = strconv.Atoi(retention[i])
+			} else if strings.Contains(retention[i], "/week in last month") {
+				retention[i] = strings.Replace(retention[i], "/week in last month", "", -1)
+				M, _ = strconv.Atoi(retention[i])
+			} else if strings.Contains(retention[i], "/month in last year") {
+				retention[i] = strings.Replace(retention[i], "/month in last year", "", -1)
+				Y, _ = strconv.Atoi(retention[i])
+			} else {
+				w.Err("[ERROR > lib/destroy.go:128] the struct of retention field is not valid.")
+				D = 0
+				W = 0
+				M = 0
+				Y = 0
+				break
+			}
+		}
+	}
+	return D, W, M, Y
 }
