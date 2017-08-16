@@ -164,29 +164,41 @@ func Director() {
 			var SkipIfNotWritten bool
 			var SkipIfCloned     bool
 
-			// Add only the snapshot name, uuid and the flag to new snapshots list
-			var SnapshotsList []string
+			// Add only the snapshot name, uuid and the flag to the list
 			for k := 0; k < len(PairsList); k++ {
-				snapString := tools.After(PairsList[k], keyfix)
-				SnapshotsList = append(SnapshotsList, snapString)
+				PairsList[k] = tools.After(PairsList[k], keyfix)
 			}
 
 			// Remove a snapshot if it contains the flag #deleted or if the dataset is not correct
-			for m := 0; m < len(SnapshotsList); m++ {
-				_, snapName, flag := lib.InfoKV(SnapshotsList[m])
+			for m := 0; m < len(PairsList); m++ {
+				_, name, flag := lib.InfoKV(PairsList[m])
+				RealDataset := lib.DatasetName(name)
 				if strings.Contains(flag, "#deleted") {
-					SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
+					PairsList = append(PairsList[:m], PairsList[m+1:]...)
 					m--
 					continue
-				} else {
-					snapDataset := lib.DatasetName(snapName)
-					if snapDataset != dataset {
-						SnapshotsList = append(SnapshotsList[:m], SnapshotsList[m+1:]...)
-						m--
-					}
+				} else if RealDataset != dataset {
+					PairsList = append(PairsList[:m], PairsList[m+1:]...)
+					m--
 					continue
 				}
 			}
+
+			// Copies of list
+			TakeListBackup := make([]string, len(PairsList))
+			copy(TakeListBackup, PairsList)
+			TakeListSync := make([]string, len(PairsList))
+			copy(TakeListSync, PairsList)
+
+			SentListBackup := make([]string, len(PairsList))
+			copy(SentListBackup, PairsList)
+			SentListSync := make([]string, len(PairsList))
+			copy(SentListSync, PairsList)
+
+			DeleteListBackup := make([]string, len(PairsList))
+			copy(DeleteListBackup, PairsList)
+			DeleteListSync := make([]string, len(PairsList))
+			copy(DeleteListSync, PairsList)
 
 			// Take snapshot?
 			var take bool
@@ -194,11 +206,11 @@ func Director() {
 				take = false
 			} else {
 				// Should I send a take_snapshot order?
-				take, SnapshotName = NewSnapshot(SnapshotsList, BackupCreation, BackupPrefix)
+				take, SnapshotName = NewSnapshot(TakeListBackup, BackupCreation, BackupPrefix)
 				if take == true {
 					Action = "take_snapshot"
 				} else {
-					take, SnapshotName = NewSnapshot(SnapshotsList, SyncCreation, SyncPrefix)
+					take, SnapshotName = NewSnapshot(TakeListSync, SyncCreation, SyncPrefix)
 					if take == true {
 						Action = "take_snapshot"
 					}
@@ -213,14 +225,14 @@ func Director() {
 					sent = false
 				} else {
 					// Should I send a send_snapshot order?
-					sent, uuid := Send(dataset, SnapshotsList, BackupSyncPolicy, BackupPrefix)
+					sent, uuid := Send(dataset, SentListBackup, BackupSyncPolicy, BackupPrefix)
 					if sent == true {
 						Action = "send_snapshot"
 						Destination = BackupSyncOn
 						uuidList = append(uuidList, uuid)
 						DestDataset = BackupSyncDataset
 					} else {
-						sent, uuid = Send(dataset, SnapshotsList, SyncSyncPolicy, SyncPrefix)
+						sent, uuid = Send(dataset, SentListSync, SyncSyncPolicy, SyncPrefix)
 						if sent == true {
 							Action = "send_snapshot"
 							Destination = SyncSyncOn
@@ -234,12 +246,12 @@ func Director() {
 			// Destroy snapshot?
 			if take == false && sent == false {
 				// Should I send a destroy_snapshot order?
-				destroy, list := Delete(dataset, SnapshotsList, BackupPrefix, BackupRetention)
+				destroy, list := Delete(dataset, DeleteListBackup, BackupPrefix, BackupRetention)
 				if destroy == true {
 					Action = "destroy_snapshot"
 					SnapshotUUID = list
 				} else {
-					destroy, list := Delete(dataset, SnapshotsList, SyncPrefix, SyncRetention)
+					destroy, list := Delete(dataset, DeleteListSync, SyncPrefix, SyncRetention)
 					if destroy == true {
 						Action = "destroy_snapshot"
 						SnapshotUUID = list
@@ -294,12 +306,12 @@ func Director() {
 				// Marshal response to agent
 				ota, err := json.Marshal(OrderToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/director.go:295] it was not possible to encode the JSON struct.")
+					w.Err("[ERROR > director/director.go:307] it was not possible to encode the JSON struct.")
 				} else {
 					// Send order to agent
 					ConnToAgent, err := net.Dial("tcp", hostname+":7711")
 					if err != nil {
-						w.Err("[ERROR > director/director.go:300] it was not possible to connect with '"+hostname+"'.")
+						w.Err("[ERROR > director/director.go:312] it was not possible to connect with '"+hostname+"'.")
 					} else {
 						ConnToAgent.Write([]byte(ota))
 						ConnToAgent.Write([]byte("\n"))

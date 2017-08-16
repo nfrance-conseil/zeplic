@@ -120,11 +120,18 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 									for i := 0; i < len(amount); i++ {
 										w.Info("[INFO] the snapshot '"+list[amount[i]].Name+"' has been received.")
 
-										// KV write options
+										// KV write options for source
 										key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
 										value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
 
-										// Edit KV pair
+										// Edit KV pair for source
+										go lib.PutKV(key, value, datacenter)
+
+										// KV write options for destination
+										key = fmt.Sprintf("%s/%s/%s", "zeplic", lib.Host(), a.SnapshotUUID)
+										value = fmt.Sprintf("%s#%s", list[amount[i]].Name, "sync")
+
+										// Edit KV pair for destination
 										go lib.PutKV(key, value, datacenter)
 									}
 									more = true
@@ -154,16 +161,16 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 							if err != nil {
 								Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", lib.Host(), a.SnapshotName, a.Source)
 								ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-								w.Err("[ERROR > director/slave.go:151] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+								w.Err("[ERROR > director/slave.go:158] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 								more = true
 							} else {
 								ds, err := zfs.GetDataset(a.DestDataset)
 								if err != nil {
-									w.Err("[ERROR > director/slave.go:160] it was not possible to get the dataset '"+a.DestDataset+"'.")
+									w.Err("[ERROR > director/slave.go:167] it was not possible to get the dataset '"+a.DestDataset+"'.")
 								} else {
 									list, err := ds.Snapshots()
 									if err != nil {
-										w.Err("[ERROR > director/slave.go:164] it was not possible to access of snapshots list.")
+										w.Err("[ERROR > director/slave.go:171] it was not possible to access of snapshots list.")
 									} else {
 										_, amount := lib.RealList(ds, "")
 										ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,true,WasWritten,""}
@@ -171,11 +178,18 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 										for i := 0; i < len(amount); i++ {
 											w.Info("[INFO] the snapshot '"+list[amount[i]].Name+"' has been received.")
 
-											// KV write options
+											// KV write options for source
 											key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
 											value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
 
-											// Edit KV pair
+											// Edit KV pair for source
+											go lib.PutKV(key, value, datacenter)
+
+											// KV write options for destination
+											key = fmt.Sprintf("%s/%s/%s", "zeplic", lib.Host(), a.SnapshotUUID)
+											value = fmt.Sprintf("%s#%s", list[amount[i]].Name, "sync")
+
+											// Edit KV pair for destination
 											go lib.PutKV(key, value, datacenter)
 										}
 										more = true
@@ -225,12 +239,12 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 				// Marshal response to agent
 				rta, err = json.Marshal(ResponseToAgent)
 				if err != nil {
-					w.Err("[ERROR > director/slave.go:226] it was not possible to encode the JSON struct.")
+					w.Err("[ERROR > director/slave.go:240] it was not possible to encode the JSON struct.")
 				} else {
 					// Reconnection to send ZFSResponseToAgent
 					ConnToAgent, err := net.Dial("tcp", a.Source+":7733")
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:231] it was not possible to connect with '"+a.Source+"'.")
+						w.Err("[ERROR > director/slave.go:245] it was not possible to connect with '"+a.Source+"'.")
 					} else {
 						ConnToAgent.Write([]byte(rta))
 						ConnToAgent.Write([]byte("\n"))
@@ -243,14 +257,17 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 				// MapUUID to save the list of uuids
 				var MapUUID []string
 
+				// Datacenter
+				datacenter := values.Dataset[index].Consul.Datacenter
+
 				// Get the list of snapshots in DestDataset
 				ds, err := zfs.GetDataset(a.DestDataset)
 				if err != nil {
-					w.Err("[ERROR > director/slave.go:247] it was not possible to get the dataset '"+a.DestDataset+"'.")
+					w.Err("[ERROR > director/slave.go:264] it was not possible to get the dataset '"+a.DestDataset+"'.")
 				} else {
 					list, err = ds.Snapshots()
 					if err != nil {
-						w.Err("[ERROR > director/slave.go:251] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
+						w.Err("[ERROR > director/slave.go:268] it was not possible to access of snapshots list in dataset '"+a.DestDataset+"'.")
 					} else {
 						// Get the correct number of snapshots in dataset
 						_, amount := lib.RealList(ds, "")
@@ -266,12 +283,12 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 						// Marshal response to agent
 						lta, err := json.Marshal(ListUUIDsToAgent)
 						if err != nil {
-							w.Err("[ERROR > director/slave.go:267] it was not possible to encode the JSON struct.")
+							w.Err("[ERROR > director/slave.go:284] it was not possible to encode the JSON struct.")
 						} else {
 							// Send the list of uuids in DestDataset
 							Conn2ToAgent, err := net.Dial("tcp", a.Source+":7744")
 							if err != nil {
-								w.Err("[ERROR > director/slave.go:272] it was not possible to connect with '"+a.Source+"'.")
+								w.Err("[ERROR > director/slave.go:289] it was not possible to connect with '"+a.Source+"'.")
 							} else {
 								Conn2ToAgent.Write([]byte(lta))
 								Conn2ToAgent.Write([]byte("\n"))
@@ -280,19 +297,19 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 
 							l2, err := net.Listen("tcp", ":7755")
 							if err != nil {
-								w.Err("[ERROR > director/slave.go:281] it was not possible to listen on port '7755'.")
+								w.Err("[ERROR > director/slave.go:298] it was not possible to listen on port '7755'.")
 							} else {
 								defer l2.Close()
 								Conn2Slave, err := l2.Accept()
 
 								if err != nil {
-									w.Err("[ERROR > director/slave.go:287] it was not possible to accept the connection.")
+									w.Err("[ERROR > director/slave.go:303] it was not possible to accept the connection.")
 								} else {
 									// Read the status
 									buff := bufio.NewReader(Conn2Slave)
 									n, err := buff.ReadByte()
 									if err != nil {
-										w.Err("[ERROR > director/slave.go:293] it was not possible to read the 'dataset byte'.")
+										w.Err("[ERROR > director/slave.go:310] it was not possible to read the 'dataset byte'.")
 									} else {
 										m := string(n)
 										snapExist, _ := strconv.Atoi(m)
@@ -310,17 +327,17 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 											if err != nil {
 												Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s': incoherent.", lib.Host(), a.SnapshotName, a.Source)
 												ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-												w.Err("[ERROR > director/slave.go:307] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
+												w.Err("[ERROR > director/slave.go:324] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"': incoherent.")
 												break
 											}
 											ds, err := zfs.GetDataset(a.DestDataset)
 											if err != nil {
-												w.Err("[ERROR > director/slave.go:316] it was not possible to get the dataset '"+a.DestDataset+"'.")
+												w.Err("[ERROR > director/slave.go:333] it was not possible to get the dataset '"+a.DestDataset+"'.")
 												break
 											}
 											list, err := ds.Snapshots()
 											if err != nil {
-												w.Err("[ERROR > director/slave.go:321] it was not possible to access of snapshots list.")
+												w.Err("[ERROR > director/slave.go:340] it was not possible to access of snapshots list.")
 												break
 											}
 											_, newAmount := lib.RealList(ds, "")
@@ -329,12 +346,19 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 											for i := len(amount); i < len(newAmount); i++ {
 												w.Info("[INFO] the snapshot '"+list[newAmount[i]].Name+"' has been received.")
 
-												// KV write options
+												// KV write options for source
 												key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
 												value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
 
-												// Edit KV pair
-												go lib.PutKV(key, value, values.Dataset[index].Consul.Datacenter)
+												// Edit KV pair for source
+												go lib.PutKV(key, value, datacenter)
+
+												// KV write options for destination
+												key = fmt.Sprintf("%s/%s/%s", "zeplic", lib.Host(), a.SnapshotUUID)
+												value = fmt.Sprintf("%s#%s", list[newAmount[i]].Name, "sync")
+
+												// Edit KV pair for destination
+												go lib.PutKV(key, value, datacenter)
 											}
 											runner = true
 
@@ -365,17 +389,17 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 											if err != nil {
 												Error := fmt.Sprintf("[ERROR from '%s'] it was not possible to receive the snapshot '%s' from '%s'.", lib.Host(), a.SnapshotName, a.Source)
 												ResponseToAgent = ZFSResponseToAgent{a.OrderUUID,false,Zerror,Error}
-												w.Err("[ERROR > director/slave.go:362] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
+												w.Err("[ERROR > director/slave.go:386] it was not possible to receive the snapshot '"+a.SnapshotName+"' from '"+a.Source+"'.")
 												break
 											}
 											ds, err := zfs.GetDataset(a.DestDataset)
 											if err != nil {
-												w.Err("[ERROR > director/slave.go:371] it was not possible to get the dataset '"+a.DestDataset+"'.")
+												w.Err("[ERROR > director/slave.go:395] it was not possible to get the dataset '"+a.DestDataset+"'.")
 												break
 											}
 											list, err := ds.Snapshots()
 											if err != nil {
-												w.Err("[ERROR > director/slave.go:376] it was not possible to access of snapshots list.")
+												w.Err("[ERROR > director/slave.go:400] it was not possible to access of snapshots list.")
 												break
 											}
 											_, newAmount := lib.RealList(ds, "")
@@ -384,12 +408,19 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 											for i := len(amount); i < len(newAmount); i++ {
 												w.Info("[INFO] the snapshot '"+list[newAmount[i]].Name+"' has been received.")
 
-												// KV write options
+												// KV write options for source
 												key := fmt.Sprintf("%s/%s/%s", "zeplic", a.Source, a.SnapshotUUID)
 												value := fmt.Sprintf("%s#%s", a.SnapshotName, "sent")
 
-												// Edit KV pair
-												go lib.PutKV(key, value, values.Dataset[index].Consul.Datacenter)
+												// Edit KV pair for source
+												go lib.PutKV(key, value, datacenter)
+
+												// KV write options for destination
+												key = fmt.Sprintf("%s/%s/%s", "zeplic", lib.Host(), a.SnapshotUUID)
+												value = fmt.Sprintf("%s#%s", list[newAmount[i]].Name, "sync")
+
+												// Edit KV pair for destination
+												go lib.PutKV(key, value, datacenter)
 											}
 											runner = true
 										}
@@ -397,12 +428,12 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 									// Marshal response to agent
 									rta, err := json.Marshal(ResponseToAgent)
 									if err != nil {
-										w.Err("[ERROR > director/slave.go:398] it was not possible to encode the JSON struct.")
+										w.Err("[ERROR > director/slave.go:429] it was not possible to encode the JSON struct.")
 									} else {
 										// Send the last ZFSResponseToAgent
 										Conn3ToAgent, err := net.Dial("tcp", a.Source+":7766")
 										if err != nil {
-											w.Err("[ERROR > director/slave.go:403] it was not possible to connect with '"+a.Source+"'.")
+											w.Err("[ERROR > director/slave.go:434] it was not possible to connect with '"+a.Source+"'.")
 										} else {
 											Conn3ToAgent.Write([]byte(rta))
 											Conn3ToAgent.Write([]byte("\n"))
