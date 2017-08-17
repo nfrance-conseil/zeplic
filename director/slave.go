@@ -83,11 +83,11 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 			if index > -1 {
 				// Extract data of dataset
 				enable	   := values.Dataset[index].Enable
-				docker	   := values.Dataset[index].Docker
+				slave	   := values.Dataset[index].Slave
 				dataset	   := values.Dataset[index].Name
 				datacenter := values.Dataset[index].Consul.Datacenter
 
-				if dataset == a.DestDataset && enable == true && docker == true {
+				if dataset == a.DestDataset && enable == true && slave == true {
 					// Check if the dataset received exists
 					ds, err := zfs.GetDataset(a.DestDataset)
 					if err != nil {
@@ -216,7 +216,7 @@ func HandleRequestSlave (ConnSlave net.Conn) {
 					ConnSlave.Write(ack)
 					ConnSlave.Close()
 					w.Notice("[NOTICE] impossible to receive: the dataset '"+a.DestDataset+"' is disabled.")
-				} else if dataset == a.DestDataset && docker == false {
+				} else if dataset == a.DestDataset && slave == false {
 					// Status for DestDataset
 					ack = nil
 					ack = strconv.AppendInt(ack, DatasetDocker, 10)

@@ -30,7 +30,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 
 	// This value returns if the dataset is enable
 	enable	    := values.Dataset[index].Enable
-	docker	    := values.Dataset[index].Docker
+	slave	    := values.Dataset[index].Slave
 	dataset	    := values.Dataset[index].Name
 	consul	    := values.Dataset[index].Consul.Enable
 	datacenter  := values.Dataset[index].Consul.Datacenter
@@ -62,7 +62,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 		}
 	} else {
 		// Case: take snapshot || zeplic --run
-		if enable == true && docker == false {
+		if enable == true && slave == false {
 			// Get dataset
 			ds, err := Dataset(dataset)
 			if err != nil {
@@ -82,7 +82,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 				}
 				code = 0
 			}
-		} else if enable == true && docker == true {
+		} else if enable == true && slave == true {
 			w.Notice("[NOTICE] the dataset '"+dataset+"' is a docker dataset.")
 			code = 0
 		} else if enable == false && dataset != "" {
