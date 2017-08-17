@@ -89,14 +89,12 @@ func main() {
 			w.Notice("[NOTICE] 'zeplic --director' is running...")
 
 			// Infinite loop to manage the datasets
-			ticker := time.NewTicker(1 * time.Minute)
 			for {
-				select {
-				case <- ticker.C:
-					go director.Director()
-				default:
-					// No stop signal, continuing loop
-				}
+				time.Sleep(1 * time.Minute)
+				go director.Director()
+
+				// No stop signal, continuing loop
+				// ...
 			}
 		} else {
 			fmt.Printf("[INFO] Consul server is not running...\n\n")

@@ -6,7 +6,7 @@ package lib
 
 import (
 	"fmt"
-//	"strconv"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +24,48 @@ func Sync(hostname string, datacenter string, dataset string, index int) {
 	key := fmt.Sprintf("zeplic/%s/SyncKV%d", hostname, index)
 	value := fmt.Sprintf("%s@zCHECK_%d-%s-%02d_%02d:00:00", dataset, year, month, day, hour)
 	go PutKV(key, value, datacenter)
+}
+
+// Resync checks if it is time to execute Update() function
+func Resync(timezone []string) bool {
+	var resync bool
+	loc, _ := time.LoadLocation("UTC")
+	year, month, day := time.Now().Date()
+	hour, minute, _ := time.Now().Clock()
+	actual := time.Date(year, month, day, hour, minute, 00, 0, loc)
+
+	// Check if timezone struct is correct
+	if len(timezone) < 1 || len(timezone) > 2 {
+		w.Err("[ERROR > lib/sync.go:38] the length of resync struct is not valid.")
+	} else {
+		var minor time.Time
+		var major time.Time
+		for i := 0; i < 1; i++ {
+			minorH := tools.Before(timezone[i], ":")
+			minorM := tools.After(timezone[i], ":")
+			H, _ := strconv.Atoi(minorH)
+			M, _ := strconv.Atoi(minorM)
+			minor  = time.Date(year, month, day, H, M, 00, 0, loc)
+			majorH := tools.Before(timezone[i+1], ":")
+			majorM := tools.After(timezone[i+1], ":")
+			H, _ = strconv.Atoi(majorH)
+			M, _ = strconv.Atoi(majorM)
+			major  = time.Date(year, month, day, H, M, 00, 0, loc)
+		}
+		diff0 := major.Sub(minor).Seconds()
+		if diff0 < 0 {
+			w.Err("[ERROR > lib/sync.go:56] the time zone to resynchronize must belong to the same day.")
+		} else if diff0 > 0 && diff0 < 300 {
+			w.Err("[ERROR > lib/sync.go:58] the time zone to resynchronize must be greater than 5 minutes.")
+		} else {
+			diff1 := actual.Sub(minor).Seconds()
+			diff2 := major.Sub(actual).Seconds()
+			if diff1 >= 0 && diff2 >= 0 {
+				resync = true
+			}
+		}
+	}
+	return resync
 }
 
 // Update updates the KV pairs data in Consul
@@ -67,18 +109,18 @@ func Update(datacenter string, dataset string) {
 	var SnapshotsList []string
 	ds, err := zfs.GetDataset(dataset)
 	if err != nil {
-		w.Err("[ERROR > lib/sync.go:68] it was not possible to get the dataset '"+dataset+"'.")
+		w.Err("[ERROR > lib/sync.go:110] it was not possible to get the dataset '"+dataset+"'.")
 	} else {
 		list, err := ds.Snapshots()
 		if err != nil {
-			w.Err("[ERROR > lib/sync.go:72] it was not possible to access of snapshots list.")
+			w.Err("[ERROR > lib/sync.go:114] it was not possible to access of snapshots list.")
 		} else {
 			// Extract information of each snapshot
 			_, amount := RealList(ds, "")
 			for i := 0; i < len(amount); i++ {
 				snap, err := zfs.GetDataset(list[amount[i]].Name)
 				if err != nil {
-					w.Err("[ERROR > lib/sync.go:79] it was not possible to get the snapshot '"+list[amount[i]].Name+"'.")
+					w.Err("[ERROR > lib/sync.go:121] it was not possible to get the snapshot '"+list[amount[i]].Name+"'.")
 				} else {
 					// Remove backup snapshots
 					prefix := Prefix(snap.Name)

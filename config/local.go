@@ -30,7 +30,7 @@ type Copy struct {
 // Data contains the information of each dataset
 type Data struct {
 	Enable	   bool	  `json:"enable"`
-	Docker	   bool	  `json:"docker"`
+	Slave	   bool	  `json:"slave"`
 	Name	   string `json:"name"`
 	Consul	   Sync
 	Prefix	   string `json:"snap_prefix"`

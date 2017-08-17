@@ -28,8 +28,8 @@ func Crontab(cron string) ([]int, []int, []int, []time.Month, []time.Weekday) {
 		for i := 0; i < 60; i++ {
 			cMinute = append(cMinute, i)
 		}
-	} else if strings.Contains(minute, "/") {
-		M := After(minute, "/")
+	} else if strings.Contains(minute, "*/") {
+		M := After(minute, "*/")
 		Mint, _ := strconv.Atoi(M)
 		var Msum int
 		if Mint >= 0 && Mint < 60 {

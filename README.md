@@ -1,4 +1,4 @@
-# zeplic v0.3.7
+# zeplic v0.3.8
 
 [![Build Status](https://travis-ci.org/nfrance-conseil/zeplic.svg?branch=master)](https://travis-ci.org/nfrance-conseil/zeplic)
 
@@ -42,7 +42,7 @@ You can modify a sample JSON file that it has been created in your config path:
 	"local_datasets": [
 	{
 		"enable": true,
-		"docker": false,
+		"slave": false,
 		"name": "tank/foo",
 		"consul": {
 			"enable": true,
@@ -67,7 +67,7 @@ You can modify a sample JSON file that it has been created in your config path:
 ```
 
 - *enable*: to activate the dataset
-- *docker*: dataset to receive the snapshots
+- *slave*: dataset to receive the snapshots
 - *name*: name of dataset
 - *consul*: configuration using Consul (director's mode)
 - *snap_prefix*: prefix of snapshot name (dataset@PREFIX_DATE)
@@ -75,7 +75,7 @@ You can modify a sample JSON file that it has been created in your config path:
 - *backup*: backup snapshot of dataset (double copy)
 - *clone*: make a clone of last snapshot created
 
-### Running
+### Local running
 
 **Let'zeplic!**
 
@@ -98,6 +98,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 ```
 {
 	"datacenter": "ConsulDatacenter",
+	"consul_resync": ["19:00", "19:10"],
 	"datasets": [
 	{
 		"hostname": "localHostname",
@@ -127,6 +128,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 ```
 
 - *datacenter*: datacenter of Consul
+- *consul_resync*: time to resynchronize Consul data
 - *hostname*: hostname of local node
 - *dataset*: name of dataset to manage
 - *creation*: policy to create a new snapshot (cron)
@@ -196,7 +198,7 @@ Jun 29 10:00:00 hostname zeplic[1176]: [INFO] the snapshot 'tank/foo@FOO_2017-Ju
 Jun 29 10:00:00 hostname zeplic[1176]: [NOTICE] the dataset 'tank/bar' is disabled.
 ```
 
-### Help menu
+## Help menu
 
 ```
 $ zeplic --help
@@ -211,8 +213,8 @@ Usage: zeplic [-acdrsv] [--help] [--quit] [parameters ...]
  -v, --version   Show version of zeplic
 ```
 
-### Vendoring
+## Vendoring
 **zeplic** currently uses [govendor](https://github.com/kardianos/govendor) for vendoring
 
-### Version
+## Version
 **zeplic** uses [Semantic Versioning](http://semver.org/)

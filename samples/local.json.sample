@@ -2,7 +2,7 @@
 	"local_datasets": [
 	{
 		"enable": true,
-		"docker": false,
+		"slave": false,
 		"name": "tank/foo",
 		"consul": {
 			"enable": true,
@@ -19,7 +19,7 @@
 	},
 	{
 		"enable": false,
-		"docker": false,
+		"slave": false,
 		"name": "tank/bar",
 		"consul": {
 			"enable": false,

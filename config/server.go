@@ -16,8 +16,8 @@ var ServerFilePath string
 
 // Cold contains the information of backup snapshot
 type Cold struct {
-	Creation    string `json:"creation"`
 	Prefix	    string `json:"prefix"`
+	Creation    string `json:"creation"`
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
@@ -26,8 +26,8 @@ type Cold struct {
 
 // Hot contains the information of synchronization snapshot
 type Hot struct {
-	Creation    string `json:"creation"`
 	Prefix	    string `json:"prefix"`
+	Creation    string `json:"creation"`
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
@@ -40,14 +40,15 @@ type Actions struct {
 	Dataset		 string `json:"dataset"`
 	Backup		 Cold
 	Sync		 Hot
-	RollbackIfNeeded bool	`json:"rollback_needed"`
-	SkipIfRenamed    bool	`json:"skip_renamed"`
-	SkipIfNotWritten bool	`json:"skip_not_written"`
-	SkipIfCloned     bool	`json:"skip_cloned"`
+	RollbackIfNeeded bool	`json:"rollback_if_needed"`
+	SkipIfRenamed    bool	`json:"skip_if_renamed"`
+	SkipIfNotWritten bool	`json:"skip_if_not_written"`
+	SkipIfCloned     bool	`json:"skip_if_cloned"`
 }
 
 // Config extracts the interface of JSON server file
 type Config struct {
+	Resync	      []string  `json:"consul_resync"`
 	Datacenter	string	`json:"datacenter"`
 	Director      []Actions `json:"datasets"`
 }
@@ -63,7 +64,7 @@ func Server() Config {
 	var values Config
 	err = json.Unmarshal(serverFile, &values)
 	if err != nil {
-		w.Err("[ERROR > config/server.go:64] it was not possible to parse the JSON configuration file.")
+		w.Err("[ERROR > config/server.go:65] it was not possible to parse the JSON configuration file.")
 	}
 	return values
 }
