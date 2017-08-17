@@ -48,7 +48,7 @@ type Actions struct {
 
 // Config extracts the interface of JSON server file
 type Config struct {
-	Resync	      []string  `json:"ddbb"`
+	Resync	      []string  `json:"consul_resync"`
 	Datacenter	string	`json:"datacenter"`
 	Director      []Actions `json:"datasets"`
 }

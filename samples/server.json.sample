@@ -1,6 +1,6 @@
 {
 	"datacenter": "ConsulDatacenter",
-	"ddbb": ["19:00", "19:10"],
+	"consul_resync": ["19:00", "19:10"],
 	"datasets": [
 	{
 		"hostname": "LocalHostname",

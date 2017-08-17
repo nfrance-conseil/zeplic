@@ -42,7 +42,7 @@ You can modify a sample JSON file that it has been created in your config path:
 	"local_datasets": [
 	{
 		"enable": true,
-		"docker": false,
+		"slave": false,
 		"name": "tank/foo",
 		"consul": {
 			"enable": true,
@@ -67,7 +67,7 @@ You can modify a sample JSON file that it has been created in your config path:
 ```
 
 - *enable*: to activate the dataset
-- *docker*: dataset to receive the snapshots
+- *slave*: dataset to receive the snapshots
 - *name*: name of dataset
 - *consul*: configuration using Consul (director's mode)
 - *snap_prefix*: prefix of snapshot name (dataset@PREFIX_DATE)
@@ -98,6 +98,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 ```
 {
 	"datacenter": "ConsulDatacenter",
+	"consul_resync": ["19:00", "19:10"],
 	"datasets": [
 	{
 		"hostname": "localHostname",
@@ -127,6 +128,7 @@ JSON file to configure the retention and replication policy. Use this one only i
 ```
 
 - *datacenter*: datacenter of Consul
+- *consul_resync*: time to resynchronize Consul data
 - *hostname*: hostname of local node
 - *dataset*: name of dataset to manage
 - *creation*: policy to create a new snapshot (cron)
