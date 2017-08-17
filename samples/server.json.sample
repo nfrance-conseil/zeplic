@@ -1,29 +1,29 @@
 {
 	"datacenter": "ConsulDatacenter",
-	"resync": ["19::00", "20:00"],
+	"ddbb": ["19:00", "19:10"],
 	"datasets": [
 	{
 		"hostname": "LocalHostname",
 		"dataset": "tank/FOO",
 		"backup": {
-			"creation": "00 * * * *",
 			"prefix": "snapBK",
+			"creation": "*/30 * * * *",
 			"sync_on": "SyncHostname",
 			"sync_dataset": "tank/COPY",
-			"sync_policy": "00 4 * * *",
-			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
-		},
-		"sync": {
-			"creation": "00 4 * * *",
-			"prefix": "snapSYNC",
-			"sync_on": "SyncHostname",
-			"sync_dataset": "tank/copySYNC",
 			"sync_policy": "asap",
 			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
 		},
-		"rollback_needed": true,
-		"skip_renamed": true,
-		"skip_not_written": true,
-		"skip_cloned": true
+		"sync": {
+			"prefix": "snapSYNC",
+			"creation": "00 4 * * *",
+			"sync_on": "SyncHostname",
+			"sync_dataset": "tank/copySYNC",
+			"sync_policy": "30 4 * * *",
+			"retention": ["24 in last day", "1/day in last week", "1/week in last month", "1/month in last year"]
+		},
+		"rollback_if_needed": true,
+		"skip_if_renamed": true,
+		"skip_if_not_written": true,
+		"skip_if_cloned": true
 	}]
 }

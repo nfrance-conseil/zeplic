@@ -261,22 +261,24 @@ func NewSnapshot(TakeList []string, cron string, prefix string) (bool, string) {
 	cMinute, cHour, cMonthday, cMonth, cWeekday := tools.Crontab(cron)
 
 	// Remove KV pair for sync
+	var SnapSync string
 	if len(TakeList) > 1 {
 		for g := 0; g < len(TakeList); g++ {
 			if strings.Contains(TakeList[g], "zCHECK") {
+				SnapSync = TakeList[g]
 				TakeList = append(TakeList[:g], TakeList[g+1:]...)
 				g--
 			}
 		}
-	}
 
-	// Remove snapshots with other prefix
-	for h := 0; h < len(TakeList); h++ {
-		_, SnapshotName, _ := lib.InfoKV(TakeList[h])
-		RealPrefix := lib.Prefix(SnapshotName)
-		if RealPrefix != prefix || RealPrefix != "zCHECK" {
-			TakeList = append(TakeList[:h], TakeList[h+1:]...)
-			continue
+		// Remove snapshots with other prefix
+		for h := 0; h < len(TakeList); h++ {
+			_, SnapshotName, _ := lib.InfoKV(TakeList[h])
+			RealPrefix := lib.Prefix(SnapshotName)
+			if RealPrefix != prefix {
+				TakeList = append(TakeList[:h], TakeList[h+1:]...)
+				continue
+			}
 		}
 	}
 
@@ -288,6 +290,9 @@ func NewSnapshot(TakeList []string, cron string, prefix string) (bool, string) {
 	TakeList = tools.Arrange(TakeList)
 
 	// Last snapshot time
+	if len(TakeList) == 0 {
+		TakeList = append(TakeList, SnapSync)
+	}
 	LastSnapshot := TakeList[len(TakeList)-1]
 	y, m, d, H, M, _ := lib.CreateTime(LastSnapshot)
 	last := time.Date(y, m, d, H, M, 00, 0, loc)

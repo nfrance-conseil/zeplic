@@ -44,7 +44,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 	// Case: receive snapshot	
 	if strings.Contains(SnapshotName, "@") {
 		// Get dataset
-		ds, err := zfs.GetDataset(dataset)
+		ds, err := Dataset(dataset)
 		if err != nil {
 			code = 1
 		} else {
@@ -64,7 +64,7 @@ func Runner(index int, director bool, SnapshotName string, NotWritten bool) int 
 		// Case: take snapshot || zeplic --run
 		if enable == true && docker == false {
 			// Get dataset
-			ds, err := zfs.GetDataset(dataset)
+			ds, err := Dataset(dataset)
 			if err != nil {
 				code = 1
 			} else {
@@ -113,6 +113,7 @@ func Dataset(dataset string) (*zfs.Dataset, error) {
 			if err != nil {
 				w.Err("[ERROR > lib/runner.go:112] it was not possible to get the dataset '"+dataset+"'.")
 			}
+			return ds, nil
 		}
 	}
 	return ds, err

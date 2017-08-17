@@ -16,8 +16,8 @@ var ServerFilePath string
 
 // Cold contains the information of backup snapshot
 type Cold struct {
-	Creation    string `json:"creation"`
 	Prefix	    string `json:"prefix"`
+	Creation    string `json:"creation"`
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
@@ -26,8 +26,8 @@ type Cold struct {
 
 // Hot contains the information of synchronization snapshot
 type Hot struct {
-	Creation    string `json:"creation"`
 	Prefix	    string `json:"prefix"`
+	Creation    string `json:"creation"`
 	SyncOn      string `json:"sync_on"`
 	SyncDataset string `json:"sync_dataset"`
 	SyncPolicy  string `json:"sync_policy"`
@@ -40,15 +40,15 @@ type Actions struct {
 	Dataset		 string `json:"dataset"`
 	Backup		 Cold
 	Sync		 Hot
-	RollbackIfNeeded bool	`json:"rollback_needed"`
-	SkipIfRenamed    bool	`json:"skip_renamed"`
-	SkipIfNotWritten bool	`json:"skip_not_written"`
-	SkipIfCloned     bool	`json:"skip_cloned"`
+	RollbackIfNeeded bool	`json:"rollback_if_needed"`
+	SkipIfRenamed    bool	`json:"skip_if_renamed"`
+	SkipIfNotWritten bool	`json:"skip_if_not_written"`
+	SkipIfCloned     bool	`json:"skip_if_cloned"`
 }
 
 // Config extracts the interface of JSON server file
 type Config struct {
-	Resync        []string  `json:"resync"`
+	Resync	      []string  `json:"ddbb"`
 	Datacenter	string	`json:"datacenter"`
 	Director      []Actions `json:"datasets"`
 }
